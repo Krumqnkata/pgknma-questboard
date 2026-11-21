@@ -28,6 +28,19 @@ class MissionForm(forms.ModelForm):
             del self.fields["is_active"]
 
 
+class ReviewForm(forms.Form):
+    """Учителят потвърждава или отказва заявка (Ф5)."""
+
+    APPROVE = "approve"
+    REJECT = "reject"
+
+    decision = forms.ChoiceField(choices=[(APPROVE, "Потвърди"), (REJECT, "Откажи")])
+    comment = forms.CharField(
+        label="Коментар", required=False, max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": "Коментар към ученика (по желание)"}),
+    )
+
+
 class ClaimForm(forms.Form):
     """Ученикът заявява изпълнение с кратко доказателство (Ф4)."""
 

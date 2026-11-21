@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from accounts.models import Guild
 from accounts.testing import make_mission, make_student, make_teacher
+from economy.models import CoinTransaction, Privilege, Purchase
 from missions.models import Claim, Mission
 
 
@@ -90,6 +91,93 @@ class MissionPageTests(TestCase):
 
     # --- Начална страница ---
 
-    def test_home_sends_each_role_to_its_page(self):
+    def test_student_home_shows_stats(self):
         self.client.force_login(self.student)
-        self.assertRedirects(self.client.get(reverse("home")), reverse("mission_list"))
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, "Здравей, Феникс")
+        self.assertContains(response, "Тази седмица: 0 от 5")
+
+    def test_teacher_home_is_review_list(self):
+        self.client.force_login(self.teacher)
+        self.assertRedirects(self.client.get(reverse("home")), reverse("review_list"))
+
+
+class GamePageTests(TestCase):
+    """Проверка на заявки, магазин, привилегии и класация през страниците."""
+
+    def setUp(self):
+        self.teacher = make_teacher()
+        self.student = make_student()
+        self.mission = make_mission(self.teacher, title="Репортаж", xp=60)
+        self.claim = Claim.objects.create(mission=self.mission, student=self.student, evidence="връзка")
+
+    def review(self, decision, user=None, comment=""):
+        self.client.force_login(user or self.teacher)
+        return self.client.post(reverse("review_claim", args=[self.claim.pk]),
+                                {"decision": decision, "comment": comment}, follow=True)
+
+    def test_teacher_sees_pending_claim(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse("review_list"))
+        self.assertContains(response, "Репортаж")
+        self.assertContains(response, '<span class="count">1</span>', html=True)
+
+    def test_teacher_approves_claim(self):
+        response = self.review("approve")
+        self.assertContains(response, "Феникс получава 60 XP и 1 монета.")
+        self.claim.refresh_from_db()
+        self.assertEqual(self.claim.status, Claim.Status.APPROVED)
+
+    def test_double_click_on_approve_shows_error(self):
+        self.review("approve")
+        response = self.review("approve")
+        self.assertContains(response, "вече е проверена")
+
+    def test_teacher_rejects_with_comment(self):
+        self.review("reject", comment="Липсва снимка")
+        self.claim.refresh_from_db()
+        self.assertEqual(self.claim.status, Claim.Status.REJECTED)
+        self.assertEqual(self.claim.review_comment, "Липсва снимка")
+
+    def test_student_cannot_review(self):
+        response = self.review("approve", user=self.student)
+        self.assertEqual(response.status_code, 403)
+
+    def test_review_does_not_redirect_to_other_sites(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(reverse("review_claim", args=[self.claim.pk]),
+                                    {"decision": "approve", "next": "https://evil.example.com/"})
+        self.assertRedirects(response, reverse("review_list"), fetch_redirect_response=False)
+
+    def test_student_buys_in_shop(self):
+        self.review("approve")  # 60 XP → 1 монета
+        CoinTransaction.objects.create(student=self.student, amount=1, kind="correction", reason="тест")
+        self.client.force_login(self.student)
+        hint = Privilege.objects.get(code="hint_token")
+        response = self.client.post(reverse("shop_buy", args=[hint.pk]), follow=True)
+        self.assertContains(response, "Купено: Hint Token")
+
+    def test_shop_refuses_without_coins(self):
+        self.client.force_login(self.student)
+        hint = Privilege.objects.get(code="hint_token")
+        response = self.client.post(reverse("shop_buy", args=[hint.pk]), follow=True)
+        self.assertContains(response, "Нямаш достатъчно монети")
+
+    def test_teacher_marks_purchase_used(self):
+        CoinTransaction.objects.create(student=self.student, amount=5, kind="correction", reason="тест")
+        purchase = Purchase.objects.create(student=self.student, privilege=Privilege.objects.get(code="deadline_pass"),
+                                           price_paid=3)
+        self.client.force_login(self.teacher)
+        self.client.post(reverse("purchase_use", args=[purchase.pk]))
+        purchase.refresh_from_db()
+        self.assertTrue(purchase.is_used)
+
+    def test_leaderboard_shows_nicknames_not_real_names(self):
+        self.student.first_name, self.student.last_name = "Калина", "Петкова"
+        self.student.save()
+        self.review("approve")
+        self.client.force_login(make_student("drug@example.com", nickname="Сокол"))
+        response = self.client.get(reverse("leaderboard"))
+        self.assertContains(response, "Феникс")
+        self.assertNotContains(response, "Калина")
+        self.assertNotContains(response, "Петкова")

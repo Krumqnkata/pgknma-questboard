@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Магазин – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Магазин</h1>
+  <p class="coins">Имаш <strong>{{ stats.coins|coins }}</strong></p>
+</div>
+
+<div class="grid">
+  {% for privilege in privileges %}
+    <section class="card">
+      <div class="card-top">
+        <h2>{{ privilege.name }}</h2>
+        <span class="xp">{{ privilege.price|coins }}</span>
+      </div>
+      <p>{{ privilege.description }}</p>
+      <form method="post" action="{% url 'shop_buy' privilege.pk %}">
+        {% csrf_token %}
+        <button type="submit" {% if stats.coins < privilege.price %}disabled{% endif %}>
+          {% if stats.coins < privilege.price %}Не стигат монетите{% else %}Купи{% endif %}
+        </button>
+      </form>
+    </section>
+  {% empty %}
+    <p class="muted">В момента няма привилегии за продажба.</p>
+  {% endfor %}
+</div>
+
+<section class="card spaced">
+  <h2>Моите покупки</h2>
+  {% if purchases %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Привилегия</th><th>Цена</th><th>Купена</th><th>Състояние</th></tr></thead>
+        <tbody>
+          {% for purchase in purchases %}
+            <tr>
+              <td>{{ purchase.privilege.name }}</td>
+              <td>{{ purchase.price_paid|coins }}</td>
+              <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
+              <td>
+                {% if purchase.is_used %}<span class="badge">използвана {{ purchase.used_at|date:"j F"|lower }}</span>
+                {% else %}<span class="badge status-approved">неизползвана</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Още нищо не си купил.</p>
+  {% endif %}
+</section>
+{% endblock %}

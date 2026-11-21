@@ -60,13 +60,18 @@
                 <td>{{ claim.student.school_class }}</td>
                 <td class="pre">{{ claim.evidence|urlize }}</td>
                 <td>{{ claim.submitted_at|date:"j F, H:i"|lower }}</td>
-                <td>{% include "web/_claim_status.html" %}</td>
+                <td>
+                  {% include "web/_claim_status.html" %}
+                  {% if claim.review_comment %}<p class="muted small">„{{ claim.review_comment }}“</p>{% endif %}
+                </td>
               </tr>
+              {% if claim.status == "pending" %}
+                <tr class="review-row"><td colspan="5">{% include "web/_review_buttons.html" %}</td></tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
-      <p class="muted">Потвърждаването на заявките идва в следващата стъпка.</p>
     {% else %}
       <p class="muted">Още няма заявки.</p>
     {% endif %}

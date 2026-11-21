@@ -49,7 +49,14 @@ a { color: var(--accent); }
 
 .brand { font-weight: 700; font-size: 1.2rem; text-decoration: none; }
 
-.nav { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.nav { display: flex; align-items: center; gap: 0.4rem 1rem; flex-wrap: wrap; }
+
+/* На тесен екран (телефон) менюто отива под името на сайта. */
+@media (max-width: 720px) {
+  .topbar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .nav { gap: 0.3rem 0.9rem; }
+  .page { padding: 1rem; }
+}
 .who { color: var(--muted); }
 
 .page { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem; }
@@ -181,6 +188,68 @@ th { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
 .help { display: block; color: var(--muted); margin-top: 0.2rem; }
 .error { display: block; color: var(--error); margin-top: 0.2rem; }
 .has-error input, .has-error textarea, .has-error select { border-color: var(--error); }
+
+/* ---------- Начало на ученика ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.stat-label { margin: 0; color: var(--muted); font-weight: 600; }
+.stat-value { margin: 0.2rem 0; font-size: 2rem; font-weight: 700; }
+.stat-value small { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.small { font-size: 0.9rem; }
+
+.progress { height: 10px; border-radius: 999px; background: var(--border); overflow: hidden; margin: 0.4rem 0; }
+.progress span { display: block; height: 100%; background: var(--accent); }
+
+.two-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+.spaced { margin-top: 1rem; }
+.list-row { padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.list-row:last-child { border-bottom: 0; }
+.list-row p { margin: 0.2rem 0 0; }
+.plus { color: var(--success); font-weight: 700; }
+.minus { color: var(--error); font-weight: 700; }
+
+/* ---------- Проверка на заявки ---------- */
+.review-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.review-form input { flex: 1 1 220px; margin: 0; }
+.review-form button { margin: 0; }
+.review-row td { border-bottom: 2px solid var(--border); }
+.claim-card .evidence { padding: 0.6rem 0.8rem; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 4px; }
+button.secondary { background: transparent; color: var(--error); border: 1px solid var(--error); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.small-button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.9rem; }
+
+/* ---------- Брояч в менюто ---------- */
+.count {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ---------- Класация ---------- */
+.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
+.filters select { width: auto; margin: 0; }
+.filters button { margin: 0; }
+tr.me td { background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 600; }
+.coins { font-size: 1.1rem; margin: 0; }
+
+/* Текст само за екранни четци */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
+}
 
 /* ---------- Профил ---------- */
 .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.5rem; }

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Заявки за проверка – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Заявки за проверка</h1>
+  <a class="button" href="{% url 'mission_create' %}">Нова мисия</a>
+</div>
+
+{% for claim in claims %}
+  <section class="card claim-card">
+    <div class="card-top">
+      <a href="{% url 'mission_detail' claim.mission.pk %}"><strong>{{ claim.mission.title }}</strong></a>
+      <span class="xp">{{ claim.mission.xp }} XP</span>
+    </div>
+    <p class="muted">
+      {{ claim.student.get_full_name|default:claim.student.nickname }} ({{ claim.student.nickname }}), {{ claim.student.school_class }}
+      · подадена на {{ claim.submitted_at|date:"j F, H:i"|lower }}
+    </p>
+    <p class="pre evidence">{{ claim.evidence|urlize }}</p>
+    <p class="muted small"><strong>Критерий:</strong> {{ claim.mission.criteria }}</p>
+    {% include "web/_review_buttons.html" %}
+  </section>
+{% empty %}
+  <div class="card">
+    <p>Няма заявки, които чакат проверка.</p>
+  </div>
+{% endfor %}
+{% endblock %}

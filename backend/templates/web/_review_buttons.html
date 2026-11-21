@@ -1,0 +1,8 @@
+{# Бутони „Потвърди“ / „Откажи“ за заявка. Очаква claim; next – къде да се върне. #}
+<form method="post" action="{% url 'review_claim' claim.pk %}" class="review-form">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <input type="text" name="comment" maxlength="500" placeholder="Коментар (по желание)" aria-label="Коментар към ученика">
+  <button type="submit" name="decision" value="approve">Потвърди</button>
+  <button type="submit" name="decision" value="reject" class="secondary">Откажи</button>
+</form>

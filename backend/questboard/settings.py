@@ -90,6 +90,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "web.context_processors.navigation",
             ],
         },
     },
@@ -119,6 +120,9 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+            # Всяка транзакция заключва базата за писане още в началото,
+            # за да не се засекат две едновременни покупки или потвърждения.
+            "OPTIONS": {"transaction_mode": "IMMEDIATE"},
         }
     }
 
@@ -266,6 +270,7 @@ UNFOLD = {
                 "items": [
                     {"title": "Движения на XP", "icon": "trending_up", "link": _admin_link("economy_xptransaction")},
                     {"title": "Движения на монети", "icon": "paid", "link": _admin_link("economy_cointransaction")},
+                    {"title": "Седмични сметки", "icon": "date_range", "link": _admin_link("economy_coinweek")},
                     {"title": "Покупки", "icon": "shopping_bag", "link": _admin_link("economy_purchase")},
                     {"title": "Ползване на асистента", "icon": "smart_toy",
                      "link": _admin_link("assistant_bridge_assistantlog")},

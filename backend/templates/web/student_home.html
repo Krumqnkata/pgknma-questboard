@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Начало – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Здравей, {{ user.nickname }}!</h1>
+  <p class="muted">{{ user.school_class }} · гилдия {{ user.guild }}</p>
+</div>
+
+<div class="stats">
+  <section class="card stat">
+    <p class="stat-label">Ниво</p>
+    <p class="stat-value">{{ stats.level.number|default:"—" }}{% if stats.level.title %} <small>{{ stats.level.title }}</small>{% endif %}</p>
+    <div class="progress" role="progressbar" aria-valuenow="{{ stats.progress_percent }}" aria-valuemin="0" aria-valuemax="100"
+         aria-label="Напредък до следващото ниво">
+      <span style="width: {{ stats.progress_percent }}%"></span>
+    </div>
+    <p class="muted small">
+      {% if stats.next_level %}Още {{ stats.xp_to_next_level }} XP до ниво {{ stats.next_level.number }}{% else %}Най-високото ниво!{% endif %}
+    </p>
+  </section>
+
+  <section class="card stat">
+    <p class="stat-label">Опит</p>
+    <p class="stat-value">{{ stats.xp }} <small>XP</small></p>
+    <p class="muted small">XP не се харчи и определя нивото.</p>
+  </section>
+
+  <section class="card stat">
+    <p class="stat-label">Монети</p>
+    <p class="stat-value">{{ stats.coins }}</p>
+    <p class="muted small">Тази седмица: {{ stats.coins_this_week }} от {{ stats.weekly_limit }}</p>
+    <a href="{% url 'shop' %}">Към магазина</a>
+  </section>
+</div>
+
+<div class="two-columns">
+  <section class="card">
+    <h2>Моите заявки</h2>
+    {% for claim in recent_claims %}
+      <div class="list-row">
+        <a href="{% url 'mission_detail' claim.mission.pk %}">{{ claim.mission.title }}</a>
+        {% include "web/_claim_status.html" %}
+        {% if claim.review_comment %}<p class="muted small">„{{ claim.review_comment }}“</p>{% endif %}
+      </div>
+    {% empty %}
+      <p class="muted">Още нямаш заявки. <a href="{% url 'mission_list' %}">Виж мисиите.</a></p>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Последни движения</h2>
+    {% for entry in recent_xp %}
+      <div class="list-row"><span class="plus">+{{ entry.amount }} XP</span> {{ entry.reason }}</div>
+    {% endfor %}
+    {% for entry in recent_coins %}
+      <div class="list-row">
+        <span class="{% if entry.amount > 0 %}plus{% else %}minus{% endif %}">{% if entry.amount > 0 %}+{% endif %}{{ entry.amount|coins }}</span>
+        {{ entry.reason }}
+      </div>
+    {% endfor %}
+    {% if not recent_xp and not recent_coins %}<p class="muted">Още няма движения.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

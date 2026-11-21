@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Привилегии – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Неизползвани привилегии</h1>
+</div>
+<p class="muted">Когато ученик използва привилегия при вас (напр. удължен срок), отбележете я тук.</p>
+
+{% if purchases %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ученик</th><th>Клас</th><th>Привилегия</th><th>Купена</th><th></th></tr></thead>
+      <tbody>
+        {% for purchase in purchases %}
+          <tr>
+            <td>{{ purchase.student.get_full_name|default:purchase.student.nickname }} ({{ purchase.student.nickname }})</td>
+            <td>{{ purchase.student.school_class }}</td>
+            <td>{{ purchase.privilege.name }}</td>
+            <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
+            <td>
+              <form method="post" action="{% url 'purchase_use' purchase.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="small-button">Използвана</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="card"><p>Няма неизползвани привилегии.</p></div>
+{% endif %}
+{% endblock %}

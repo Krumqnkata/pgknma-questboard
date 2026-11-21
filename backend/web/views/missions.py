@@ -1,11 +1,10 @@
 """
-Страниците за ученици и учители (Django шаблони).
+Страници за мисиите: списък, детайли, създаване, редакция и заявка за изпълнение.
 
 Тук няма правила на играта – те са в missions/services.py.
 Изгледите само проверяват ролята, показват данни и викат услугите.
 """
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -14,35 +13,20 @@ from accounts.permissions import role_required
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
 
-from .forms import ClaimForm, MissionForm
+from ..forms import ClaimForm, MissionForm, ReviewForm
 
 STUDENT = User.Role.STUDENT
 TEACHER = User.Role.TEACHER
 
 
-@login_required
-def home(request):
-    """Всеки отива на своята начална страница според ролята."""
-    if request.user.is_admin_role:
-        return redirect("admin:index")
-    return redirect("mission_list")
-
-
-@login_required
-def profile(request):
-    return render(request, "web/profile.html")
-
-
-# ---------- Мисии ----------
-
 @role_required(STUDENT, TEACHER)
 def mission_list(request):
     if request.user.is_teacher:
-        return teacher_mission_list(request)
-    return student_mission_list(request)
+        return _teacher_mission_list(request)
+    return _student_mission_list(request)
 
 
-def student_mission_list(request):
+def _student_mission_list(request):
     missions = missions_for_student()
 
     # Филтър по гилдия: ?guild=<id>
@@ -61,7 +45,7 @@ def student_mission_list(request):
     })
 
 
-def teacher_mission_list(request):
+def _teacher_mission_list(request):
     missions = missions_for_teacher(request.user).annotate(
         pending_count=Count("claims", filter=Q(claims__status=Claim.Status.PENDING)),
         claims_count=Count("claims"),
@@ -95,11 +79,20 @@ def mission_edit(request, pk):
 @role_required(STUDENT, TEACHER)
 def mission_detail(request, pk):
     if request.user.is_teacher:
-        mission = get_object_or_404(Mission.objects.select_related("guild"), pk=pk, created_by=request.user)
-        claims = mission.claims.select_related("student", "student__school_class").order_by("status", "-submitted_at")
-        return render(request, "web/mission_detail.html", {"mission": mission, "claims": claims})
+        return _teacher_mission_detail(request, pk)
+    return _student_mission_detail(request, pk)
 
-    # Ученик: вижда активните мисии и тези, за които вече има заявка.
+
+def _teacher_mission_detail(request, pk):
+    mission = get_object_or_404(Mission.objects.select_related("guild"), pk=pk, created_by=request.user)
+    claims = mission.claims.select_related("student", "student__school_class").order_by("status", "-submitted_at")
+    return render(request, "web/mission_detail.html", {
+        "mission": mission, "claims": claims, "review_form": ReviewForm(),
+    })
+
+
+def _student_mission_detail(request, pk):
+    # Ученикът вижда активните мисии и тези, за които вече има заявка.
     mission = get_object_or_404(
         Mission.objects.select_related("guild").filter(Q(is_active=True) | Q(claims__student=request.user)).distinct(),
         pk=pk,

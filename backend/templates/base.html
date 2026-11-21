@@ -11,11 +11,16 @@
     <a class="brand" href="{% url 'home' %}">Questboard</a>
     {% if user.is_authenticated %}
       <nav class="nav">
-        {% if user.is_student or user.is_teacher %}
+        {% if user.is_student %}
+          <a href="{% url 'home' %}">Начало</a>
           <a href="{% url 'mission_list' %}">Мисии</a>
-        {% endif %}
-        {% if user.is_teacher %}
-          <a href="{% url 'mission_create' %}">Нова мисия</a>
+          <a href="{% url 'shop' %}">Магазин</a>
+          <a href="{% url 'leaderboard' %}">Класация</a>
+        {% elif user.is_teacher %}
+          <a href="{% url 'review_list' %}">Заявки{% if pending_review_count %} <span class="count">{{ pending_review_count }}</span>{% endif %}</a>
+          <a href="{% url 'mission_list' %}">Мисии</a>
+          <a href="{% url 'purchase_list' %}">Привилегии</a>
+          <a href="{% url 'leaderboard' %}">Класация</a>
         {% endif %}
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">Администрация</a>{% endif %}
         <a href="{% url 'profile' %}" class="who">{{ user }} · {{ user.get_role_display }}</a>
