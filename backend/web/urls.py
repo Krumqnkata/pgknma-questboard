@@ -13,6 +13,7 @@ urlpatterns = [
     path("missions/new/", views.mission_create, name="mission_create"),
     path("missions/<int:pk>/", views.mission_detail, name="mission_detail"),
     path("missions/<int:pk>/edit/", views.mission_edit, name="mission_edit"),
+    path("missions/<int:pk>/hint/", views.mission_hint, name="mission_hint"),
     # Проверка на заявки (учител)
     path("review/", views.review_list, name="review_list"),
     path("claims/<int:pk>/review/", views.review_claim, name="review_claim"),
@@ -23,4 +24,7 @@ urlpatterns = [
     path("purchases/<int:pk>/use/", views.purchase_use, name="purchase_use"),
     # Класация
     path("leaderboard/", views.leaderboard_view, name="leaderboard"),
+    # Справки и асистент
+    path("reports/", views.reports, name="reports"),
+    path("assistant/", views.assistant_chat, name="assistant"),
 ]

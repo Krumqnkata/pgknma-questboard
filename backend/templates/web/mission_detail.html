@@ -44,6 +44,29 @@
       <p class="muted">Мисията вече не приема заявки.</p>
     {% endif %}
   </section>
+
+  {% if mission.hints_allowed and can_claim or hints %}
+    <section class="card assistant-box">
+      <h2>Подсказка от асистента</h2>
+      {% for hint in hints %}
+        <div class="hint">
+          <p class="pre">{{ hint.text }}</p>
+          <p class="muted small">{{ hint.created_at|date:"j F, H:i"|lower }}</p>
+        </div>
+      {% endfor %}
+      {% if mission.hints_allowed and can_claim %}
+        {% if hint_tokens %}
+          <form method="post" action="{% url 'mission_hint' mission.pk %}">
+            {% csrf_token %}
+            <button type="submit">Поискай подсказка (1 Hint Token)</button>
+            <span class="muted small">Имаш {{ hint_tokens }}. Подсказката дава насока, не готово решение.</span>
+          </form>
+        {% else %}
+          <p class="muted">Нямаш Hint Token. <a href="{% url 'shop' %}">Купи от магазина.</a></p>
+        {% endif %}
+      {% endif %}
+    </section>
+  {% endif %}
 {% endif %}
 
 {% if user.is_teacher %}

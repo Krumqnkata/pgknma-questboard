@@ -234,7 +234,8 @@ def mark_purchase_used(purchase, teacher, mission=None):
 
 
 def unused_purchases():
-    return Purchase.objects.filter(used_at__isnull=True).select_related(
+    """Неизползваните покупки, които учителят отбелязва. Hint Token се харчи сам – през асистента."""
+    return Purchase.objects.filter(used_at__isnull=True).exclude(privilege__code="hint_token").select_related(
         "student", "student__school_class", "privilege").order_by("purchased_at")
 
 

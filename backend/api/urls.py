@@ -16,6 +16,9 @@ urlpatterns = [
     path("me/", views.MeView.as_view(), name="api-me"),
     path("me/stats/", views.MyStatsView.as_view(), name="api-my-stats"),
     path("leaderboard/", views.LeaderboardView.as_view(), name="api-leaderboard"),
+    path("assistant/ask/", views.AssistantAskView.as_view(), name="api-assistant-ask"),
+    path("assistant/mission-draft/", views.MissionDraftView.as_view(), name="api-mission-draft"),
+    path("reports/<str:report>/", views.ReportView.as_view(), name="api-report"),
     path("", include(router.urls)),
     # Автоматична документация на API-то
     path("schema/", SpectacularAPIView.as_view(), name="api-schema"),

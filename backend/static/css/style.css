@@ -251,6 +251,34 @@ tr.me td { background: color-mix(in srgb, var(--accent) 15%, transparent); font-
   overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
 }
 
+/* ---------- Асистент ---------- */
+.assistant-box { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.assistant-box textarea { margin-bottom: 0; }
+.hint { padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 4px; }
+.hint p { margin: 0.2rem 0; }
+
+.chat { max-width: 760px; }
+.chat-log { display: flex; flex-direction: column; gap: 0.6rem; max-height: 55vh; overflow-y: auto; margin-bottom: 1rem; }
+.bubble { max-width: 85%; padding: 0.6rem 0.9rem; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble.user { align-self: flex-end; background: var(--accent); color: #fff; }
+.bubble.bot { align-self: flex-start; background: var(--bg); border: 1px solid var(--border); }
+.bubble.waiting { color: var(--muted); font-style: italic; }
+.bubble.error { border-color: var(--error); color: var(--error); }
+.chat-form { display: flex; gap: 0.5rem; }
+.chat-form input { margin: 0; }
+.chat-form button { margin: 0; }
+button.chip { margin: 0; font-weight: normal; cursor: pointer; }
+
+/* ---------- Справки ---------- */
+.report-form { display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: flex-end; }
+.report-form .field { flex: 1 1 160px; }
+.report-form button { margin-top: 0; }
+.chip + .chip { margin-left: 0.2rem; }
+
+/* ---------- Страници за грешки ---------- */
+.error-card { max-width: 560px; margin: 3rem auto; text-align: center; }
+.error-code { margin: 0; font-size: 3rem; font-weight: 800; color: var(--accent); }
+
 /* ---------- Профил ---------- */
 .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.5rem; }
 .details dt { color: var(--muted); }

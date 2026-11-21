@@ -1,0 +1,44 @@
+{# Показва резултата от справка по разписанието. Очаква променлива result. #}
+<h2>
+  {% if result.teacher %}{{ result.teacher }}{% elif result.class %}{{ result.class }}{% else %}Свободни кабинети{% endif %}
+  {% if result.day %}· {{ result.day }}{% endif %}{% if result.period %}, {{ result.period }} час{% endif %}
+</h2>
+
+{% if result.message %}<p>{{ result.message }}</p>{% endif %}
+
+{% if result.lessons is not None %}
+  {% if result.lessons %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ден</th><th>Час</th><th>Време</th><th>Клас</th><th>Предмет</th><th>Учител</th><th>Кабинет</th></tr></thead>
+        <tbody>
+          {% for lesson in result.lessons %}
+            <tr><td>{{ lesson.day }}</td><td>{{ lesson.period }}</td><td>{{ lesson.start }}–{{ lesson.end }}</td>
+                <td>{{ lesson.class }}</td><td>{{ lesson.subject }}</td><td>{{ lesson.teacher }}</td><td>{{ lesson.room }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Няма часове.</p>
+  {% endif %}
+{% endif %}
+
+{% if result.free_periods is not None %}
+  {% for slot in result.free_periods %}
+    <span class="chip">{{ slot.period }} час ({{ slot.start }}–{{ slot.end }})</span>
+  {% empty %}
+    <p class="muted">Няма свободни часове през този ден.</p>
+  {% endfor %}
+{% endif %}
+
+{% if result.same_subject is not None %}
+  {% if result.lesson %}<p>Час: {{ result.lesson.subject }}, {{ result.lesson.class }}, кабинет {{ result.lesson.room }}</p>
+  {% else %}<p class="muted">Учителят няма час тогава.</p>{% endif %}
+  <p><strong>Свободни със същия предмет:</strong> {{ result.same_subject|join:", "|default:"няма" }}</p>
+  <p><strong>Други свободни учители:</strong> {{ result.other_free|join:", "|default:"няма" }}</p>
+{% endif %}
+
+{% if result.rooms is not None %}
+  {% for room in result.rooms %}<span class="chip">{{ room }}</span>{% empty %}<p class="muted">Няма свободни кабинети.</p>{% endfor %}
+{% endif %}

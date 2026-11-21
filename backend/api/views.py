@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsStudent, IsTeacher
+from assistant_bridge.services import AssistantError, ask, draft_mission, request_hint
 from economy import leaderboard
 from economy.models import Purchase
 from economy.services import (
@@ -22,10 +23,12 @@ from economy.services import (
 )
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
+from timetable import queries
 
 from .serializers import (
-    ClaimCreateSerializer, ClaimSerializer, MeSerializer, MissionSerializer, PrivilegeSerializer,
-    PurchaseSerializer, RankingRowSerializer, ReviewSerializer, StatsSerializer,
+    AnswerSerializer, ClaimCreateSerializer, ClaimSerializer, DraftSerializer, HintSerializer, IdeaSerializer,
+    MeSerializer, MissionSerializer, PrivilegeSerializer, PurchaseSerializer, QuestionSerializer,
+    RankingRowSerializer, ReviewSerializer, StatsSerializer,
 )
 
 
@@ -89,6 +92,20 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
         except GameRuleError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(ClaimSerializer(claim).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses=HintSerializer)
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsStudent])
+    def hint(self, request, pk=None):
+        """Подсказка от асистента срещу един Hint Token (Ф10)."""
+        mission = get_object_or_404(Mission, pk=pk, is_active=True)
+        try:
+            hint = request_hint(request.user, mission)
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        except AssistantError as error:
+            return Response({"detail": f"{error} Hint Token-ът не е похарчен."},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response(HintSerializer(hint).data, status=status.HTTP_201_CREATED)
 
 
 class ClaimViewSet(viewsets.ReadOnlyModelViewSet):
@@ -216,3 +233,58 @@ class LeaderboardView(APIView):
                 class_id=int(school_class) if school_class.isdigit() else None,
             ), many=True).data,
         })
+
+
+# ---------- Асистент и справки ----------
+
+class AssistantAskView(APIView):
+    """Въпрос към асистента. Ползва се от чата в браузъра (static/js/assistant-chat.js)."""
+
+    @extend_schema(request=QuestionSerializer, responses=AnswerSerializer)
+    def post(self, request):
+        data = QuestionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            answer = ask(request.user, data.validated_data["question"])
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        except AssistantError as error:
+            # Асистентът е изключен, недостъпен или е достигнат лимитът – ясно съобщение.
+            return Response({"detail": str(error)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response(AnswerSerializer({"answer": answer.text, "tool": answer.tool, "data": answer.data}).data)
+
+
+class MissionDraftView(APIView):
+    """Чернова на мисия от асистента (Ф11). Връща данни за формата – нищо не се записва."""
+
+    permission_classes = [IsAuthenticated, IsTeacher]
+
+    @extend_schema(request=IdeaSerializer, responses=DraftSerializer)
+    def post(self, request):
+        data = IdeaSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            draft = draft_mission(request.user, data.validated_data["idea"])
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        except AssistantError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response(DraftSerializer(draft).data)
+
+
+class ReportView(APIView):
+    """
+    Справки по разписанието без асистента (Ф17, Ф18, Ф22).
+    Пример: GET /api/reports/free_rooms/?day=сряда&period=3
+    """
+
+    @extend_schema(responses=OpenApiTypes.OBJECT, parameters=[
+        OpenApiParameter("teacher", str), OpenApiParameter("class_name", str),
+        OpenApiParameter("day", str), OpenApiParameter("period", str),
+    ])
+    def get(self, request, report):
+        params = {key: request.query_params.get(key, "") for key in ("teacher", "class_name", "day", "period")}
+        try:
+            return Response(queries.run_report(request.user, report, params))
+        except queries.QueryError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)

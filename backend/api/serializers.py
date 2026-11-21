@@ -97,3 +97,30 @@ class RankingRowSerializer(serializers.Serializer):
     average = serializers.IntegerField()
     guild = serializers.CharField()
     level = serializers.IntegerField(source="level.number", allow_null=True, default=None)
+
+
+class QuestionSerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=500)
+
+
+class AnswerSerializer(serializers.Serializer):
+    answer = serializers.CharField()
+    tool = serializers.CharField(allow_null=True)
+    data = serializers.DictField()
+
+
+class IdeaSerializer(serializers.Serializer):
+    idea = serializers.CharField(min_length=5, max_length=1000)
+
+
+class DraftSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    description = serializers.CharField()
+    criteria = serializers.CharField()
+    guild = serializers.IntegerField(allow_null=True)
+    xp = serializers.IntegerField()
+
+
+class HintSerializer(serializers.Serializer):
+    hint = serializers.CharField(source="text")
+    created_at = serializers.DateTimeField()

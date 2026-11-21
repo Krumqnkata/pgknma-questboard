@@ -181,3 +181,10 @@ class GamePageTests(TestCase):
         self.assertContains(response, "Феникс")
         self.assertNotContains(response, "Калина")
         self.assertNotContains(response, "Петкова")
+
+
+class ErrorPageTests(TestCase):
+    def test_404_page_is_in_bulgarian(self):
+        response = self.client.get("/няма-такава-страница/")
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "Страницата не е намерена", status_code=404)

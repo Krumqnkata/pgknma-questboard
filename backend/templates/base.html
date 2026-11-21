@@ -16,11 +16,14 @@
           <a href="{% url 'mission_list' %}">Мисии</a>
           <a href="{% url 'shop' %}">Магазин</a>
           <a href="{% url 'leaderboard' %}">Класация</a>
+          <a href="{% url 'assistant' %}">Асистент</a>
         {% elif user.is_teacher %}
           <a href="{% url 'review_list' %}">Заявки{% if pending_review_count %} <span class="count">{{ pending_review_count }}</span>{% endif %}</a>
           <a href="{% url 'mission_list' %}">Мисии</a>
           <a href="{% url 'purchase_list' %}">Привилегии</a>
           <a href="{% url 'leaderboard' %}">Класация</a>
+          <a href="{% url 'reports' %}">Справки</a>
+          <a href="{% url 'assistant' %}">Асистент</a>
         {% endif %}
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">Администрация</a>{% endif %}
         <a href="{% url 'profile' %}" class="who">{{ user }} · {{ user.get_role_display }}</a>

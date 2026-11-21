@@ -143,6 +143,9 @@ AUTH_PASSWORD_VALIDATORS = [
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
+# При изтекла форма (CSRF) – нашата страница на български вместо стандартната
+CSRF_FAILURE_VIEW = "web.views.errors.csrf_failure"
+
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
@@ -274,6 +277,7 @@ UNFOLD = {
                     {"title": "Покупки", "icon": "shopping_bag", "link": _admin_link("economy_purchase")},
                     {"title": "Ползване на асистента", "icon": "smart_toy",
                      "link": _admin_link("assistant_bridge_assistantlog")},
+                    {"title": "Дадени подсказки", "icon": "lightbulb", "link": _admin_link("assistant_bridge_hint")},
                     {"title": "Промени в администрацията", "icon": "history", "link": _admin_link("admin_logentry")},
                 ],
             },
@@ -286,7 +290,7 @@ UNFOLD = {
 ASSISTANT_URL = os.getenv("ASSISTANT_URL", "http://127.0.0.1:8001")
 ASSISTANT_TOKEN = os.getenv("ASSISTANT_TOKEN", "")
 # Колко секунди чакаме асистента, преди да покажем съобщение за грешка
-ASSISTANT_TIMEOUT_SECONDS = 10
+ASSISTANT_TIMEOUT_SECONDS = 30
 
 
 # ---------- Сигурност в публикуваната версия ----------

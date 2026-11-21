@@ -15,11 +15,15 @@
                         └──HTTP + таен ключ──▶ Асистент (FastAPI) ──HTTPS──▶ Езиков модел
 ```
 
-- **Основно API (Django + Django REST Framework)**: страниците за ученици и
-  учители, REST API-то и всички правила на играта. Само то пише в базата.
-- **Асистент (FastAPI)**: отделна програма. Ключът за езиковия модел стои
-  само тук. Приема заявки само от Django и слуша само на `127.0.0.1`.
-- Ако асистентът е спрян, платформата продължава да работи без него.
+- **Уеб клиент (браузърът)**: страниците се генерират от Django шаблони (HTML
+  и CSS). Чатът с асистента е на обикновен JavaScript и говори с REST API-то.
+- **Основно API (Django + Django REST Framework)**: страниците, REST API-то и
+  всички правила на играта. Само то пише в базата и проверява правата.
+- **Асистент (FastAPI)**: отделна програма. Ключовете за езиковите модели
+  стоят само тук. Приема заявки само от Django и слуша само на `127.0.0.1`.
+  Не чете базата: Django му праща само нужните данни, без лични данни на ученици.
+- Ако асистентът е спрян или изключен от администрацията, платформата
+  продължава да работи без него.
 
 ## Структура на папките
 
@@ -35,6 +39,10 @@ backend/                Основно API (Django)
   web/                  страниците (Django шаблони)
   templates/, static/   HTML шаблони и CSS
 assistant_service/      Услуга на асистента (FastAPI)
+  main.py               адресите: /hint, /mission-draft, /query/plan, /query/answer
+  logic.py              подготовка на заявките към модела и проверка на отговорите
+  prompts.py            инструкциите към модела
+  providers/            OpenAI, Gemini и Claude зад общ интерфейс
 start.py                пуска цялата система с една команда
 run_tests.py            пуска всички тестове с една команда
 .env.example            пример за файла с тайните и портовете
@@ -67,8 +75,8 @@ python manage.py createsuperuser
 cd ..
 ```
 
-Примерни данни (класове, мисии и тестов акаунт за всяка роля, само с
-измислени хора) се зареждат така, след като сложите `DEMO_PASSWORD` в `.env`:
+Примерни данни (класове, мисии, разписание и тестов акаунт за всяка роля,
+само с измислени хора) се зареждат така, след като сложите `DEMO_PASSWORD` в `.env`:
 
 ```powershell
 cd backend
@@ -93,6 +101,45 @@ python start.py
 - Документация на API-то: http://127.0.0.1:8000/api/docs/
 
 Спиране: **Ctrl+C**. Портовете се сменят от `.env` (`DJANGO_PORT`, `ASSISTANT_PORT`).
+
+## Асистентът
+
+1. В `.env` сложете API ключ за избрания доставчик (`OPENAI_API_KEY`,
+   `GEMINI_API_KEY` или `ANTHROPIC_API_KEY`).
+2. В администрацията → „Настройки на играта“ изберете доставчика и името на
+   модела (за Claude по подразбиране е `claude-opus-5-5`) и включете асистента.
+
+Какво може:
+
+- **Подсказка (Ф10)**: ученикът харчи Hint Token и получава насока по мисия.
+  Ако моделът не отговори, токенът не се харчи.
+- **Чернова на мисия (Ф11)**: учителят описва идея и асистентът попълва
+  формата. Нищо не се публикува без учителя.
+- **Справки (Ф17, Ф18, Ф22, Ф14)**: моделът само избира коя справка да се
+  изпълни (извикване на функции). Django я изпълнява с правата на питащия.
+  Имената на учителите се заменят с кодове, преди да отидат към модела.
+- Всяко ползване се записва в журнала. Има дневен лимит на потребител.
+
+Контролните случаи (20 броя) се пускат срещу истинския модел с:
+
+```powershell
+cd backend
+python manage.py evaluate_assistant
+```
+
+Резултатът се записва в `docs/assistant-evaluation.md`.
+
+## Разписание
+
+Разписанието се внася от CSV файл: от администрацията (Разписание → „Внеси
+от CSV“) или с `python manage.py import_timetable файл.csv`. Първият ред е:
+
+```
+ден,час,начало,край,клас,предмет,учител,кабинет
+```
+
+Пример: [backend/timetable/sample/razpisanie_primer.csv](backend/timetable/sample/razpisanie_primer.csv)
+(измислени учители). Справките са на страница „Справки“ и работят и без асистента.
 
 ## Тестове
 
@@ -131,6 +178,10 @@ Questboard се разпространява под лиценза GNU General P
 | [Uvicorn](https://www.uvicorn.org/) | сървър за услугата на асистента | BSD-3-Clause |
 | [HTTPX](https://www.python-httpx.org/) | заявки от Django към асистента | BSD-3-Clause |
 | [python-dotenv](https://github.com/theskumar/python-dotenv) | четене на файла `.env` | BSD-3-Clause |
+| [Pydantic](https://docs.pydantic.dev/) | проверка на заявките и отговорите на асистента | MIT |
+| [anthropic](https://github.com/anthropics/anthropic-sdk-python) | връзка с Claude | Apache-2.0 |
+| [openai](https://github.com/openai/openai-python) | връзка с OpenAI | Apache-2.0 |
+| [google-genai](https://github.com/googleapis/python-genai) | връзка с Gemini | Apache-2.0 |
 | [mysqlclient](https://github.com/PyMySQL/mysqlclient) | връзка с MySQL (по избор) | GPL-2.0-or-later |
 | [Material Symbols](https://fonts.google.com/icons) | иконите в администрацията (идват с django-unfold) | Apache-2.0 |
 | [Inter](https://rsms.me/inter/) | шрифтът на администрацията (идва с django-unfold) | SIL OFL 1.1 |

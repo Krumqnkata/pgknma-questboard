@@ -136,11 +136,12 @@ class GameApiTests(TestCase):
         self.assertEqual(self.client.get(reverse("api-my-stats")).status_code, 403)
 
     def test_buy_and_use_privilege(self):
-        self.give_coins(2)
+        deadline_pass = Privilege.objects.get(code="deadline_pass")  # 3 монети
+        self.give_coins(3)
         self.client.force_login(self.student)
-        bought = self.client.post(reverse("privilege-buy", args=[self.hint.pk]))
+        bought = self.client.post(reverse("privilege-buy", args=[deadline_pass.pk]))
         self.assertEqual(bought.status_code, 201, bought.content)
-        again = self.client.post(reverse("privilege-buy", args=[self.hint.pk]))
+        again = self.client.post(reverse("privilege-buy", args=[deadline_pass.pk]))
         self.assertEqual(again.status_code, 400)
 
         self.client.force_login(self.teacher)

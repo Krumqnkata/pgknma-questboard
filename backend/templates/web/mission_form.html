@@ -3,7 +3,22 @@
 {% block title %}{% if is_new %}Нова мисия{% else %}Редакция{% endif %} – Questboard{% endblock %}
 
 {% block content %}
-<section class="card form-card">
+{% if is_new %}
+  <section class="card form-card assistant-box">
+    <h2>Чернова с асистента</h2>
+    <p class="muted small">Опишете идеята с едно-две изречения. Асистентът ще попълни формата отдолу,
+      а вие я преглеждате и редактирате. Нищо не се публикува без вас.</p>
+    <form method="post">
+      {% csrf_token %}
+      <label for="draft_idea" class="sr-only">Идея за мисия</label>
+      <textarea name="draft_idea" id="draft_idea" rows="2" maxlength="1000"
+                placeholder="Напр. учениците да помогнат при подготовката на коледния базар">{{ draft_idea }}</textarea>
+      <button type="submit">Направи чернова</button>
+    </form>
+  </section>
+{% endif %}
+
+<section class="card form-card{% if is_new %} spaced{% endif %}">
   <h1>{% if is_new %}Нова мисия{% else %}Редакция на „{{ mission.title }}“{% endif %}</h1>
   <form method="post" novalidate>
     {% csrf_token %}

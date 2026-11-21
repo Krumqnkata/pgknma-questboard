@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Справки – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Справки по разписанието</h1>
+  <a href="{% url 'assistant' %}">Попитай асистента</a>
+</div>
+
+<section class="card">
+  <form method="get" class="report-form">
+    <div class="field">
+      <label for="report">Справка</label>
+      <select name="report" id="report" required>
+        <option value="">— изберете —</option>
+        {% for key, title in reports.items %}
+          <option value="{{ key }}" {% if key == report %}selected{% endif %}>{{ title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if teachers %}
+      <div class="field">
+        <label for="teacher">Учител</label>
+        <input list="teacher-list" name="teacher" id="teacher" value="{{ params.teacher }}" placeholder="име или фамилия">
+        <datalist id="teacher-list">{% for name in teachers %}<option value="{{ name }}">{% endfor %}</datalist>
+      </div>
+    {% endif %}
+
+    <div class="field">
+      <label for="class_name">Клас</label>
+      {% if classes %}
+        <select name="class_name" id="class_name">
+          <option value="">—</option>
+          {% for school_class in classes %}
+            <option {% if school_class.name == params.class_name %}selected{% endif %}>{{ school_class.name }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <input name="class_name" id="class_name" value="{{ params.class_name }}" readonly>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="day">Ден</label>
+      <select name="day" id="day">
+        <option value="">днес</option>
+        {% for day in days %}<option {% if day == params.day %}selected{% endif %}>{{ day }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="period">Час</label>
+      <input type="number" name="period" id="period" min="1" max="14" value="{{ params.period }}" placeholder="сега">
+    </div>
+
+    <div class="field"><button type="submit">Покажи</button></div>
+  </form>
+  <p class="muted small">Справката показва къде трябва да е някой <strong>според разписанието</strong>, а не къде е в действителност.</p>
+</section>
+
+{% if error %}<p class="message message-error spaced">{{ error }}</p>{% endif %}
+
+{% if result %}
+  <section class="card spaced">
+    {% include "web/_report_result.html" %}
+  </section>
+{% endif %}
+{% endblock %}

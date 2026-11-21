@@ -10,6 +10,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import Guild, User
 from accounts.permissions import role_required
+from assistant_bridge.models import Hint
+from assistant_bridge.services import AssistantError, draft_mission, unused_hint_tokens
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
 
@@ -55,6 +57,10 @@ def _teacher_mission_list(request):
 
 @role_required(TEACHER)
 def mission_create(request):
+    # Бутонът „Чернова с асистента“ попълва формата, но нищо не се публикува (Ф11).
+    if request.method == "POST" and "draft_idea" in request.POST:
+        return _mission_draft(request)
+
     form = MissionForm(request.POST or None)
     form.instance.created_by = request.user
     if request.method == "POST" and form.is_valid():
@@ -62,6 +68,19 @@ def mission_create(request):
         messages.success(request, f"Мисията „{mission.title}“ е публикувана.")
         return redirect("mission_detail", pk=mission.pk)
     return render(request, "web/mission_form.html", {"form": form, "is_new": True})
+
+
+def _mission_draft(request):
+    idea = request.POST.get("draft_idea", "")
+    initial = {}
+    try:
+        initial = draft_mission(request.user, idea)
+    except (GameRuleError, AssistantError) as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, "Черновата е готова. Прегледайте и редактирайте, преди да публикувате.")
+    form = MissionForm(initial=initial)
+    return render(request, "web/mission_form.html", {"form": form, "is_new": True, "draft_idea": idea})
 
 
 @role_required(TEACHER)
@@ -112,4 +131,6 @@ def _student_mission_detail(request, pk):
 
     return render(request, "web/mission_detail.html", {
         "mission": mission, "my_claim": my_claim, "can_claim": can_claim, "form": form,
+        "hints": Hint.objects.filter(student=request.user, mission=mission),
+        "hint_tokens": unused_hint_tokens(request.user).count(),
     })
