@@ -19,7 +19,8 @@ class GameSettingsAdmin(ModelAdmin):
             "week_start_day", "max_xp_per_mission",
         ]}),
         ("Асистент", {"fields": [
-            "assistant_status", "assistant_enabled", "llm_provider", "llm_model", "assistant_daily_limit",
+            "assistant_status", "assistant_enabled", "llm_provider", "use_other_providers",
+            "claude_model", "openai_model", "gemini_model", "assistant_daily_limit",
         ]}),
         (None, {"fields": ["updated_at"]}),
     ]

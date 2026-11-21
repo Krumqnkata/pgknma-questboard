@@ -21,6 +21,7 @@ class AssistantLog(models.Model):
     mission = models.ForeignKey("missions.Mission", verbose_name="мисия", on_delete=models.SET_NULL,
                                 null=True, blank=True, related_name="+")
     success = models.BooleanField("успешно", default=False)
+    provider = models.CharField("отговорил модел", max_length=20, blank=True)
     error = models.CharField("грешка", max_length=255, blank=True)
     duration_ms = models.PositiveIntegerField("време за отговор (мс)", null=True, blank=True)
     created_at = models.DateTimeField("кога", auto_now_add=True)

@@ -51,9 +51,19 @@ class GameSettings(models.Model):
         "асистентът е включен", default=True,
         help_text="Ако е изключен, платформата работи, а ученикът вижда съобщение, че асистентът не е достъпен.",
     )
-    llm_provider = models.CharField("доставчик на езиков модел", max_length=10,
-                                    choices=LlmProvider.choices, default=LlmProvider.OPENAI)
-    llm_model = models.CharField("име на модела", max_length=100, blank=True)
+    # Трите доставчика се ползват заедно: първо основният, а ако той не отговори
+    # (няма ключ, грешка, забавяне), асистентът опитва другите по ред.
+    llm_provider = models.CharField("основен доставчик", max_length=10,
+                                    choices=LlmProvider.choices, default=LlmProvider.CLAUDE)
+    use_other_providers = models.BooleanField(
+        "резервни доставчици", default=True,
+        help_text="Ако основният модел не отговори, асистентът опитва другите два.",
+    )
+    claude_model = models.CharField("модел на Claude", max_length=100, default="claude-opus-5-5")
+    openai_model = models.CharField("модел на OpenAI", max_length=100, blank=True,
+                                    help_text="Празно – OpenAI не се ползва.")
+    gemini_model = models.CharField("модел на Gemini", max_length=100, blank=True,
+                                    help_text="Празно – Gemini не се ползва.")
     assistant_daily_limit = models.PositiveIntegerField("заявки към асистента на потребител на ден", default=20)
 
     updated_at = models.DateTimeField("последна промяна", auto_now=True)
@@ -71,6 +81,22 @@ class GameSettings(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Настройките на играта не могат да се изтрият.")
+
+    def provider_order(self):
+        """
+        Доставчиците по реда, в който асистентът да ги опитва: [{"provider", "model"}, ...].
+        Доставчик без име на модел се пропуска.
+        """
+        models_by_provider = {
+            self.LlmProvider.CLAUDE: self.claude_model,
+            self.LlmProvider.OPENAI: self.openai_model,
+            self.LlmProvider.GEMINI: self.gemini_model,
+        }
+        order = [self.llm_provider]
+        if self.use_other_providers:
+            order += [name for name in models_by_provider if name != self.llm_provider]
+        return [{"provider": name, "model": models_by_provider[name]}
+                for name in order if models_by_provider[name].strip()]
 
     @classmethod
     def load(cls):

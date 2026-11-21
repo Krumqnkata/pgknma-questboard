@@ -49,8 +49,9 @@ class _Logged:
         self.entry = AssistantLog(user=user, kind=kind, mission=mission)
         self.started = time.monotonic()
 
-    def finish(self, success, error=""):
+    def finish(self, success, error="", provider=""):
         self.entry.success = success
+        self.entry.provider = provider or self.entry.provider
         self.entry.error = str(error)[:255]
         self.entry.duration_ms = int((time.monotonic() - self.started) * 1000)
         self.entry.save()
@@ -97,7 +98,7 @@ def request_hint(student, mission):
         spent = Purchase.objects.filter(pk=token.pk, used_at__isnull=True).update(
             used_at=timezone.now(), used_for_mission=mission)
         if spent:
-            log.finish(True)
+            log.finish(True, provider=answer.get("provider", ""))
             return Hint.objects.create(student=student, mission=mission, purchase=token, text=answer["hint"])
 
     log.finish(False, "няма неизползван Hint Token")
@@ -122,7 +123,7 @@ def draft_mission(teacher, idea):
         "guilds": [{"name": g.name, "description": g.description} for g in guilds],
         "max_xp": GameSettings.load().max_xp_per_mission,
     })
-    log.finish(True)
+    log.finish(True, provider=draft.get("provider", ""))
 
     guild = next((g for g in guilds if g.name == draft["guild"]), None)
     return {
@@ -165,6 +166,7 @@ def ask(user, question):
             "role": user.get_role_display(),
         },
     })
+    log.entry.provider = plan.get("provider", "")
     if not plan.get("tool"):
         log.finish(True)
         return Answer(text=codes.reveal(plan.get("answer") or ""))
@@ -178,5 +180,5 @@ def ask(user, question):
 
     result = _call(log, "/query/answer", {"question": hidden_question, "tool": plan["tool"],
                                          "data": codes.hide_data(data)})
-    log.finish(True)
+    log.finish(True, provider=result.get("provider", ""))
     return Answer(text=codes.reveal(result["answer"]), tool=plan["tool"], data=data)

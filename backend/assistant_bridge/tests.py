@@ -29,8 +29,12 @@ class AssistantHealthTests(TestCase):
 
     @patch("assistant_bridge.client.httpx.get")
     def test_running_assistant(self, fake_get):
-        fake_get.return_value = httpx.Response(200, json={"status": "ok"})
-        self.assertEqual(check_assistant_health(), (True, "работи"))
+        fake_get.return_value = httpx.Response(200, json={"status": "ok",
+                                                          "providers": {"claude": True, "openai": False}})
+        ok, message = check_assistant_health()
+        self.assertTrue(ok)
+        self.assertIn("Claude ✓", message)
+        self.assertIn("OpenAI ✗", message)
 
     @patch("assistant_bridge.client.httpx.get", side_effect=httpx.ConnectError("спрян"))
     def test_stopped_assistant(self, fake_get):
@@ -229,7 +233,7 @@ class AskTests(TestCase):
 class EvaluationCommandTests(TestCase):
     """Командата с контролните случаи – с подставка вместо истински модел."""
 
-    def fake_call(self, path, payload):
+    def fake_call(self, path, payload, providers=None):
         if path == "/hint":
             return {"hint": "Започни, като прочетеш внимателно условието."}
         if path == "/mission-draft":
@@ -251,5 +255,60 @@ class EvaluationCommandTests(TestCase):
             call_command("evaluate_assistant", stdout=io.StringIO())
             report = (Path(folder) / "report.md").read_text(encoding="utf-8")
         self.assertIn("Резултат:", report)
-        self.assertIn("| H1 | подсказка | ✓", report)
-        self.assertIn("| D1 | чернова | ✓", report)
+        self.assertIn("| H1 | подсказка | ✓ |", report)
+        self.assertIn("| D1 | чернова | ✓ |", report)
+
+    def test_each_provider_separately(self):
+        import io
+        import tempfile
+
+        from django.core.management import call_command
+
+        from .management.commands import evaluate_assistant
+
+        rules = GameSettings.load()
+        rules.gemini_model = "gemini-модел"
+        rules.save()
+        with tempfile.TemporaryDirectory() as folder,                 patch.object(evaluate_assistant, "REPORT", Path(folder) / "report.md"),                 patch("assistant_bridge.client.call", side_effect=self.fake_call) as fake:
+            call_command("evaluate_assistant", "--provider", "all", stdout=io.StringIO())
+            reports = sorted(path.name for path in Path(folder).iterdir())
+        # OpenAI няма модел в настройките – пропуснат е.
+        self.assertEqual(reports, ["assistant-evaluation-claude.md", "assistant-evaluation-gemini.md"])
+        self.assertEqual(fake.call_args.args[2], [{"provider": "gemini", "model": "gemini-модел"}])
+
+
+class ProviderOrderTests(TestCase):
+    """Трите доставчика заедно: основният първи, после резервните."""
+
+    def test_primary_first_then_others(self):
+        rules = GameSettings.load()
+        rules.llm_provider = "gemini"
+        rules.gemini_model, rules.openai_model, rules.claude_model = "gemini-модел", "openai-модел", "claude-opus-5-5"
+        order = [p["provider"] for p in rules.provider_order()]
+        self.assertEqual(order[0], "gemini")
+        self.assertEqual(set(order), {"gemini", "openai", "claude"})
+
+    def test_provider_without_model_is_skipped(self):
+        rules = GameSettings.load()  # по подразбиране само Claude има модел
+        self.assertEqual([p["provider"] for p in rules.provider_order()], ["claude"])
+
+    def test_only_primary_when_fallback_is_off(self):
+        rules = GameSettings.load()
+        rules.openai_model = "openai-модел"
+        rules.use_other_providers = False
+        self.assertEqual(len(rules.provider_order()), 1)
+
+    @patch("assistant_bridge.client.httpx.post")
+    def test_order_is_sent_to_assistant(self, fake_post):
+        from . import client
+        fake_post.return_value = httpx.Response(200, json={"hint": "насока", "provider": "claude"})
+        client.call("/hint", {"mission": {}})
+        self.assertEqual(fake_post.call_args.kwargs["json"]["providers"][0]["provider"], "claude")
+
+    @patch("assistant_bridge.client.call", return_value={"hint": "насока", "provider": "gemini"})
+    def test_log_records_which_model_answered(self, fake_call):
+        student = make_student()
+        mission = make_mission(make_teacher())
+        Purchase.objects.create(student=student, price_paid=2, privilege=Privilege.objects.get(code="hint_token"))
+        request_hint(student, mission)
+        self.assertEqual(AssistantLog.objects.get().provider, "gemini")

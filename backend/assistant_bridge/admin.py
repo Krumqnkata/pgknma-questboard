@@ -6,8 +6,8 @@ from .models import AssistantLog, Hint
 
 @admin.register(AssistantLog)
 class AssistantLogAdmin(ModelAdmin):
-    list_display = ["created_at", "user", "kind", "mission", "success", "duration_ms", "error"]
-    list_filter = ["kind", "success", "created_at"]
+    list_display = ["created_at", "user", "kind", "mission", "success", "provider", "duration_ms", "error"]
+    list_filter = ["kind", "success", "provider", "created_at"]
     search_fields = ["user__email", "user__nickname"]
 
     # Журналът се пише само от кода.
