@@ -1,0 +1,8 @@
+"""Страниците за ученици и учители (Django шаблони)."""
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+
+
+@login_required
+def home(request):
+    return render(request, "web/home.html")

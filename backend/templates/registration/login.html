@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Вход – Questboard{% endblock %}
+
+{% block content %}
+<section class="card narrow">
+  <h1>Вход</h1>
+  {% if form.errors %}
+    <p class="message message-error">Грешен имейл или парола.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_username">Имейл</label>
+    <input type="email" name="username" id="id_username" autocomplete="email" required autofocus
+           value="{{ form.username.value|default:'' }}">
+    <label for="id_password">Парола</label>
+    <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit">Влез</button>
+  </form>
+</section>
+{% endblock %}

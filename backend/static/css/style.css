@@ -1,0 +1,98 @@
+/* Основни цветове на Questboard. Тъмният режим се включва сам според настройката на устройството. */
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --text: #1d2330;
+  --muted: #5b6475;
+  --accent: #4b45c6;
+  --border: #dde1ea;
+  --error: #cf222e;
+  --success: #1a7f37;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161c;
+    --surface: #1e2129;
+    --text: #e8eaf0;
+    --muted: #a0a7b6;
+    --accent: #8f8af0;
+    --border: #2e333e;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+a { color: var(--accent); }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { font-weight: 700; font-size: 1.2rem; text-decoration: none; }
+
+.nav { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.who { color: var(--muted); }
+
+.page { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.card.narrow { max-width: 400px; margin: 2rem auto; }
+
+label { display: block; margin-top: 1rem; font-weight: 600; }
+
+input, textarea, select {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  margin-top: 1.2rem;
+  padding: 0.6rem 1.2rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+form.inline { display: inline; }
+.link-button {
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: normal;
+  text-decoration: underline;
+}
+
+.message { padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px solid var(--border); }
+.message-error { border-color: var(--error); color: var(--error); }
+.message-success { border-color: var(--success); color: var(--success); }

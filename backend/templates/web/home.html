@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card">
+  <h1>Здравей, {{ user }}!</h1>
+  {% if user.is_student %}
+    <p>Клас {{ user.school_class }} · гилдия {{ user.guild }}</p>
+    <p>Тук ще са активните мисии, твоите XP, ниво и монети.</p>
+  {% elif user.is_teacher %}
+    <p>Тук ще са твоите мисии и заявките, които чакат проверка.</p>
+  {% else %}
+    <p>Влезли сте като администратор. Настройките са в <a href="{% url 'admin:index' %}">администрацията</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}
