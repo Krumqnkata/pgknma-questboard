@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
 # backend/ – папката с manage.py
@@ -45,6 +46,8 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 
 
 INSTALLED_APPS = [
+    # Тема за Django admin – трябва да е преди django.contrib.admin
+    "unfold",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -67,7 +70,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -137,7 +139,9 @@ LOGOUT_REDIRECT_URL = "login"
 
 
 # ---------- Език и време ----------
+# Интерфейсът е само на български, независимо от езика на браузъра.
 LANGUAGE_CODE = "bg"
+LANGUAGES = [("bg", "Български")]
 TIME_ZONE = "Europe/Sofia"
 USE_I18N = True
 USE_TZ = True
@@ -168,6 +172,102 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Questboard API",
     "DESCRIPTION": "Основно API на Questboard: мисии, точки, монети, магазин и справки.",
     "VERSION": "0.1.0",
+}
+
+
+# ---------- Тема на администрацията (django-unfold) ----------
+# Менюто вляво е подредено по задачи, а не по приложения в кода.
+# Иконите са имената от Material Symbols: https://fonts.google.com/icons
+def _admin_link(name):
+    return reverse_lazy(f"admin:{name}_changelist")
+
+
+UNFOLD = {
+    "SITE_TITLE": "Questboard",
+    "SITE_HEADER": "Questboard",
+    "SITE_SUBHEADER": "Администрация",
+    "SITE_SYMBOL": "swords",
+    "SITE_URL": "/",
+    "ENVIRONMENT": "questboard.admin_config.environment_label",
+    "SHOW_HISTORY": True,
+    "COLORS": {
+        # Индиго – същият цвят като в страниците за ученици и учители
+        "primary": {
+            "50": "oklch(96.2% .018 272.314)",
+            "100": "oklch(93% .034 272.788)",
+            "200": "oklch(87% .065 274.039)",
+            "300": "oklch(78.5% .115 274.713)",
+            "400": "oklch(67.3% .182 276.935)",
+            "500": "oklch(58.5% .233 277.117)",
+            "600": "oklch(51.1% .262 276.966)",
+            "700": "oklch(45.7% .24 277.023)",
+            "800": "oklch(39.8% .195 277.366)",
+            "900": "oklch(35.9% .144 278.697)",
+            "950": "oklch(25.7% .09 281.288)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "items": [
+                    {"title": "Табло", "icon": "dashboard", "link": reverse_lazy("admin:index")},
+                ],
+            },
+            {
+                "title": "Игра",
+                "separator": True,
+                "items": [
+                    {"title": "Настройки на играта", "icon": "tune",
+                     "link": _admin_link("economy_gamesettings")},
+                    {"title": "Нива", "icon": "military_tech", "link": _admin_link("economy_level")},
+                    {"title": "Магазин", "icon": "storefront", "link": _admin_link("economy_privilege")},
+                ],
+            },
+            {
+                "title": "Мисии",
+                "separator": True,
+                "items": [
+                    {"title": "Мисии", "icon": "flag", "link": _admin_link("missions_mission")},
+                    {"title": "Заявки", "icon": "task_alt", "link": _admin_link("missions_claim"),
+                     "badge": "questboard.admin_config.pending_claims_badge"},
+                ],
+            },
+            {
+                "title": "Хора",
+                "separator": True,
+                "items": [
+                    {"title": "Потребители", "icon": "group", "link": _admin_link("accounts_user")},
+                    {"title": "Класове", "icon": "school", "link": _admin_link("accounts_schoolclass")},
+                    {"title": "Гилдии", "icon": "shield", "link": _admin_link("accounts_guild")},
+                ],
+            },
+            {
+                "title": "Разписание",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {"title": "Учебни часове", "icon": "calendar_month", "link": _admin_link("timetable_lesson")},
+                    {"title": "Кабинети", "icon": "meeting_room", "link": _admin_link("timetable_room")},
+                    {"title": "Предмети", "icon": "menu_book", "link": _admin_link("timetable_subject")},
+                ],
+            },
+            {
+                "title": "Журнали",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {"title": "Движения на XP", "icon": "trending_up", "link": _admin_link("economy_xptransaction")},
+                    {"title": "Движения на монети", "icon": "paid", "link": _admin_link("economy_cointransaction")},
+                    {"title": "Покупки", "icon": "shopping_bag", "link": _admin_link("economy_purchase")},
+                    {"title": "Ползване на асистента", "icon": "smart_toy",
+                     "link": _admin_link("assistant_bridge_assistantlog")},
+                    {"title": "Промени в администрацията", "icon": "history", "link": _admin_link("admin_logentry")},
+                ],
+            },
+        ],
+    },
 }
 
 

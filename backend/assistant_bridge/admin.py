@@ -1,10 +1,11 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import AssistantLog
 
 
 @admin.register(AssistantLog)
-class AssistantLogAdmin(admin.ModelAdmin):
+class AssistantLogAdmin(ModelAdmin):
     list_display = ["created_at", "user", "kind", "mission", "success", "duration_ms", "error"]
     list_filter = ["kind", "success", "created_at"]
     search_fields = ["user__email", "user__nickname"]

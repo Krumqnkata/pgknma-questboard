@@ -1,10 +1,11 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import Claim, Mission
 
 
 @admin.register(Mission)
-class MissionAdmin(admin.ModelAdmin):
+class MissionAdmin(ModelAdmin):
     list_display = ["title", "guild", "xp", "deadline", "is_active", "hints_allowed", "created_by"]
     list_filter = ["guild", "is_active", "hints_allowed"]
     search_fields = ["title", "description"]
@@ -12,7 +13,7 @@ class MissionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Claim)
-class ClaimAdmin(admin.ModelAdmin):
+class ClaimAdmin(ModelAdmin):
     list_display = ["mission", "student", "status", "submitted_at", "reviewed_by", "reviewed_at"]
     list_filter = ["status", "mission__guild"]
     search_fields = ["mission__title", "student__nickname", "student__email"]

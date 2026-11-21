@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
 
 from assistant_bridge.client import check_assistant_health
 
@@ -9,7 +10,7 @@ from .models import CoinTransaction, GameSettings, Level, Privilege, Purchase, X
 
 
 @admin.register(GameSettings)
-class GameSettingsAdmin(admin.ModelAdmin):
+class GameSettingsAdmin(ModelAdmin):
     """Една страница с всички правила на играта и настройките на асистента."""
 
     fieldsets = [
@@ -44,17 +45,17 @@ class GameSettingsAdmin(admin.ModelAdmin):
 
 
 @admin.register(Level)
-class LevelAdmin(admin.ModelAdmin):
+class LevelAdmin(ModelAdmin):
     list_display = ["number", "min_xp", "title"]
 
 
 @admin.register(Privilege)
-class PrivilegeAdmin(admin.ModelAdmin):
+class PrivilegeAdmin(ModelAdmin):
     list_display = ["name", "code", "price", "is_active"]
     list_editable = ["price", "is_active"]
 
 
-class ReadOnlyLedgerAdmin(admin.ModelAdmin):
+class ReadOnlyLedgerAdmin(ModelAdmin):
     """
     Журналът на движенията се пише само от кода с правилата на играта.
     В admin може да се гледа и търси, но не и да се променя или трие.
