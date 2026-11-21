@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from accounts.models import Guild, User
 from accounts.testing import make_mission, make_student, make_teacher
+from economy.models import CoinTransaction, Privilege
 from missions.models import Claim
 
 
@@ -81,8 +82,81 @@ class MissionApiTests(TestCase):
         self.assertEqual(second.status_code, 400)
         self.assertEqual(Claim.objects.count(), 1)
 
+    def test_teacher_approves_through_api(self):
+        claim = Claim.objects.create(mission=self.mission, student=self.student, evidence="готово")
+        self.client.force_login(self.teacher)
+        url = reverse("claim-approve", args=[claim.pk])
+        first = self.client.post(url, {"comment": "Браво"}, content_type="application/json")
+        second = self.client.post(url, {}, content_type="application/json")
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(first.json()["xp"], self.mission.xp)
+        self.assertEqual(second.status_code, 400)
+
+    def test_other_teacher_cannot_see_or_approve_claim(self):
+        claim = Claim.objects.create(mission=self.mission, student=self.student, evidence="готово")
+        self.client.force_login(make_teacher("drug@example.com"))
+        response = self.client.post(reverse("claim-approve", args=[claim.pk]), content_type="application/json")
+        self.assertEqual(response.status_code, 404)
+
+    def test_student_cannot_approve_own_claim(self):
+        claim = Claim.objects.create(mission=self.mission, student=self.student, evidence="готово")
+        self.client.force_login(self.student)
+        response = self.client.post(reverse("claim-approve", args=[claim.pk]), content_type="application/json")
+        self.assertEqual(response.status_code, 403)
+
     def test_student_sees_only_own_claims(self):
         other = make_student("drug@example.com", nickname="Сокол")
         Claim.objects.create(mission=self.mission, student=other, evidence="чуждо")
         self.client.force_login(self.student)
         self.assertEqual(self.client.get(reverse("claim-list")).json(), [])
+
+
+class GameApiTests(TestCase):
+    """Статистика, магазин, привилегии и класация през API-то."""
+
+    def setUp(self):
+        self.teacher = make_teacher()
+        self.student = make_student()
+        self.hint = Privilege.objects.get(code="hint_token")
+
+    def give_coins(self, amount):
+        CoinTransaction.objects.create(student=self.student, amount=amount,
+                                       kind=CoinTransaction.Kind.CORRECTION, reason="тест")
+
+    def test_my_stats(self):
+        self.give_coins(3)
+        self.client.force_login(self.student)
+        data = self.client.get(reverse("api-my-stats")).json()
+        self.assertEqual(data["coins"], 3)
+        self.assertEqual(data["level"], 1)
+        self.assertEqual(data["weekly_limit"], 5)
+
+    def test_teacher_has_no_stats(self):
+        self.client.force_login(self.teacher)
+        self.assertEqual(self.client.get(reverse("api-my-stats")).status_code, 403)
+
+    def test_buy_and_use_privilege(self):
+        self.give_coins(2)
+        self.client.force_login(self.student)
+        bought = self.client.post(reverse("privilege-buy", args=[self.hint.pk]))
+        self.assertEqual(bought.status_code, 201, bought.content)
+        again = self.client.post(reverse("privilege-buy", args=[self.hint.pk]))
+        self.assertEqual(again.status_code, 400)
+
+        self.client.force_login(self.teacher)
+        used = self.client.post(reverse("purchase-use", args=[bought.json()["id"]]))
+        self.assertEqual(used.status_code, 200)
+        self.assertIsNotNone(used.json()["used_at"])
+
+    def test_leaderboard_has_no_real_names(self):
+        self.student.first_name = "Калина"
+        self.student.save()
+        self.client.force_login(self.student)
+        response = self.client.get(reverse("api-leaderboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["students"][0]["name"], "Феникс")
+        self.assertNotIn("Калина", response.content.decode())
+
+    def test_api_schema_builds(self):
+        self.client.force_login(self.teacher)
+        self.assertEqual(self.client.get(reverse("api-schema")).status_code, 200)

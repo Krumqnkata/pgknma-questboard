@@ -5,6 +5,7 @@
 
 Същото се пуска и в GitHub Actions при всяко качване.
 """
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +15,8 @@ ROOT = Path(__file__).resolve().parent
 STEPS = [
     ("Проверка за липсващи миграции",
      [sys.executable, "manage.py", "makemigrations", "--check", "--dry-run"], ROOT / "backend"),
+    ("Проверка на документацията на API-то",
+     [sys.executable, "manage.py", "spectacular", "--file", os.devnull, "--fail-on-warn"], ROOT / "backend"),
     ("Тестове на основното API (Django)",
      [sys.executable, "manage.py", "test"], ROOT / "backend"),
     ("Тестове на асистента (FastAPI)",

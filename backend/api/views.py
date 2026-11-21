@@ -5,6 +5,8 @@ REST API на Questboard. Отговорите са в JSON.
 Правата се проверяват тук по ролята, а правилата на играта са в missions/services.py.
 """
 from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -12,10 +14,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsStudent, IsTeacher
+from economy import leaderboard
+from economy.models import Purchase
+from economy.services import (
+    active_privileges, approve_claim, buy_privilege, mark_purchase_used, reject_claim, student_stats,
+    unused_purchases,
+)
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
 
-from .serializers import ClaimCreateSerializer, ClaimSerializer, MeSerializer, MissionSerializer
+from .serializers import (
+    ClaimCreateSerializer, ClaimSerializer, MeSerializer, MissionSerializer, PrivilegeSerializer,
+    PurchaseSerializer, RankingRowSerializer, ReviewSerializer, StatsSerializer,
+)
 
 
 class HealthView(APIView):
@@ -23,6 +34,7 @@ class HealthView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         return Response({"status": "ok"})
 
@@ -30,6 +42,7 @@ class HealthView(APIView):
 class MeView(APIView):
     """Кой е влезлият потребител и каква е ролята му."""
 
+    @extend_schema(responses=MeSerializer)
     def get(self, request):
         return Response(MeSerializer(request.user).data)
 
@@ -47,6 +60,8 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # при генериране на документацията няма потребител
+            return Mission.objects.none()
         user = self.request.user
         if user.is_teacher:
             return missions_for_teacher(user)
@@ -78,14 +93,16 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
 
 class ClaimViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Заявки (само за четене засега).
+    Заявки.
       - ученик: своите заявки;
-      - учител: заявките по своите мисии.
+      - учител: заявките по своите мисии; потвърждава (approve) или отказва (reject).
     """
 
     serializer_class = ClaimSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # при генериране на документацията няма потребител
+            return Claim.objects.none()
         user = self.request.user
         claims = Claim.objects.select_related("mission", "student")
         if user.is_student:
@@ -93,3 +110,109 @@ class ClaimViewSet(viewsets.ReadOnlyModelViewSet):
         if user.is_teacher:
             return claims.filter(mission__created_by=user)
         return claims  # администратор
+
+    def _review(self, request, review_function):
+        claim = self.get_object()
+        data = ReviewSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            result = review_function(claim, request.user, data.validated_data["comment"])
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "claim": ClaimSerializer(result.claim).data,
+            "xp": result.xp,
+            "coins": result.coins,
+            "new_level": result.new_level.number if result.new_level else None,
+        })
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsTeacher],
+            serializer_class=ReviewSerializer)
+    def approve(self, request, pk=None):
+        return self._review(request, approve_claim)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsTeacher],
+            serializer_class=ReviewSerializer)
+    def reject(self, request, pk=None):
+        return self._review(request, reject_claim)
+
+
+class MyStatsView(APIView):
+    """XP, ниво и монети на влезлия ученик."""
+
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    @extend_schema(responses=StatsSerializer)
+    def get(self, request):
+        return Response(StatsSerializer(student_stats(request.user)).data)
+
+
+class PrivilegeViewSet(viewsets.ReadOnlyModelViewSet):
+    """Магазинът: привилегиите в продажба. Ученикът купува с POST /api/privileges/<id>/buy/."""
+
+    serializer_class = PrivilegeSerializer
+
+    def get_queryset(self):
+        return active_privileges()
+
+    @extend_schema(request=None, responses=PurchaseSerializer)
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsStudent])
+    def buy(self, request, pk=None):
+        privilege = self.get_object()
+        try:
+            purchase = buy_privilege(request.user, privilege)
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(PurchaseSerializer(purchase).data, status=status.HTTP_201_CREATED)
+
+
+class PurchaseViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Купени привилегии.
+      - ученик: своите покупки;
+      - учител: неизползваните покупки; отбелязва използвана с POST /api/purchases/<id>/use/.
+    """
+
+    serializer_class = PurchaseSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # при генериране на документацията няма потребител
+            return Purchase.objects.none()
+        user = self.request.user
+        if user.is_student:
+            return Purchase.objects.filter(student=user).select_related("privilege", "student")
+        return unused_purchases()
+
+    @extend_schema(request=None, responses=PurchaseSerializer)
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsTeacher])
+    def use(self, request, pk=None):
+        purchase = self.get_object()
+        try:
+            purchase = mark_purchase_used(purchase, request.user)
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(PurchaseSerializer(purchase).data)
+
+
+class LeaderboardView(APIView):
+    """Класации по гилдии, класове и ученици – само с псевдоними (Ф7)."""
+
+    @extend_schema(responses=inline_serializer("Leaderboard", fields={
+        "guilds": RankingRowSerializer(many=True),
+        "classes": RankingRowSerializer(many=True),
+        "students": RankingRowSerializer(many=True),
+    }), parameters=[
+        OpenApiParameter("guild", int, description="само ученици от тази гилдия"),
+        OpenApiParameter("class", int, description="само ученици от този клас"),
+    ])
+    def get(self, request):
+        guild = request.query_params.get("guild", "")
+        school_class = request.query_params.get("class", "")
+        return Response({
+            "guilds": RankingRowSerializer(leaderboard.guild_ranking(), many=True).data,
+            "classes": RankingRowSerializer(leaderboard.class_ranking(), many=True).data,
+            "students": RankingRowSerializer(leaderboard.student_ranking(
+                guild_id=int(guild) if guild.isdigit() else None,
+                class_id=int(school_class) if school_class.isdigit() else None,
+            ), many=True).data,
+        })
