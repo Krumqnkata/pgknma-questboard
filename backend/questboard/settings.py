@@ -6,6 +6,7 @@
 (модел economy.GameSettings) и се променят от Django admin.
 """
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -132,6 +133,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+# При тестовете ползваме бърз (и несигурен) хеш, за да не чакаме при всеки тестов потребител.
+# В истинската работа остава сигурният хеш по подразбиране (PBKDF2).
+if "test" in sys.argv:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"

@@ -6,6 +6,7 @@
 потвърждение. Логиката по начисляването е в economy, тук са само данните.
 """
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -43,6 +44,29 @@ class Mission(models.Model):
     def is_open(self):
         """Може ли още да се заявява изпълнение."""
         return self.is_active and timezone.now() <= self.deadline
+
+    def clean(self):
+        """
+        Правилата за мисия. Django ги проверява във формите и в admin,
+        а API-то ги вика ръчно (виж api/serializers.py).
+        """
+        from economy.models import GameSettings  # тук, за да няма кръгов импорт
+
+        super().clean()
+        errors = {}
+
+        max_xp = GameSettings.load().max_xp_per_mission
+        if self.xp is not None and self.xp > max_xp:
+            errors["xp"] = f"Най-много {max_xp} XP за една мисия (настройва се от администратора)."
+        if self.xp == 0:
+            errors["xp"] = "Мисията трябва да носи поне 1 XP."
+
+        # Нова мисия не може да е с изтекъл срок. При редакция на стара мисия е позволено.
+        if self._state.adding and self.deadline and self.deadline <= timezone.now():
+            errors["deadline"] = "Крайният срок трябва да е в бъдещето."
+
+        if errors:
+            raise ValidationError(errors)
 
 
 class Claim(models.Model):
