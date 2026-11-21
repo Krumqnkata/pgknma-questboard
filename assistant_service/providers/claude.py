@@ -14,7 +14,8 @@ MODELS_WITH_FALLBACK = {"claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-
 
 class ClaudeProvider(LLMProvider):
     def __init__(self, api_key, model=""):
-        self.client = anthropic.Anthropic(api_key=api_key, timeout=25.0, max_retries=1)
+        # Кратко чакане и без повторен опит – при проблем асистентът минава на следващия доставчик.
+        self.client = anthropic.Anthropic(api_key=api_key, timeout=15.0, max_retries=0)
         self.model = model or DEFAULT_MODEL
 
     def _create(self, output_config=None, **kwargs):

@@ -10,7 +10,8 @@ class OpenAIProvider(LLMProvider):
     def __init__(self, api_key, model=""):
         if not model:
             raise ProviderError("Задайте име на модела на OpenAI в настройките на играта.")
-        self.client = openai.OpenAI(api_key=api_key, timeout=25.0, max_retries=1)
+        # Кратко чакане и без повторен опит – при проблем асистентът минава на следващия доставчик.
+        self.client = openai.OpenAI(api_key=api_key, timeout=15.0, max_retries=0)
         self.model = model
 
     def _create(self, system, user, **kwargs):

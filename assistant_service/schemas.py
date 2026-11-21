@@ -11,11 +11,24 @@ from pydantic import BaseModel, Field
 Provider = Literal["openai", "gemini", "claude", "fake"]
 
 
-class ModelChoice(BaseModel):
-    """Кой доставчик и модел да се ползват – избират се в Django admin."""
-
+class ProviderChoice(BaseModel):
     provider: Provider
     model: str = ""
+
+
+class ModelChoice(BaseModel):
+    """
+    Доставчиците по ред – избират се в Django admin. Асистентът опитва първия,
+    а ако той не отговори (няма ключ, грешка, забавяне) – следващия.
+    """
+
+    providers: list[ProviderChoice] = Field(min_length=1, max_length=3)
+
+
+class Answered(BaseModel):
+    """Всеки отговор казва кой модел е отговорил – записва се в журнала."""
+
+    provider: str = ""
 
 
 # ---------- Подсказка (Ф10) ----------
@@ -30,7 +43,7 @@ class HintRequest(ModelChoice):
     mission: MissionText
 
 
-class HintResponse(BaseModel):
+class HintResponse(Answered):
     hint: str
 
 
@@ -57,6 +70,10 @@ class MissionDraft(BaseModel):
     xp: int
 
 
+class DraftResponse(MissionDraft, Answered):
+    pass
+
+
 # ---------- Справки с извикване на функции (Ф17, Ф18, Ф22, Ф14) ----------
 
 class ToolDefinition(BaseModel):
@@ -79,7 +96,7 @@ class PlanRequest(ModelChoice):
     context: QueryContext = QueryContext()
 
 
-class PlanResponse(BaseModel):
+class PlanResponse(Answered):
     """Или избрана справка с параметри, или кратък текстов отговор без справка."""
 
     tool: str | None = None
@@ -93,5 +110,5 @@ class AnswerRequest(ModelChoice):
     data: dict[str, Any]
 
 
-class AnswerResponse(BaseModel):
+class AnswerResponse(Answered):
     answer: str

@@ -15,9 +15,9 @@ from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, status
 
 import config
 import logic
-from providers import ProviderError
+from providers import NAMES, ProviderError
 from schemas import (
-    AnswerRequest, AnswerResponse, DraftRequest, HintRequest, HintResponse, MissionDraft, PlanRequest, PlanResponse,
+    AnswerRequest, AnswerResponse, DraftRequest, DraftResponse, HintRequest, HintResponse, PlanRequest, PlanResponse,
 )
 
 app = FastAPI(
@@ -46,14 +46,15 @@ def run(function, request):
         return function(request)
     except ProviderError as error:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(error))
-    except ValueError:  # напр. невалиден JSON от модела
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Асистентът върна неочакван отговор. Опитайте отново.")
 
 
 @router.get("/health")
 def health():
-    """Django пита тук дали асистентът работи (индикаторът в admin)."""
-    return {"status": "ok"}
+    """
+    Django пита тук дали асистентът работи (индикаторът в admin).
+    Казва и за кои доставчици има ключ – самите ключове никога не се връщат.
+    """
+    return {"status": "ok", "providers": {name: bool(config.LLM_API_KEYS.get(name)) for name in NAMES}}
 
 
 # Функциите са обикновени (def), затова FastAPI ги пуска в отделни нишки
@@ -62,10 +63,10 @@ def health():
 @router.post("/hint", response_model=HintResponse)
 def hint(request: HintRequest):
     """Подсказка по мисия (Ф10). Насока, а не готово решение."""
-    return HintResponse(hint=run(logic.make_hint, request))
+    return run(logic.make_hint, request)
 
 
-@router.post("/mission-draft", response_model=MissionDraft)
+@router.post("/mission-draft", response_model=DraftResponse)
 def mission_draft(request: DraftRequest):
     """Чернова на мисия по идея на учителя (Ф11). Отговорът е проверен JSON."""
     return run(logic.make_draft, request)
@@ -80,7 +81,7 @@ def query_plan(request: PlanRequest):
 @router.post("/query/answer", response_model=AnswerResponse)
 def query_answer(request: AnswerRequest):
     """Втора стъпка: моделът оформя отговора само от данните, които Django е върнал."""
-    return AnswerResponse(answer=run(logic.answer_query, request))
+    return run(logic.answer_query, request)
 
 
 app.include_router(router)

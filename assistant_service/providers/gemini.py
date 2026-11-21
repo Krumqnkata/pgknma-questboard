@@ -11,7 +11,8 @@ class GeminiProvider(LLMProvider):
     def __init__(self, api_key, model=""):
         if not model:
             raise ProviderError("Задайте име на модела на Gemini в настройките на играта.")
-        self.client = genai.Client(api_key=api_key)
+        # Кратко чакане (в милисекунди) – при проблем асистентът минава на следващия доставчик.
+        self.client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=15000))
         self.model = model
 
     def _generate(self, user, config):

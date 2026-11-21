@@ -15,7 +15,13 @@ class HealthTokenTests(unittest.TestCase):
     def test_correct_token_is_accepted(self):
         response = client.get("/health", headers={"X-Assistant-Token": "test-token"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"status": "ok"})
+        self.assertEqual(response.json()["status"], "ok")
+
+    def test_health_says_which_keys_are_set_but_never_shows_them(self):
+        with patch.dict(config.LLM_API_KEYS, {"claude": "sk-secret", "openai": "", "gemini": ""}):
+            response = client.get("/health", headers={"X-Assistant-Token": "test-token"})
+        self.assertEqual(response.json()["providers"], {"openai": False, "gemini": False, "claude": True})
+        self.assertNotIn("sk-secret", response.text)
 
     def test_missing_token_is_rejected(self):
         response = client.get("/health")
