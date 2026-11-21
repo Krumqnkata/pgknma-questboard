@@ -52,7 +52,12 @@ class LoginTests(TestCase):
         # След входа отива на началната страница, която пък пренасочва според ролята.
         self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
-    def test_home_requires_login(self):
+    def test_home_without_login_is_public_landing(self):
         response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Как работи")
+
+    def test_missions_require_login(self):
+        response = self.client.get(reverse("mission_list"))
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("login"), response["Location"])

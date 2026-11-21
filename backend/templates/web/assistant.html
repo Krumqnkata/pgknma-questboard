@@ -5,36 +5,44 @@
 
 {% block content %}
 <div class="page-head">
-  <h1>Асистент</h1>
-  <a href="{% url 'reports' %}">Справки без асистента</a>
+  <div>
+    <h1>Асистент</h1>
+    <p>{% if user.is_student %}Справки по разписанието на твоя клас и какво ти трябва за следващото ниво.{% else %}Справки по разписанието: кой учител кога има час, кой може да замести, къде е даден клас и кои кабинети са свободни.{% endif %}</p>
+  </div>
+  {% if not user.is_student %}<a class="btn btn-outline" href="{% url 'reports' %}">Справки без асистента</a>{% endif %}
 </div>
 
-<section class="card chat" aria-live="polite">
-  <div id="chat-log" class="chat-log">
+<section class="code-card chat" aria-label="Разговор с асистента">
+  <div class="code-card-head"><span>assistant.chat</span><span>отговорите са според разписанието</span></div>
+
+  <div id="chat-log" class="chat-log" aria-live="polite">
     {# Текстът е на един ред, защото балончетата пазят новите редове (white-space: pre-wrap). #}
-    <div class="bubble bot">{% if user.is_student %}Здравей! Мога да правя справки по разписанието на твоя клас и да ти кажа какво ти трябва за следващото ниво.{% else %}Здравей! Мога да правя справки по разписанието: кой учител кога има час или е свободен, кой може да замести, къде е даден клас и кои кабинети са свободни.{% endif %}</div>
+    <div class="bubble bot">Здравей! Напиши въпрос или избери някой от примерите отдолу.</div>
   </div>
 
-  <div class="chips" id="examples">
+  <div class="chat-examples" id="examples">
     {% if user.is_student %}
-      <button type="button" class="chip">Какъв час имаме сега?</button>
-      <button type="button" class="chip">Какво ми трябва за следващото ниво?</button>
+      <button type="button">Какъв час имаме сега?</button>
+      <button type="button">Какво ми трябва за следващото ниво?</button>
     {% else %}
-      <button type="button" class="chip">Кои кабинети са свободни 3 час в сряда?</button>
-      <button type="button" class="chip">Къде е 11Б сега?</button>
-      <button type="button" class="chip">Кой може да замести Маринова 2 час в понеделник?</button>
+      <button type="button">Кои кабинети са свободни 3 час в сряда?</button>
+      <button type="button">Къде е 11Б сега?</button>
+      <button type="button">Кой може да замести Маринова 2 час в понеделник?</button>
     {% endif %}
   </div>
 
   <form id="chat-form" class="chat-form">
     <label for="chat-input" class="sr-only">Въпрос</label>
-    <input id="chat-input" name="question" maxlength="500" autocomplete="off" placeholder="Напишете въпрос…" required>
+    <input id="chat-input" name="question" maxlength="500" autocomplete="off" placeholder="Напиши въпрос" required>
     <button type="submit" id="chat-send">Изпрати</button>
   </form>
-  <p class="muted small">Справките показват къде трябва да е някой според разписанието, а не къде е в действителност.
-    Имената на учителите се заменят с кодове, преди въпросът да отиде към езиковия модел.</p>
 </section>
 
+<p class="muted small section">Имената на учителите се заменят с кодове, преди въпросът да отиде към езиковия модел.
+  Към модела не се изпращат данни за ученици.</p>
+{% endblock %}
+
+{% block scripts %}
 {# Адресът на API-то се подава от Django, за да не е записан на ръка в JavaScript. #}
 <script>window.QUESTBOARD_ASK_URL = "{% url 'api-assistant-ask' %}";</script>
 <script src="{% static 'js/assistant-chat.js' %}" defer></script>

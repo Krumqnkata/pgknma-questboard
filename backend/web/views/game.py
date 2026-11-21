@@ -4,22 +4,24 @@
 """
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import Guild, SchoolClass, User
 from accounts.permissions import role_required
 from economy import leaderboard
-from economy.models import Privilege, Purchase
+from economy.models import Privilege, Purchase, XPTransaction
 from economy.services import (
     active_privileges, approve_claim, buy_privilege, mark_purchase_used, pending_claims_for,
     reject_claim, student_stats, unused_purchases,
 )
 from economy.words import coins_text
 from missions.models import Claim
-from missions.services import GameRuleError
+from missions.services import GameRuleError, missions_for_student
 
 from ..forms import ReviewForm
 
@@ -27,9 +29,10 @@ STUDENT = User.Role.STUDENT
 TEACHER = User.Role.TEACHER
 
 
-@login_required
 def home(request):
-    """Всеки отива на своята начална страница според ролята."""
+    """Всеки отива на своята начална страница според ролята. Без вход – представяне на платформата."""
+    if not request.user.is_authenticated:
+        return landing(request)
     if request.user.is_admin_role:
         return redirect("admin:index")
     if request.user.is_teacher:
@@ -37,10 +40,39 @@ def home(request):
     return student_home(request)
 
 
+def landing(request):
+    """Публична страница: какво е Questboard. Показва само общи числа, без лични данни."""
+    mission = missions_for_student().order_by("-created_at").first()
+    mission_fields = [
+        ("title", mission.title), ("guild", mission.guild.name), ("xp", mission.xp),
+        ("deadline", timezone.localtime(mission.deadline).strftime("%d.%m.%Y")),
+    ] if mission else [("title", "Първата мисия"), ("guild", "Builders"), ("xp", 50)]
+
+    return render(request, "web/landing.html", {
+        "mission_fields": mission_fields,
+        "guilds": Guild.objects.all(),
+        "numbers": {
+            "missions": missions_for_student().count(),
+            "students": User.objects.filter(role=STUDENT, is_active=True).count(),
+            "approved": Claim.objects.filter(status=Claim.Status.APPROVED).count(),
+            "xp": XPTransaction.objects.aggregate(total=Sum("amount"))["total"] or 0,
+        },
+    })
+
+
 def student_home(request):
     student = request.user
+    stats = student_stats(student)
     return render(request, "web/student_home.html", {
-        "stats": student_stats(student),
+        "stats": stats,
+        # Данните за панела „player.ts“ – само неща, които ученикът и без това вижда.
+        "player_fields": [
+            ("nickname", student.nickname),
+            ("guild", student.guild.name if student.guild else ""),
+            ("level", stats.level.number if stats.level else 0),
+            ("xp", stats.xp),
+            ("coins", stats.coins),
+        ],
         "recent_claims": Claim.objects.filter(student=student).select_related("mission")
                                       .order_by("-reviewed_at", "-submitted_at")[:5],
         "recent_xp": student.xp_transactions.order_by("-created_at")[:5],

@@ -4,16 +4,19 @@
 
 {% block content %}
 <div class="page-head">
-  <h1>Справки по разписанието</h1>
-  <a href="{% url 'assistant' %}">Попитай асистента</a>
+  <div>
+    <h1>Справки по разписанието</h1>
+    <p>Къде трябва да е някой според разписанието, а не къде е в действителност.</p>
+  </div>
+  <a class="btn btn-outline" href="{% url 'assistant' %}">Попитай асистента</a>
 </div>
 
-<section class="card">
-  <form method="get" class="report-form">
+<section class="panel">
+  <form method="get" class="inline-form">
     <div class="field">
       <label for="report">Справка</label>
       <select name="report" id="report" required>
-        <option value="">— изберете —</option>
+        <option value="">Изберете</option>
         {% for key, title in reports.items %}
           <option value="{{ key }}" {% if key == report %}selected{% endif %}>{{ title }}</option>
         {% endfor %}
@@ -32,7 +35,7 @@
       <label for="class_name">Клас</label>
       {% if classes %}
         <select name="class_name" id="class_name">
-          <option value="">—</option>
+          <option value="">Всички</option>
           {% for school_class in classes %}
             <option {% if school_class.name == params.class_name %}selected{% endif %}>{{ school_class.name }}</option>
           {% endfor %}
@@ -45,7 +48,7 @@
     <div class="field">
       <label for="day">Ден</label>
       <select name="day" id="day">
-        <option value="">днес</option>
+        <option value="">Днес</option>
         {% for day in days %}<option {% if day == params.day %}selected{% endif %}>{{ day }}</option>{% endfor %}
       </select>
     </div>
@@ -55,15 +58,14 @@
       <input type="number" name="period" id="period" min="1" max="14" value="{{ params.period }}" placeholder="сега">
     </div>
 
-    <div class="field"><button type="submit">Покажи</button></div>
+    <button type="submit">Покажи</button>
   </form>
-  <p class="muted small">Справката показва къде трябва да е някой <strong>според разписанието</strong>, а не къде е в действителност.</p>
 </section>
 
-{% if error %}<p class="message message-error spaced">{{ error }}</p>{% endif %}
+{% if error %}<p class="message message-error section">{{ error }}</p>{% endif %}
 
 {% if result %}
-  <section class="card spaced">
+  <section class="section">
     {% include "web/_report_result.html" %}
   </section>
 {% endif %}

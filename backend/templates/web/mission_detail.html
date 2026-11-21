@@ -1,77 +1,94 @@
 {% extends "base.html" %}
+{% load questboard %}
 
 {% block title %}{{ mission.title }} – Questboard{% endblock %}
 
 {% block content %}
-<section class="card">
-  <div class="card-top">
-    <span class="badge guild">{{ mission.guild }}</span>
-    <span class="xp">{{ mission.xp }} XP</span>
-  </div>
-  <h1>{{ mission.title }}</h1>
-  <p class="muted">Срок: {{ mission.deadline|date:"j F Y, H:i"|lower }}
-    {% if not mission.is_open %} · <strong>не приема заявки</strong>{% endif %}</p>
+<a class="muted small" href="{% url 'mission_list' %}">Всички мисии</a>
+<h1 class="mission-title">{{ mission.title }}</h1>
 
-  <h2>Описание</h2>
-  <p class="pre">{{ mission.description }}</p>
-  <h2>Критерий за изпълнение</h2>
-  <p class="pre">{{ mission.criteria }}</p>
+<div class="mission-layout">
+  <div>
+    <section class="panel">
+      <h2>{% if user.is_student %}Какво трябва да направиш{% else %}Описание{% endif %}</h2>
+      <p class="pre">{{ mission.description }}</p>
+      <h3>Критерий за изпълнение</h3>
+      <p class="pre mb-0">{{ mission.criteria }}</p>
+    </section>
 
-  {% if user.is_teacher %}
-    <p class="muted">Подсказки от асистента: {{ mission.hints_allowed|yesno:"разрешени,забранени" }}</p>
-    <a class="button" href="{% url 'mission_edit' mission.pk %}">Редактирай</a>
-  {% endif %}
-</section>
-
-{% if user.is_student %}
-  <section class="card">
-    <h2>Твоята заявка</h2>
-    {% if my_claim %}
-      <p>{% include "web/_claim_status.html" with claim=my_claim %}
-         <span class="muted">подадена на {{ my_claim.submitted_at|date:"j F, H:i"|lower }}</span></p>
-      <p class="pre">{{ my_claim.evidence }}</p>
-      {% if my_claim.review_comment %}<p><strong>Коментар на учителя:</strong> {{ my_claim.review_comment }}</p>{% endif %}
-    {% endif %}
-
-    {% if can_claim %}
-      {% if my_claim %}<p>Можеш да подадеш заявката отново.</p>{% endif %}
-      <form method="post">
-        {% csrf_token %}
-        {% include "web/_form_fields.html" %}
-        <button type="submit">Заяви изпълнение</button>
-      </form>
-    {% elif not my_claim %}
-      <p class="muted">Мисията вече не приема заявки.</p>
-    {% endif %}
-  </section>
-
-  {% if mission.hints_allowed and can_claim or hints %}
-    <section class="card assistant-box">
-      <h2>Подсказка от асистента</h2>
-      {% for hint in hints %}
-        <div class="hint">
-          <p class="pre">{{ hint.text }}</p>
-          <p class="muted small">{{ hint.created_at|date:"j F, H:i"|lower }}</p>
-        </div>
-      {% endfor %}
-      {% if mission.hints_allowed and can_claim %}
-        {% if hint_tokens %}
-          <form method="post" action="{% url 'mission_hint' mission.pk %}">
-            {% csrf_token %}
-            <button type="submit">Поискай подсказка (1 Hint Token)</button>
-            <span class="muted small">Имаш {{ hint_tokens }}. Подсказката дава насока, не готово решение.</span>
-          </form>
-        {% else %}
-          <p class="muted">Нямаш Hint Token. <a href="{% url 'shop' %}">Купи от магазина.</a></p>
+    {% if user.is_student %}
+      <section class="panel">
+        <h2>Твоята заявка</h2>
+        {% if my_claim %}
+          <div class="list-row">
+            {% include "web/_claim_status.html" with claim=my_claim %}
+            <span class="muted small">подадена на {{ my_claim.submitted_at|date:"j F, H:i"|lower }}</span>
+          </div>
+          <p class="evidence pre">{{ my_claim.evidence }}</p>
+          {% if my_claim.review_comment %}<p><strong>Учителят:</strong> {{ my_claim.review_comment }}</p>{% endif %}
         {% endif %}
+
+        {% if can_claim %}
+          {% if my_claim %}<p>Заявката е отказана. Поправи каквото трябва и я подай отново.</p>{% endif %}
+          <form method="post">
+            {% csrf_token %}
+            {% include "web/_form_fields.html" %}
+            <button type="submit">Заяви изпълнение</button>
+          </form>
+        {% elif not my_claim %}
+          <p class="muted mb-0">Мисията вече не приема заявки.</p>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+
+  <aside>
+    <section class="panel">
+      <dl class="facts">
+        <dt>Гилдия</dt><dd><span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span></dd>
+        <dt>Опит</dt><dd class="xp">{{ mission.xp }} XP</dd>
+        <dt>Срок</dt><dd>{{ mission.deadline|date:"j F Y, H:i"|lower }}</dd>
+        <dt>Състояние</dt>
+        <dd>{% if not mission.is_active %}спряна{% elif mission.is_open %}приема заявки{% else %}срокът изтече{% endif %}</dd>
+        {% if user.is_teacher %}
+          <dt>Подсказки</dt><dd>{{ mission.hints_allowed|yesno:"разрешени,забранени" }}</dd>
+        {% endif %}
+      </dl>
+      {% if user.is_teacher %}
+        <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'mission_edit' mission.pk %}">Редактирай</a></div>
       {% endif %}
     </section>
-  {% endif %}
-{% endif %}
+
+    {% if user.is_student %}
+      {% if mission.hints_allowed and can_claim or hints %}
+        <section class="panel panel-accent">
+          <h3>Подсказка от асистента</h3>
+          {% for hint in hints %}
+            <div class="hint">
+              <p class="pre">{{ hint.text }}</p>
+              <p class="muted small">{{ hint.created_at|date:"j F, H:i"|lower }}</p>
+            </div>
+          {% endfor %}
+          {% if mission.hints_allowed and can_claim %}
+            {% if hint_tokens %}
+              <p class="muted small">Подсказката дава насока, а не готово решение. Имаш {{ hint_tokens }} Hint Token.</p>
+              <form method="post" action="{% url 'mission_hint' mission.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-outline btn-small">Поискай подсказка за 1 Hint Token</button>
+              </form>
+            {% else %}
+              <p class="muted small mb-0">Нямаш Hint Token. <a href="{% url 'shop' %}">Купи от магазина.</a></p>
+            {% endif %}
+          {% endif %}
+        </section>
+      {% endif %}
+    {% endif %}
+  </aside>
+</div>
 
 {% if user.is_teacher %}
-  <section class="card">
-    <h2>Заявки ({{ claims|length }})</h2>
+  <section class="section">
+    <div class="section-head"><h2>Заявки ({{ claims|length }})</h2></div>
     {% if claims %}
       <div class="table-wrap">
         <table>
@@ -79,7 +96,7 @@
           <tbody>
             {% for claim in claims %}
               <tr>
-                <td>{{ claim.student.get_full_name|default:claim.student.nickname }}</td>
+                <td>{{ claim.student.get_full_name|default:claim.student.nickname }}<br><span class="muted small">{{ claim.student.nickname }}</span></td>
                 <td>{{ claim.student.school_class }}</td>
                 <td class="pre">{{ claim.evidence|urlize }}</td>
                 <td>{{ claim.submitted_at|date:"j F, H:i"|lower }}</td>
@@ -96,7 +113,7 @@
         </table>
       </div>
     {% else %}
-      <p class="muted">Още няма заявки.</p>
+      <p class="muted">Още няма заявки по тази мисия.</p>
     {% endif %}
   </section>
 {% endif %}

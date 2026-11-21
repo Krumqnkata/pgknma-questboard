@@ -1,25 +1,29 @@
 {% extends "base.html" %}
+{% load questboard %}
 
 {% block title %}Моите мисии – Questboard{% endblock %}
 
 {% block content %}
 <div class="page-head">
-  <h1>Моите мисии</h1>
-  <a class="button" href="{% url 'mission_create' %}">Нова мисия</a>
+  <div>
+    <h1>Моите мисии</h1>
+    <p>Мисиите, които сте публикували, и колко заявки чакат проверка.</p>
+  </div>
+  <a class="btn" href="{% url 'mission_create' %}">Нова мисия</a>
 </div>
 
 {% if missions %}
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>Мисия</th><th>Гилдия</th><th>XP</th><th>Срок</th><th>Заявки</th><th>Състояние</th></tr>
+        <tr><th>Мисия</th><th>Гилдия</th><th class="num">XP</th><th>Срок</th><th>Заявки</th><th>Състояние</th></tr>
       </thead>
       <tbody>
         {% for mission in missions %}
           <tr>
-            <td><a href="{% url 'mission_detail' mission.pk %}">{{ mission.title }}</a></td>
-            <td>{{ mission.guild }}</td>
-            <td>{{ mission.xp }}</td>
+            <td><a href="{% url 'mission_detail' mission.pk %}"><strong>{{ mission.title }}</strong></a></td>
+            <td><span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span></td>
+            <td class="num xp">{{ mission.xp }}</td>
             <td>{{ mission.deadline|date:"j F, H:i"|lower }}</td>
             <td>
               {{ mission.claims_count }}
@@ -28,7 +32,7 @@
             <td>
               {% if not mission.is_active %}<span class="badge">спряна</span>
               {% elif mission.is_open %}<span class="badge status-approved">активна</span>
-              {% else %}<span class="badge">изтекъл срок</span>{% endif %}
+              {% else %}<span class="badge">срокът изтече</span>{% endif %}
             </td>
           </tr>
         {% endfor %}
@@ -36,8 +40,10 @@
     </table>
   </div>
 {% else %}
-  <div class="card">
-    <p>Още нямате мисии. <a href="{% url 'mission_create' %}">Създайте първата.</a></p>
-  </div>
+  <section class="panel">
+    <h2>Още нямате мисии</h2>
+    <p class="muted">Опишете задача, която учениците могат да изпълнят. Асистентът може да предложи чернова.</p>
+    <a class="btn" href="{% url 'mission_create' %}">Създай първата мисия</a>
+  </section>
 {% endif %}
 {% endblock %}

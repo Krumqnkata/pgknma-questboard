@@ -5,23 +5,28 @@
 
 {% block content %}
 <div class="page-head">
-  <h1>Магазин</h1>
-  <p class="coins">Имаш <strong>{{ stats.coins|coins }}</strong></p>
+  <div>
+    <h1>Магазин</h1>
+    <p>Монетите се печелят от опита: {{ stats.coins_this_week }} от {{ stats.weekly_limit }} тази седмица.</p>
+  </div>
+  <div class="stat-value" aria-label="Твоите монети">{{ stats.coins|coins }}</div>
 </div>
 
-<div class="grid">
+<div class="mission-grid">
   {% for privilege in privileges %}
-    <section class="card">
-      <div class="card-top">
-        <h2>{{ privilege.name }}</h2>
+    <section class="mission-card">
+      <div class="mission-meta">
+        <h3>{{ privilege.name }}</h3>
         <span class="xp">{{ privilege.price|coins }}</span>
       </div>
-      <p>{{ privilege.description }}</p>
-      <form method="post" action="{% url 'shop_buy' privilege.pk %}">
+      <p class="muted small">{{ privilege.description }}</p>
+      <form method="post" action="{% url 'shop_buy' privilege.pk %}" class="mission-foot">
         {% csrf_token %}
-        <button type="submit" {% if stats.coins < privilege.price %}disabled{% endif %}>
-          {% if stats.coins < privilege.price %}Не стигат монетите{% else %}Купи{% endif %}
-        </button>
+        {% if stats.coins < privilege.price %}
+          <button type="submit" class="btn-small" disabled>Не стигат монетите</button>
+        {% else %}
+          <button type="submit" class="btn-small">Купи за {{ privilege.price|coins }}</button>
+        {% endif %}
       </form>
     </section>
   {% empty %}
@@ -29,8 +34,8 @@
   {% endfor %}
 </div>
 
-<section class="card spaced">
-  <h2>Моите покупки</h2>
+<section class="section">
+  <div class="section-head"><h2>Моите покупки</h2></div>
   {% if purchases %}
     <div class="table-wrap">
       <table>
@@ -42,7 +47,7 @@
               <td>{{ purchase.price_paid|coins }}</td>
               <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
               <td>
-                {% if purchase.is_used %}<span class="badge">използвана {{ purchase.used_at|date:"j F"|lower }}</span>
+                {% if purchase.is_used %}<span class="badge">използвана на {{ purchase.used_at|date:"j F"|lower }}</span>
                 {% else %}<span class="badge status-approved">неизползвана</span>{% endif %}
               </td>
             </tr>
@@ -51,7 +56,7 @@
       </table>
     </div>
   {% else %}
-    <p class="muted">Още нищо не си купил.</p>
+    <p class="muted">Още нищо не си купил. Deadline Pass дава удължен срок, а Hint Token – подсказка от асистента.</p>
   {% endif %}
 </section>
 {% endblock %}

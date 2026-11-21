@@ -95,7 +95,8 @@ class MissionPageTests(TestCase):
         self.client.force_login(self.student)
         response = self.client.get(reverse("home"))
         self.assertContains(response, "Здравей, Феникс")
-        self.assertContains(response, "Тази седмица: 0 от 5")
+        self.assertContains(response, "0<small> от 5</small>")
+        self.assertContains(response, "player.ts")  # панелът с данните на ученика
 
     def test_teacher_home_is_review_list(self):
         self.client.force_login(self.teacher)
@@ -120,7 +121,7 @@ class GamePageTests(TestCase):
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("review_list"))
         self.assertContains(response, "Репортаж")
-        self.assertContains(response, '<span class="count">1</span>', html=True)
+        self.assertContains(response, 'aria-label="1 чакат"')
 
     def test_teacher_approves_claim(self):
         response = self.review("approve")

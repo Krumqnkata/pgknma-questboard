@@ -1,33 +1,40 @@
 {% extends "base.html" %}
+{% load questboard %}
 
 {% block title %}Мисии – Questboard{% endblock %}
 
 {% block content %}
 <div class="page-head">
-  <h1>Активни мисии</h1>
-  <p class="muted">Твоята гилдия: <strong>{{ user.guild }}</strong></p>
+  <div>
+    <h1>Активни мисии</h1>
+    <p>Избери мисия, изпълни я и заяви изпълнението. Учителят ще я провери.</p>
+  </div>
 </div>
 
-<nav class="chips" aria-label="Филтър по гилдия">
-  <a href="{% url 'mission_list' %}" class="chip{% if not selected_guild %} active{% endif %}">Всички</a>
+<nav class="chip-row" aria-label="Филтър по гилдия">
+  <a href="{% url 'mission_list' %}" class="chip plain" {% if not selected_guild %}aria-current="true"{% endif %}>Всички</a>
   {% for guild in guilds %}
-    <a href="?guild={{ guild.id }}" class="chip{% if selected_guild == guild.id|stringformat:'s' %} active{% endif %}">{{ guild }}</a>
+    <a href="?guild={{ guild.id }}" class="chip {{ guild|guild_class }}"
+       {% if selected_guild == guild.id|stringformat:'s' %}aria-current="true"{% endif %}>{{ guild }}{% if guild == user.guild %} (твоята){% endif %}</a>
   {% endfor %}
 </nav>
 
-<div class="grid">
+<div class="mission-grid section">
   {% for mission, claim in rows %}
-    <a class="card mission-card" href="{% url 'mission_detail' mission.pk %}">
-      <div class="card-top">
-        <span class="badge guild">{{ mission.guild }}</span>
+    <a class="mission-card" href="{% url 'mission_detail' mission.pk %}">
+      <div class="mission-meta">
+        <span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span>
         <span class="xp">{{ mission.xp }} XP</span>
       </div>
-      <h2>{{ mission.title }}</h2>
-      <p class="muted">Срок: {{ mission.deadline|date:"j F, H:i"|lower }}</p>
-      {% if claim %}{% include "web/_claim_status.html" %}{% endif %}
+      <h3>{{ mission.title }}</h3>
+      <p class="muted small">{{ mission.description|truncatewords:18 }}</p>
+      <div class="mission-foot">
+        <span>до {{ mission.deadline|date:"j F, H:i"|lower }}</span>
+        {% if claim %}{% include "web/_claim_status.html" %}{% endif %}
+      </div>
     </a>
   {% empty %}
-    <p class="muted">В момента няма активни мисии{% if selected_guild %} за тази гилдия{% endif %}.</p>
+    <p class="muted">В момента няма активни мисии{% if selected_guild %} за тази гилдия{% endif %}. Провери пак по-късно.</p>
   {% endfor %}
 </div>
 {% endblock %}

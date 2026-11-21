@@ -1,69 +1,92 @@
 {% extends "base.html" %}
+{% load questboard %}
 
 {% block title %}Класация – Questboard{% endblock %}
 
 {% block content %}
 <div class="page-head">
-  <h1>Класация</h1>
-  <p class="muted">Учениците се показват само с псевдоними.</p>
+  <div>
+    <h1>Класация</h1>
+    <p>Учениците се показват само с псевдоними.</p>
+  </div>
 </div>
 
-<div class="two-columns">
-  <section class="card">
+<div class="columns">
+  <section class="panel">
     <h2>Гилдии</h2>
-    <table>
-      <thead><tr><th>#</th><th>Гилдия</th><th>XP</th><th>Членове</th></tr></thead>
-      <tbody>
-        {% for row in guild_rows %}
-          <tr><td>{{ row.rank }}</td><td>{{ row.name }}</td><td>{{ row.xp }}</td><td>{{ row.members }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Гилдия</th><th class="num">XP</th><th class="num">Членове</th></tr></thead>
+        <tbody>
+          {% for row in guild_rows %}
+            <tr class="{% if row.rank == 1 and row.xp %}top-1{% endif %}">
+              <td class="rank">{{ row.rank }}</td>
+              <td><span class="chip {{ row.name|guild_class }}">{{ row.name }}</span></td>
+              <td class="num">{{ row.xp }}</td><td class="num">{{ row.members }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </section>
 
-  <section class="card">
+  <section class="panel">
     <h2>Класове</h2>
-    <table>
-      <thead><tr><th>#</th><th>Клас</th><th>XP</th><th>Средно на ученик</th></tr></thead>
-      <tbody>
-        {% for row in class_rows %}
-          <tr><td>{{ row.rank }}</td><td>{{ row.name }}</td><td>{{ row.xp }}</td><td>{{ row.average }}</td></tr>
-        {% empty %}
-          <tr><td colspan="4" class="muted">Още няма класове с ученици.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Клас</th><th class="num">XP</th><th class="num">Средно на ученик</th></tr></thead>
+        <tbody>
+          {% for row in class_rows %}
+            <tr class="{% if row.rank == 1 and row.xp %}top-1{% endif %}">
+              <td class="rank">{{ row.rank }}</td><td>{{ row.name }}</td>
+              <td class="num">{{ row.xp }}</td><td class="num">{{ row.average }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">Още няма класове с ученици.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </section>
 </div>
 
-<section class="card spaced">
-  <h2>Ученици</h2>
-  <form method="get" class="filters">
-    <label for="filter-guild" class="sr-only">Гилдия</label>
-    <select name="guild" id="filter-guild">
-      <option value="">Всички гилдии</option>
-      {% for guild in guilds %}
-        <option value="{{ guild.id }}" {% if selected_guild == guild.id|stringformat:'s' %}selected{% endif %}>{{ guild }}</option>
-      {% endfor %}
-    </select>
-    <label for="filter-class" class="sr-only">Клас</label>
-    <select name="class" id="filter-class">
-      <option value="">Всички класове</option>
-      {% for school_class in classes %}
-        <option value="{{ school_class.id }}" {% if selected_class == school_class.id|stringformat:'s' %}selected{% endif %}>{{ school_class }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit">Покажи</button>
-  </form>
+<section class="section">
+  <div class="section-head">
+    <h2>Ученици</h2>
+    <form method="get" class="inline-form" aria-label="Филтър">
+      <div class="field">
+        <label for="filter-guild" class="sr-only">Гилдия</label>
+        <select name="guild" id="filter-guild">
+          <option value="">Всички гилдии</option>
+          {% for guild in guilds %}
+            <option value="{{ guild.id }}" {% if selected_guild == guild.id|stringformat:'s' %}selected{% endif %}>{{ guild }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-class" class="sr-only">Клас</label>
+        <select name="class" id="filter-class">
+          <option value="">Всички класове</option>
+          {% for school_class in classes %}
+            <option value="{{ school_class.id }}" {% if selected_class == school_class.id|stringformat:'s' %}selected{% endif %}>{{ school_class }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn-outline">Покажи</button>
+    </form>
+  </div>
 
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Псевдоним</th><th>Гилдия</th><th>Ниво</th><th>XP</th></tr></thead>
+      <thead><tr><th>#</th><th>Псевдоним</th><th>Гилдия</th><th class="num">Ниво</th><th class="num">XP</th></tr></thead>
       <tbody>
         {% for row in student_rows %}
-          <tr{% if user.is_student and row.name == user.nickname %} class="me"{% endif %}>
-            <td>{{ row.rank }}</td><td>{{ row.name }}</td><td>{{ row.guild }}</td>
-            <td>{{ row.level.number|default:"—" }}</td><td>{{ row.xp }}</td>
+          <tr class="{% if user.is_student and row.name == user.nickname %}me{% endif %} {% if row.rank == 1 and row.xp %}top-1{% endif %}">
+            <td class="rank">{{ row.rank }}</td>
+            <td>{{ row.name }}{% if user.is_student and row.name == user.nickname %} <span class="muted small">(ти)</span>{% endif %}</td>
+            <td><span class="chip {{ row.guild|guild_class }}">{{ row.guild }}</span></td>
+            <td class="num">{{ row.level.number|default:"0" }}</td>
+            <td class="num"><strong>{{ row.xp }}</strong></td>
           </tr>
         {% empty %}
           <tr><td colspan="5" class="muted">Няма ученици по този филтър.</td></tr>

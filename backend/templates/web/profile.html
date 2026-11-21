@@ -1,22 +1,29 @@
 {% extends "base.html" %}
+{% load questboard %}
 
 {% block title %}Профил – Questboard{% endblock %}
+{% block page_class %}page-narrow{% endblock %}
 
 {% block content %}
-<section class="card form-card">
-  <h1>Профил</h1>
-  <dl class="details">
+<div class="page-head">
+  <div>
+    <h1>{% if user.is_student %}{{ user.nickname }}{% else %}{{ user.get_full_name|default:user.email }}{% endif %}</h1>
+    <p>{{ user.get_role_display }}</p>
+  </div>
+</div>
+
+<section class="panel">
+  <dl class="facts">
     <dt>Име</dt><dd>{{ user.get_full_name|default:"—" }}</dd>
     <dt>Имейл</dt><dd>{{ user.email }}</dd>
-    <dt>Роля</dt><dd>{{ user.get_role_display }}</dd>
     {% if user.is_student %}
       <dt>Псевдоним</dt><dd>{{ user.nickname }}</dd>
       <dt>Клас</dt><dd>{{ user.school_class }}</dd>
-      <dt>Гилдия</dt><dd>{{ user.guild }}</dd>
+      <dt>Гилдия</dt><dd><span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span></dd>
     {% endif %}
   </dl>
-  {% if user.is_student %}
-    <p class="muted">В класациите другите виждат само псевдонима ти. Ако искаш да го смениш, обърни се към администратора.</p>
-  {% endif %}
 </section>
+{% if user.is_student %}
+  <p class="muted small section">В класациите другите виждат само псевдонима ти. Ако искаш да го смениш, обърни се към администратора.</p>
+{% endif %}
 {% endblock %}

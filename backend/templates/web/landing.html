@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Questboard – мисии в училищния живот{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <h1 class="hero-title">Questboard</h1>
+    <p class="hero-sub">Училищният живот като игра</p>
+    <p class="hero-text">
+      Учителите пускат мисии, учениците ги изпълняват и печелят опит, нива и монети.
+      С монетите си купуват привилегии като удължен срок или подсказка от асистента.
+      Платформата върви успоредно с оценяването и не го замества.
+    </p>
+    <div class="actions">
+      <a class="btn" href="{% url 'login' %}">Вход</a>
+      <a class="btn btn-outline" href="#kak-raboti">Как работи</a>
+    </div>
+  </div>
+  {% code_card "quest.ts" "quest" mission_fields "Най-новата активна мисия" %}
+</section>
+
+<div class="chip-row" aria-label="Гилдии">
+  {% for guild in guilds %}<span class="chip {{ guild|guild_class }}">{{ guild }}</span>{% endfor %}
+  <span class="chip plain">XP и нива</span>
+  <span class="chip plain">Монети и привилегии</span>
+  <span class="chip plain">Класации с псевдоними</span>
+  <span class="chip plain">Асистент</span>
+</div>
+
+<section class="section" aria-label="Платформата в числа">
+  <div class="stats">
+    <div class="stat"><div class="stat-value">{{ numbers.missions }}</div><div class="stat-label">активни мисии</div></div>
+    <div class="stat"><div class="stat-value">{{ numbers.students }}</div><div class="stat-label">ученици</div></div>
+    <div class="stat"><div class="stat-value">{{ numbers.approved }}</div><div class="stat-label">изпълнени мисии</div></div>
+    <div class="stat"><div class="stat-value">{{ numbers.xp }}</div><div class="stat-label">спечелен опит (XP)</div></div>
+  </div>
+</section>
+
+<section class="section" id="kak-raboti">
+  <div class="section-head"><h2>Как работи</h2></div>
+  <ol class="steps" role="list">
+    <li class="step">
+      <span class="step-n">1</span>
+      <h3>Учителят пуска мисия</h3>
+      <p>Описание, гилдия, опит и ясен критерий. Асистентът може да предложи чернова.</p>
+    </li>
+    <li class="step">
+      <span class="step-n">2</span>
+      <h3>Ученикът я изпълнява</h3>
+      <p>И заявява изпълнението с кратко доказателство: текст или връзка.</p>
+    </li>
+    <li class="step">
+      <span class="step-n">3</span>
+      <h3>Учителят потвърждава</h3>
+      <p>Опитът се начислява веднага, а монетите – по курс и със седмичен лимит.</p>
+    </li>
+  </ol>
+</section>
+{% endblock %}

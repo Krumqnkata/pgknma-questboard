@@ -1,21 +1,11 @@
-{% load static %}<!doctype html>
-<html lang="bg">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Грешка{% endblock %} – Questboard</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  {# Страница за грешка: проста, без меню и без заявки към базата, за да се покаже винаги. #}
-  <header class="topbar"><a class="brand" href="/">Questboard</a></header>
-  <main class="page">
-    <section class="card error-card">
-      <p class="error-code">{% block code %}{% endblock %}</p>
-      <h1>{% block heading %}{% endblock %}</h1>
-      <p>{% block text %}{% endblock %}</p>
-      <a class="button" href="/">Към началото</a>
-    </section>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+{# Страница за грешка: само текст и връзка към началото – показва се дори когато нещо в сървъра не работи. #}
+
+{% block content %}
+<section class="error-page">
+  <p class="error-code">{% block code %}{% endblock %}</p>
+  <h1>{% block heading %}{% endblock %}</h1>
+  <p class="hero-text">{% block text %}{% endblock %}</p>
+  <div class="actions"><a class="btn" href="/">Към началото</a></div>
+</section>
+{% endblock %}

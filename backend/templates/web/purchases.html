@@ -4,9 +4,11 @@
 
 {% block content %}
 <div class="page-head">
-  <h1>Неизползвани привилегии</h1>
+  <div>
+    <h1>Неизползвани привилегии</h1>
+    <p>Когато ученик използва привилегия при вас, например удължен срок, отбележете я тук.</p>
+  </div>
 </div>
-<p class="muted">Когато ученик използва привилегия при вас (напр. удължен срок), отбележете я тук.</p>
 
 {% if purchases %}
   <div class="table-wrap">
@@ -15,14 +17,14 @@
       <tbody>
         {% for purchase in purchases %}
           <tr>
-            <td>{{ purchase.student.get_full_name|default:purchase.student.nickname }} ({{ purchase.student.nickname }})</td>
+            <td>{{ purchase.student.get_full_name|default:purchase.student.nickname }}<br><span class="muted small">{{ purchase.student.nickname }}</span></td>
             <td>{{ purchase.student.school_class }}</td>
-            <td>{{ purchase.privilege.name }}</td>
+            <td><strong>{{ purchase.privilege.name }}</strong></td>
             <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
-            <td>
+            <td class="num">
               <form method="post" action="{% url 'purchase_use' purchase.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="small-button">Използвана</button>
+                <button type="submit" class="btn-outline btn-small">Отбележи като използвана</button>
               </form>
             </td>
           </tr>
@@ -31,6 +33,9 @@
     </table>
   </div>
 {% else %}
-  <div class="card"><p>Няма неизползвани привилегии.</p></div>
+  <section class="panel">
+    <h2>Няма неизползвани привилегии</h2>
+    <p class="muted mb-0">Hint Token не се показва тук – той се харчи сам, когато ученикът поиска подсказка.</p>
+  </section>
 {% endif %}
 {% endblock %}

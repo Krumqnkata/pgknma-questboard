@@ -1,0 +1,5 @@
+{# Панел като редактор на код. Попълва се от тага code_card в web/templatetags/questboard.py. #}
+<figure class="code-card" aria-label="{{ filename }}">
+  <figcaption class="code-card-head"><span>{{ filename }}</span>{% if aside %}<span>{{ aside }}</span>{% endif %}</figcaption>
+  <pre><code>{% for line in lines %}<span class="code-line" data-n="{{ forloop.counter }}">{% for kind, text in line %}{% if kind %}<span class="tok-{{ kind }}">{{ text }}</span>{% else %}{{ text }}{% endif %}{% endfor %}</span>{% endfor %}</code></pre>
+</figure>

@@ -3,30 +3,41 @@
 {% block title %}{% if is_new %}Нова мисия{% else %}Редакция{% endif %} – Questboard{% endblock %}
 
 {% block content %}
-{% if is_new %}
-  <section class="card form-card assistant-box">
-    <h2>Чернова с асистента</h2>
-    <p class="muted small">Опишете идеята с едно-две изречения. Асистентът ще попълни формата отдолу,
-      а вие я преглеждате и редактирате. Нищо не се публикува без вас.</p>
-    <form method="post">
+<div class="page-head">
+  <div>
+    <h1>{% if is_new %}Нова мисия{% else %}Редакция{% endif %}</h1>
+    <p>{% if is_new %}Учениците ще я видят веднага след публикуване.{% else %}{{ mission.title }}{% endif %}</p>
+  </div>
+</div>
+
+<div class="mission-layout">
+  <section class="panel">
+    <form method="post" novalidate>
       {% csrf_token %}
-      <label for="draft_idea" class="sr-only">Идея за мисия</label>
-      <textarea name="draft_idea" id="draft_idea" rows="2" maxlength="1000"
-                placeholder="Напр. учениците да помогнат при подготовката на коледния базар">{{ draft_idea }}</textarea>
-      <button type="submit">Направи чернова</button>
+      {% include "web/_form_fields.html" %}
+      <div class="actions">
+        <button type="submit">{% if is_new %}Публикувай{% else %}Запази промените{% endif %}</button>
+        <a class="btn btn-outline" href="{% if is_new %}{% url 'mission_list' %}{% else %}{% url 'mission_detail' mission.pk %}{% endif %}">Отказ</a>
+      </div>
     </form>
   </section>
-{% endif %}
 
-<section class="card form-card{% if is_new %} spaced{% endif %}">
-  <h1>{% if is_new %}Нова мисия{% else %}Редакция на „{{ mission.title }}“{% endif %}</h1>
-  <form method="post" novalidate>
-    {% csrf_token %}
-    {% include "web/_form_fields.html" %}
-    <div class="actions">
-      <button type="submit">{% if is_new %}Публикувай{% else %}Запази{% endif %}</button>
-      <a href="{% if is_new %}{% url 'mission_list' %}{% else %}{% url 'mission_detail' mission.pk %}{% endif %}">Отказ</a>
-    </div>
-  </form>
-</section>
+  {% if is_new %}
+    <aside>
+      <section class="panel panel-accent">
+        <h3>Чернова с асистента</h3>
+        <p class="muted small">Опишете идеята с едно-две изречения. Асистентът попълва формата, а вие я преглеждате. Нищо не се публикува без вас.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">
+            <label for="draft_idea" class="sr-only">Идея за мисия</label>
+            <textarea name="draft_idea" id="draft_idea" rows="4" maxlength="1000"
+                      placeholder="Напр. учениците да помогнат при подготовката на коледния базар">{{ draft_idea }}</textarea>
+          </div>
+          <button type="submit" class="btn-outline btn-block">Направи чернова</button>
+        </form>
+      </section>
+    </aside>
+  {% endif %}
+</div>
 {% endblock %}
