@@ -11,6 +11,9 @@ load_dotenv(PROJECT_ROOT / ".env")
 ASSISTANT_TOKEN = os.getenv("ASSISTANT_TOKEN", "")
 
 # Ключовете за езиковите модели стоят САМО тук – Django не ги знае.
+# Тестовият модел (без интернет) – само за автоматичните тестове.
+ALLOW_FAKE = os.getenv("ASSISTANT_ALLOW_FAKE", "").lower() in ("1", "true", "yes")
+
 LLM_API_KEYS = {
     "openai": os.getenv("OPENAI_API_KEY", ""),
     "gemini": os.getenv("GEMINI_API_KEY", ""),
