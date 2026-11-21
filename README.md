@@ -101,3 +101,27 @@ python run_tests.py
 
 В `.env` са само стойностите, нужни при стартиране, и тайните. Файлът не се
 качва в GitHub.
+
+## Лиценз
+
+Questboard се разпространява под лиценза GNU General Public License,
+версия 3 (GPL-3.0). Пълният текст е във файла [LICENSE](LICENSE).
+
+## Използвани библиотеки
+
+| Библиотека | За какво се ползва | Лиценз |
+|---|---|---|
+| [Django](https://www.djangoproject.com/) | основното API, страниците, администрацията | BSD-3-Clause |
+| [Django REST Framework](https://www.django-rest-framework.org/) | REST API | BSD-3-Clause |
+| [drf-spectacular](https://github.com/tfranzel/drf-spectacular) | автоматична документация на API-то | BSD-3-Clause |
+| [django-unfold](https://github.com/unfoldadmin/django-unfold) | тема на администрацията | MIT |
+| [FastAPI](https://fastapi.tiangolo.com/) | услугата на асистента | MIT |
+| [Uvicorn](https://www.uvicorn.org/) | сървър за услугата на асистента | BSD-3-Clause |
+| [HTTPX](https://www.python-httpx.org/) | заявки от Django към асистента | BSD-3-Clause |
+| [python-dotenv](https://github.com/theskumar/python-dotenv) | четене на файла `.env` | BSD-3-Clause |
+| [mysqlclient](https://github.com/PyMySQL/mysqlclient) | връзка с MySQL (по избор) | GPL-2.0-or-later |
+| [Material Symbols](https://fonts.google.com/icons) | иконите в администрацията (идват с django-unfold) | Apache-2.0 |
+| [Inter](https://rsms.me/inter/) | шрифтът на администрацията (идва с django-unfold) | SIL OFL 1.1 |
+
+django-unfold включва и свои JavaScript библиотеки (Alpine.js, htmx, Chart.js
+и др.). Лицензите им са в пакета на django-unfold.
