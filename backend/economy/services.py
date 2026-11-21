@@ -1,0 +1,242 @@
+"""
+Правилата на играта: XP, нива, монети, седмичен лимит и магазин (раздел 3.1).
+
+Всяко начисляване и харчене минава само оттук. Страниците и API-то
+викат тези функции и никога не пишат сами в таблиците с движения.
+"""
+from dataclasses import dataclass
+from datetime import timedelta
+
+from django.db import transaction
+from django.db.models import Sum
+from django.utils import timezone
+
+from accounts.models import User
+from missions.models import Claim
+from missions.services import GameRuleError
+
+from .models import CoinTransaction, CoinWeek, GameSettings, Level, Privilege, Purchase, XPTransaction
+
+# ---------- Наличности (винаги се изчисляват от движенията) ----------
+
+
+def xp_total(student):
+    return student.xp_transactions.aggregate(total=Sum("amount"))["total"] or 0
+
+
+def coin_balance(student):
+    return student.coin_transactions.aggregate(total=Sum("amount"))["total"] or 0
+
+
+def level_for_xp(xp):
+    """Най-високото ниво, чиято граница е достигната."""
+    return Level.objects.filter(min_xp__lte=xp).order_by("-min_xp").first()
+
+
+def next_level_for_xp(xp):
+    return Level.objects.filter(min_xp__gt=xp).order_by("min_xp").first()
+
+
+@dataclass
+class StudentStats:
+    xp: int
+    level: Level | None
+    next_level: Level | None
+    coins: int
+    coins_this_week: int
+    weekly_limit: int
+
+    @property
+    def progress_percent(self):
+        """Колко процента от пътя до следващото ниво е изминат."""
+        if not self.next_level:
+            return 100
+        start = self.level.min_xp if self.level else 0
+        return int((self.xp - start) * 100 / (self.next_level.min_xp - start))
+
+    @property
+    def xp_to_next_level(self):
+        return self.next_level.min_xp - self.xp if self.next_level else 0
+
+
+def student_stats(student, now=None):
+    xp = xp_total(student)
+    week = CoinWeek.objects.filter(student=student, week_start=week_start_for(now)).first()
+    return StudentStats(
+        xp=xp,
+        level=level_for_xp(xp),
+        next_level=next_level_for_xp(xp),
+        coins=coin_balance(student),
+        coins_this_week=week.coins_earned if week else 0,
+        weekly_limit=GameSettings.load().weekly_coin_limit,
+    )
+
+
+# ---------- Седмици и монети ----------
+
+
+def week_start_for(now=None):
+    """Датата, от която започва текущата седмица (денят се избира в настройките)."""
+    today = timezone.localdate(now or timezone.now())
+    start_day = GameSettings.load().week_start_day  # 0 = понеделник
+    return today - timedelta(days=(today.weekday() - start_day) % 7)
+
+
+def _current_week(student, rules, now):
+    """
+    Седмичната сметка на ученика, заключена до края на транзакцията.
+    При нова седмица пренася остатъка от предишната, ако това е включено в настройките.
+    """
+    start = week_start_for(now)
+    week = CoinWeek.objects.select_for_update().filter(student=student, week_start=start).first()
+    if week:
+        return week
+
+    carry_in = 0
+    previous = CoinWeek.objects.filter(student=student, week_start__lt=start).order_by("-week_start").first()
+    if previous and rules.carry_over_remainder:
+        # Пренася се само остатъкът под курса (напр. 30 от 50 XP).
+        # XP над седмичния лимит не се пренася, иначе лимитът няма смисъл.
+        carry_in = previous.xp_left % rules.xp_per_coin
+    return CoinWeek.objects.create(student=student, week_start=start, carry_in=carry_in)
+
+
+def award_xp(student, amount, reason, created_by=None, claim=None, now=None):
+    """
+    Начислява XP и превръща каквото може в монети по курса и седмичния лимит (Ф6).
+    XP се пази винаги – дори когато лимитът е достигнат и монети не се дават.
+    Връща колко монети са дадени.
+    """
+    rules = GameSettings.load()
+    XPTransaction.objects.create(student=student, amount=amount, reason=reason, claim=claim, created_by=created_by)
+
+    week = _current_week(student, rules, now)
+    week.xp_earned += amount
+
+    coins_left_this_week = max(0, rules.weekly_coin_limit - week.coins_earned)
+    new_coins = min(coins_left_this_week, week.xp_left // rules.xp_per_coin)
+
+    week.coins_earned += new_coins
+    week.xp_used += new_coins * rules.xp_per_coin
+    week.save()
+
+    if new_coins:
+        CoinTransaction.objects.create(
+            student=student, amount=new_coins, kind=CoinTransaction.Kind.EARNED,
+            reason=f"{new_coins * rules.xp_per_coin} XP по курс {rules.xp_per_coin} XP = 1 монета",
+            claim=claim, created_by=created_by,
+        )
+    return new_coins
+
+
+# ---------- Потвърждаване на заявки ----------
+
+
+@dataclass
+class ReviewResult:
+    claim: Claim
+    xp: int = 0
+    coins: int = 0
+    new_level: Level | None = None  # попълва се, ако ученикът е минал на ново ниво
+
+
+def _check_reviewer(claim, reviewer):
+    # Заявката се проверява от автора на мисията (или администратор).
+    if not (reviewer.is_admin_role or (reviewer.is_teacher and claim.mission.created_by_id == reviewer.id)):
+        raise GameRuleError("Само учителят, създал мисията, може да проверява заявките по нея.")
+
+
+def _mark_reviewed(claim, reviewer, status, comment):
+    """
+    Сменя състоянието САМО ако заявката още чака проверка.
+    Ако двама натиснат едновременно (или един натисне два пъти), само първият минава.
+    """
+    updated = Claim.objects.filter(pk=claim.pk, status=Claim.Status.PENDING).update(
+        status=status, reviewed_by=reviewer, reviewed_at=timezone.now(), review_comment=comment,
+    )
+    if updated == 0:
+        raise GameRuleError("Тази заявка вече е проверена.")
+    claim.refresh_from_db()
+
+
+def approve_claim(claim, reviewer, comment="", now=None):
+    """Учителят потвърждава заявка (Ф5): XP се начислява само сега."""
+    _check_reviewer(claim, reviewer)
+    with transaction.atomic():
+        _mark_reviewed(claim, reviewer, Claim.Status.APPROVED, comment.strip())
+
+        student = claim.student
+        old_level = level_for_xp(xp_total(student))
+        xp = claim.mission.xp
+        coins = award_xp(student, xp, reason=f"Мисия „{claim.mission.title}“",
+                         created_by=reviewer, claim=claim, now=now)
+        new_level = level_for_xp(xp_total(student))
+
+    return ReviewResult(claim=claim, xp=xp, coins=coins,
+                        new_level=new_level if new_level != old_level else None)
+
+
+def reject_claim(claim, reviewer, comment=""):
+    """Учителят отказва заявка. Ученикът може да я подаде отново."""
+    _check_reviewer(claim, reviewer)
+    with transaction.atomic():
+        _mark_reviewed(claim, reviewer, Claim.Status.REJECTED, comment.strip())
+    return ReviewResult(claim=claim)
+
+
+def pending_claims_for(reviewer):
+    claims = Claim.objects.filter(status=Claim.Status.PENDING).select_related(
+        "mission", "student", "student__school_class")
+    if reviewer.is_admin_role:
+        return claims
+    return claims.filter(mission__created_by=reviewer)
+
+
+# ---------- Магазин ----------
+
+
+def buy_privilege(student, privilege):
+    """
+    Ученикът купува привилегия с монети (Ф8).
+    Редът на ученика се заключва, за да не минат две едновременни покупки
+    с едни и същи монети.
+    """
+    if not student.is_student:
+        raise GameRuleError("Само ученици могат да пазаруват.")
+    if not privilege.is_active:
+        raise GameRuleError("Тази привилегия вече не се продава.")
+
+    with transaction.atomic():
+        User.objects.select_for_update().get(pk=student.pk)
+        balance = coin_balance(student)
+        if balance < privilege.price:
+            raise GameRuleError(f"Нямаш достатъчно монети: нужни са {privilege.price}, имаш {balance}.")
+
+        purchase = Purchase.objects.create(student=student, privilege=privilege, price_paid=privilege.price)
+        CoinTransaction.objects.create(
+            student=student, amount=-privilege.price, kind=CoinTransaction.Kind.SPENT,
+            reason=f"Покупка: {privilege.name}", purchase=purchase, created_by=student,
+        )
+    return purchase
+
+
+def mark_purchase_used(purchase, teacher, mission=None):
+    """Учителят отбелязва, че ученикът е използвал привилегията (Ф9)."""
+    if not (teacher.is_teacher or teacher.is_admin_role):
+        raise GameRuleError("Само учител може да отбележи привилегия като използвана.")
+    updated = Purchase.objects.filter(pk=purchase.pk, used_at__isnull=True).update(
+        used_at=timezone.now(), marked_used_by=teacher, used_for_mission=mission,
+    )
+    if updated == 0:
+        raise GameRuleError("Тази привилегия вече е използвана.")
+    purchase.refresh_from_db()
+    return purchase
+
+
+def unused_purchases():
+    return Purchase.objects.filter(used_at__isnull=True).select_related(
+        "student", "student__school_class", "privilege").order_by("purchased_at")
+
+
+def active_privileges():
+    return Privilege.objects.filter(is_active=True)

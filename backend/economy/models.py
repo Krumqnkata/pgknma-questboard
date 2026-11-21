@@ -9,6 +9,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from .words import coins_text
+
 
 class GameSettings(models.Model):
     """
@@ -115,6 +117,40 @@ class XPTransaction(models.Model):
         return f"{self.student}: {self.amount:+} XP"
 
 
+class CoinWeek(models.Model):
+    """
+    Седмична сметка за монетите на един ученик (Ф6).
+
+    Пази колко XP е дошло през седмицата, колко е пренесено от предишната
+    и колко монети са дадени. Така седмичният лимит и пренасянето на остатъка
+    се изчисляват от записани числа, а не се гадаят наново.
+    """
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="ученик",
+                                on_delete=models.PROTECT, related_name="coin_weeks")
+    week_start = models.DateField("седмица от")
+    carry_in = models.PositiveIntegerField("пренесено XP", default=0)
+    xp_earned = models.PositiveIntegerField("XP през седмицата", default=0)
+    xp_used = models.PositiveIntegerField("XP, обърнато в монети", default=0)
+    coins_earned = models.PositiveIntegerField("дадени монети", default=0)
+
+    class Meta:
+        verbose_name = "седмична сметка"
+        verbose_name_plural = "седмични сметки за монети"
+        ordering = ["-week_start"]
+        constraints = [
+            models.UniqueConstraint(fields=["student", "week_start"], name="one_coin_week_per_student"),
+        ]
+
+    def __str__(self):
+        return f"{self.student} – седмица от {self.week_start}"
+
+    @property
+    def xp_left(self):
+        """XP, което още не е обърнато в монети."""
+        return self.carry_in + self.xp_earned - self.xp_used
+
+
 class CoinTransaction(models.Model):
     """Едно движение на монети: спечелени от XP (+) или похарчени в магазина (−)."""
 
@@ -161,7 +197,7 @@ class Privilege(models.Model):
         ordering = ["price"]
 
     def __str__(self):
-        return f"{self.name} ({self.price} мон.)"
+        return f"{self.name} ({coins_text(self.price)})"
 
 
 class Purchase(models.Model):

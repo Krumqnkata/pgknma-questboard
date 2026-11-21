@@ -6,7 +6,7 @@ from unfold.admin import ModelAdmin
 
 from assistant_bridge.client import check_assistant_health
 
-from .models import CoinTransaction, GameSettings, Level, Privilege, Purchase, XPTransaction
+from .models import CoinTransaction, CoinWeek, GameSettings, Level, Privilege, Purchase, XPTransaction
 
 
 @admin.register(GameSettings)
@@ -83,6 +83,13 @@ class CoinTransactionAdmin(ReadOnlyLedgerAdmin):
     list_display = ["created_at", "student", "amount", "kind", "reason", "created_by"]
     list_filter = ["kind", "created_at"]
     search_fields = ["student__nickname", "student__email", "reason"]
+
+
+@admin.register(CoinWeek)
+class CoinWeekAdmin(ReadOnlyLedgerAdmin):
+    list_display = ["week_start", "student", "carry_in", "xp_earned", "xp_used", "coins_earned"]
+    list_filter = ["week_start"]
+    search_fields = ["student__nickname", "student__email"]
 
 
 @admin.register(Purchase)
