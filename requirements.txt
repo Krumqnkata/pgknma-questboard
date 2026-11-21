@@ -1,0 +1,4 @@
+# Всички зависимости на системата – инсталират се с:
+#   pip install -r requirements.txt
+-r backend/requirements.txt
+-r assistant_service/requirements.txt

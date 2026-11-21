@@ -1,0 +1,2 @@
+# Нужно само ако в .env е DB_ENGINE=mysql
+mysqlclient==2.3.2
