@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Мисии – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Активни мисии</h1>
+  <p class="muted">Твоята гилдия: <strong>{{ user.guild }}</strong></p>
+</div>
+
+<nav class="chips" aria-label="Филтър по гилдия">
+  <a href="{% url 'mission_list' %}" class="chip{% if not selected_guild %} active{% endif %}">Всички</a>
+  {% for guild in guilds %}
+    <a href="?guild={{ guild.id }}" class="chip{% if selected_guild == guild.id|stringformat:'s' %} active{% endif %}">{{ guild }}</a>
+  {% endfor %}
+</nav>
+
+<div class="grid">
+  {% for mission, claim in rows %}
+    <a class="card mission-card" href="{% url 'mission_detail' mission.pk %}">
+      <div class="card-top">
+        <span class="badge guild">{{ mission.guild }}</span>
+        <span class="xp">{{ mission.xp }} XP</span>
+      </div>
+      <h2>{{ mission.title }}</h2>
+      <p class="muted">Срок: {{ mission.deadline|date:"j F, H:i"|lower }}</p>
+      {% if claim %}{% include "web/_claim_status.html" %}{% endif %}
+    </a>
+  {% empty %}
+    <p class="muted">В момента няма активни мисии{% if selected_guild %} за тази гилдия{% endif %}.</p>
+  {% endfor %}
+</div>
+{% endblock %}

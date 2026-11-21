@@ -49,7 +49,8 @@ class LoginTests(TestCase):
     def test_login_with_email(self):
         User.objects.create_user("t@example.com", "TaynaParola123", role=User.Role.TEACHER)
         response = self.client.post(reverse("login"), {"username": "t@example.com", "password": "TaynaParola123"})
-        self.assertRedirects(response, reverse("home"))
+        # След входа отива на началната страница, която пък пренасочва според ролята.
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
     def test_home_requires_login(self):
         response = self.client.get(reverse("home"))

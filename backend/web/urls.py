@@ -7,4 +7,9 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("login/", auth_views.LoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("profile/", views.profile, name="profile"),
+    path("missions/", views.mission_list, name="mission_list"),
+    path("missions/new/", views.mission_create, name="mission_create"),
+    path("missions/<int:pk>/", views.mission_detail, name="mission_detail"),
+    path("missions/<int:pk>/edit/", views.mission_edit, name="mission_edit"),
 ]

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_new %}Нова мисия{% else %}Редакция{% endif %} – Questboard{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+  <h1>{% if is_new %}Нова мисия{% else %}Редакция на „{{ mission.title }}“{% endif %}</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "web/_form_fields.html" %}
+    <div class="actions">
+      <button type="submit">{% if is_new %}Публикувай{% else %}Запази{% endif %}</button>
+      <a href="{% if is_new %}{% url 'mission_list' %}{% else %}{% url 'mission_detail' mission.pk %}{% endif %}">Отказ</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

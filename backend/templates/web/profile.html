@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Профил – Questboard{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+  <h1>Профил</h1>
+  <dl class="details">
+    <dt>Име</dt><dd>{{ user.get_full_name|default:"—" }}</dd>
+    <dt>Имейл</dt><dd>{{ user.email }}</dd>
+    <dt>Роля</dt><dd>{{ user.get_role_display }}</dd>
+    {% if user.is_student %}
+      <dt>Псевдоним</dt><dd>{{ user.nickname }}</dd>
+      <dt>Клас</dt><dd>{{ user.school_class }}</dd>
+      <dt>Гилдия</dt><dd>{{ user.guild }}</dd>
+    {% endif %}
+  </dl>
+  {% if user.is_student %}
+    <p class="muted">В класациите другите виждат само псевдонима ти. Ако искаш да го смениш, обърни се към администратора.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -8,6 +8,7 @@
   --border: #dde1ea;
   --error: #cf222e;
   --success: #1a7f37;
+  --warning: #9a6700;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,6 +19,9 @@
     --muted: #a0a7b6;
     --accent: #8f8af0;
     --border: #2e333e;
+    --error: #ff7b72;
+    --success: #56d364;
+    --warning: #e3b341;
   }
 }
 
@@ -92,6 +96,96 @@ form.inline { display: inline; }
   font-weight: normal;
   text-decoration: underline;
 }
+
+/* ---------- Заглавие на страница ---------- */
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+.page-head h1 { margin: 0; }
+
+h1 { font-size: 1.6rem; margin: 0.2rem 0 0.4rem; }
+h2 { font-size: 1.15rem; margin: 1.2rem 0 0.4rem; }
+.card > h1:first-child, .card > h2:first-child { margin-top: 0; }
+.muted { color: var(--muted); }
+.pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.page > .card + .card { margin-top: 1rem; }
+.form-card { max-width: 640px; }
+
+/* ---------- Бутони като връзки ---------- */
+.button {
+  display: inline-block;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.actions { display: flex; align-items: center; gap: 1rem; }
+.actions button { margin-top: 0; }
+
+/* ---------- Филтър с гилдии ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.chip {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ---------- Карти с мисии ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.mission-card { color: var(--text); text-decoration: none; transition: border-color 0.15s; }
+.mission-card:hover { border-color: var(--accent); }
+.mission-card h2 { margin: 0.6rem 0 0.2rem; }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.xp { font-weight: 700; color: var(--accent); }
+
+/* ---------- Етикети ---------- */
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.badge.guild { color: var(--accent); border-color: var(--accent); }
+.status-pending { color: var(--warning); border-color: var(--warning); }
+.status-approved { color: var(--success); border-color: var(--success); }
+.status-rejected { color: var(--error); border-color: var(--error); }
+
+/* ---------- Таблици ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); }
+th, td { padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+
+/* ---------- Полета във формите ---------- */
+.field { margin-top: 1rem; }
+.field label { margin-top: 0; }
+.field-checkbox { display: flex; align-items: center; gap: 0.5rem; }
+.field-checkbox input { width: auto; margin: 0; }
+.help { display: block; color: var(--muted); margin-top: 0.2rem; }
+.error { display: block; color: var(--error); margin-top: 0.2rem; }
+.has-error input, .has-error textarea, .has-error select { border-color: var(--error); }
+
+/* ---------- Профил ---------- */
+.details { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.5rem; }
+.details dt { color: var(--muted); }
+.details dd { margin: 0; }
 
 .message { padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px solid var(--border); }
 .message-error { border-color: var(--error); color: var(--error); }

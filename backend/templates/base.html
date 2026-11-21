@@ -11,8 +11,14 @@
     <a class="brand" href="{% url 'home' %}">Questboard</a>
     {% if user.is_authenticated %}
       <nav class="nav">
-        <span class="who">{{ user }} · {{ user.get_role_display }}</span>
+        {% if user.is_student or user.is_teacher %}
+          <a href="{% url 'mission_list' %}">Мисии</a>
+        {% endif %}
+        {% if user.is_teacher %}
+          <a href="{% url 'mission_create' %}">Нова мисия</a>
+        {% endif %}
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">Администрация</a>{% endif %}
+        <a href="{% url 'profile' %}" class="who">{{ user }} · {{ user.get_role_display }}</a>
         {# Изходът е с POST заявка – защита от изход чрез чужда връзка #}
         <form method="post" action="{% url 'logout' %}" class="inline">
           {% csrf_token %}
@@ -23,11 +29,9 @@
   </header>
 
   <main class="page">
-    {% if messages %}
-      {% for message in messages %}
-        <p class="message message-{{ message.tags }}">{{ message }}</p>
-      {% endfor %}
-    {% endif %}
+    {% for message in messages %}
+      <p class="message message-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
     {% block content %}{% endblock %}
   </main>
 </body>
