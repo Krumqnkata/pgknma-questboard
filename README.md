@@ -67,6 +67,18 @@ python manage.py createsuperuser
 cd ..
 ```
 
+Примерни данни (класове, мисии и тестов акаунт за всяка роля, само с
+измислени хора) се зареждат така, след като сложите `DEMO_PASSWORD` в `.env`:
+
+```powershell
+cd backend
+python manage.py seed_demo
+cd ..
+```
+
+Тестовите акаунти са `admin@questboard.test`, `uchitel@questboard.test` и
+`uchenik@questboard.test` до `uchenik4@questboard.test`.
+
 За MySQL вместо SQLite: `pip install -r backend/requirements-mysql.txt` и
 `DB_ENGINE=mysql` с данните за базата в `.env`.
 
