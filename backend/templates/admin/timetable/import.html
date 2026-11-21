@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load unfold %}
+
+{% block content %}
+  {% component "unfold/components/card.html" with title="Внасяне на разписание от CSV" %}
+    <div class="flex flex-col gap-4 max-w-2xl">
+      <p>Файлът заменя <strong>цялото</strong> текущо разписание. Ако има грешка дори на един ред, нищо не се променя.</p>
+      <p>Първият ред трябва да е:</p>
+      <pre class="bg-base-50 dark:bg-base-800 p-3 rounded-default overflow-x-auto">{{ columns }}</pre>
+      <p>Пример за ред: <code>понеделник,1,08:00,08:40,11Б,Математика,Петър Николов,203</code></p>
+      <p class="text-subtle">В Excel запишете файла като „CSV UTF-8“. Разделителят може да е запетая или точка и запетая.</p>
+
+      <form method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".csv,text/csv" required
+               class="border border-base-200 dark:border-base-700 rounded-default p-2">
+        <div>
+          {% component "unfold/components/button.html" with submit=1 icon="upload_file" %}Внеси{% endcomponent %}
+        </div>
+      </form>
+    </div>
+  {% endcomponent %}
+{% endblock %}

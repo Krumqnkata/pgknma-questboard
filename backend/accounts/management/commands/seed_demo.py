@@ -1,5 +1,6 @@
 """
-Зарежда примерни данни: класове, тестови акаунти за всяка роля и няколко мисии.
+Зарежда примерни данни: класове, тестови акаунти за всяка роля, няколко мисии
+и примерно седмично разписание.
 
     python manage.py seed_demo
 
@@ -9,12 +10,18 @@ DEMO_PASSWORD в .env, за да не стои в кода. Командата �
 """
 import os
 from datetime import timedelta
+from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from accounts.models import Guild, SchoolClass, User
 from missions.models import Mission
+from timetable.importer import import_timetable
+from timetable.models import Lesson
+
+SAMPLE_TIMETABLE = Path(settings.BASE_DIR) / "timetable" / "sample" / "razpisanie_primer.csv"
 
 CLASSES = ["10А", "11Б"]
 
@@ -72,6 +79,12 @@ class Command(BaseCommand):
                 "guild": guilds[guild_name], "xp": xp, "deadline": now + timedelta(days=days),
                 "description": description, "criteria": criteria,
             })
+
+        # Примерно разписание с измислени учители – само ако още няма внесено истинско
+        if not Lesson.objects.exists():
+            timetable = import_timetable(SAMPLE_TIMETABLE.read_text(encoding="utf-8"))
+            if not timetable.ok:
+                raise CommandError("Примерното разписание има грешки: " + "; ".join(timetable.errors))
 
         self.stdout.write(self.style.SUCCESS("Примерните данни са заредени. Тестови акаунти:"))
         for email in [ADMIN["email"], TEACHER["email"]] + [s[0] for s in STUDENTS]:
