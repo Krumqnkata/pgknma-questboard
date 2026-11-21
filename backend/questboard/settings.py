@@ -70,6 +70,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Сервира CSS и JavaScript в публикуваната версия (без отделен уеб сървър)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -165,6 +167,14 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# В публикуваната версия файловете се компресират и получават уникални имена,
+# за да може браузърът да ги пази дълго, без да показва стара версия.
+if not DEBUG and "test" not in sys.argv:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
@@ -204,19 +214,19 @@ UNFOLD = {
     "ENVIRONMENT": "questboard.admin_config.environment_label",
     "SHOW_HISTORY": True,
     "COLORS": {
-        # Индиго – същият цвят като в страниците за ученици и учители
+        # Червено – същият акцент като в страниците за ученици и учители
         "primary": {
-            "50": "oklch(96.2% .018 272.314)",
-            "100": "oklch(93% .034 272.788)",
-            "200": "oklch(87% .065 274.039)",
-            "300": "oklch(78.5% .115 274.713)",
-            "400": "oklch(67.3% .182 276.935)",
-            "500": "oklch(58.5% .233 277.117)",
-            "600": "oklch(51.1% .262 276.966)",
-            "700": "oklch(45.7% .24 277.023)",
-            "800": "oklch(39.8% .195 277.366)",
-            "900": "oklch(35.9% .144 278.697)",
-            "950": "oklch(25.7% .09 281.288)",
+            "50": "oklch(97.1% .013 17.38)",
+            "100": "oklch(93.6% .032 17.717)",
+            "200": "oklch(88.5% .062 18.334)",
+            "300": "oklch(80.8% .114 19.571)",
+            "400": "oklch(70.4% .191 22.216)",
+            "500": "oklch(63.7% .237 25.331)",
+            "600": "oklch(57.7% .245 27.325)",
+            "700": "oklch(50.5% .213 27.518)",
+            "800": "oklch(44.4% .177 26.899)",
+            "900": "oklch(39.6% .141 25.723)",
+            "950": "oklch(25.8% .092 26.042)",
         },
     },
     "SIDEBAR": {
@@ -296,6 +306,17 @@ ASSISTANT_TIMEOUT_SECONDS = 50
 
 # ---------- Сигурност в публикуваната версия ----------
 if not DEBUG:
+    # Бисквитките за вход и за формите се пращат само по HTTPS.
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+    # Ако пред приложението има обратен прокси сървър (nginx, хостинг), той казва дали заявката е по HTTPS.
+    if env_bool("DJANGO_BEHIND_PROXY"):
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = env_bool("DJANGO_SSL_REDIRECT")
+    # HSTS: браузърът помни, че сайтът е само по HTTPS. Включва се, когато HTTPS работи сигурно.
+    SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "0"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    # Не налагаме HTTPS на всички поддомейни – сайтът може да е поддомейн на училището,
+    # а неговите други поддомейни не са под наш контрол.
+    SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]

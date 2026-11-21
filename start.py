@@ -1,7 +1,8 @@
 """
 Пуска цялата система с една команда:
 
-    python start.py
+    python start.py               # за разработка (сървърът се рестартира при промяна на кода)
+    python start.py --production  # за публикуване (waitress, подготвени статични файлове)
 
 Стартира две отделни програми:
   1. основното API и страниците (Django)
@@ -18,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 ENV_FILE = ROOT / ".env"
+PRODUCTION = "--production" in sys.argv
 
 
 def load_env():
@@ -28,14 +30,33 @@ def load_env():
     load_dotenv(ENV_FILE)
 
 
+def manage(*args):
+    """Изпълнява команда на Django и спира, ако тя е неуспешна."""
+    if subprocess.run([sys.executable, "manage.py", *args], cwd=ROOT / "backend").returncode != 0:
+        sys.exit(f"Командата „manage.py {' '.join(args)}“ е неуспешна.")
+
+
+def prepare_production():
+    """Преди публикуване: проверка на настройките, миграции на базата и статични файлове."""
+    if os.getenv("DJANGO_DEBUG", "").lower() in ("1", "true", "yes", "on"):
+        sys.exit("За --production сложете DJANGO_DEBUG=False в .env.")
+    print("Подготовка за публикуване...")
+    manage("migrate", "--noinput")
+    manage("collectstatic", "--noinput", "--verbosity", "0")
+    manage("check", "--deploy")
+
+
 def start_django():
     host = os.getenv("DJANGO_HOST", "127.0.0.1")
     port = os.getenv("DJANGO_PORT", "8000")
     print(f"→ Questboard:  http://{host}:{port}")
-    return subprocess.Popen(
-        [sys.executable, "manage.py", "runserver", f"{host}:{port}"],
-        cwd=ROOT / "backend",
-    )
+    if PRODUCTION:
+        # waitress – сървър за реална работа, работи и под Windows, и под Linux
+        command = [sys.executable, "-m", "waitress", f"--listen={host}:{port}", "--threads=8",
+                   "questboard.wsgi:application"]
+    else:
+        command = [sys.executable, "manage.py", "runserver", f"{host}:{port}"]
+    return subprocess.Popen(command, cwd=ROOT / "backend")
 
 
 def start_assistant():
@@ -67,6 +88,8 @@ def main():
     # Съобщенията да излизат веднага, а не накуп при спиране.
     sys.stdout.reconfigure(line_buffering=True)
     load_env()
+    if PRODUCTION:
+        prepare_production()
     django = start_django()
     assistant = start_assistant()
     assistant_reported = False

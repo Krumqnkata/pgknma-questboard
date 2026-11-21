@@ -4,3 +4,6 @@ djangorestframework==3.18.3
 drf-spectacular==0.30.0
 python-dotenv==1.2.4
 httpx==0.28.1
+# За публикуване: статичните файлове се сервират от самия Django, а сървърът е waitress
+whitenoise==6.12.0
+waitress==3.0.2

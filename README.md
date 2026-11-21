@@ -102,6 +102,28 @@ python start.py
 
 Спиране: **Ctrl+C**. Портовете се сменят от `.env` (`DJANGO_PORT`, `ASSISTANT_PORT`).
 
+Сайтът има светла и тъмна тема (бутонът горе вдясно). По подразбиране следва
+настройката на устройството, а изборът се запомня в браузъра.
+
+## Публикуване
+
+1. В `.env` на сървъра: `DJANGO_DEBUG=False`, нов `DJANGO_SECRET_KEY`,
+   `DJANGO_ALLOWED_HOSTS` с домейна, `DJANGO_CSRF_TRUSTED_ORIGINS` с пълния
+   адрес (напр. `https://questboard.example.bg`) и `DB_ENGINE=mysql` с данните
+   за базата.
+2. Ако пред приложението има прокси сървър с HTTPS (nginx или хостинг):
+   `DJANGO_BEHIND_PROXY=True`, а когато HTTPS работи – `DJANGO_SSL_REDIRECT=True`
+   и `DJANGO_HSTS_SECONDS=31536000`.
+3. Стартиране:
+
+```powershell
+python start.py --production
+```
+
+Това прави миграциите, подготвя статичните файлове (WhiteNoise), проверява
+настройките за сигурност (`manage.py check --deploy`) и пуска сървъра waitress
+вместо сървъра за разработка. Асистентът остава достъпен само локално.
+
 ## Асистентът
 
 Асистентът ползва и трите доставчика: **Claude, OpenAI и Gemini**. Първо пита
@@ -190,6 +212,10 @@ Questboard се разпространява под лиценза GNU General P
 | [openai](https://github.com/openai/openai-python) | връзка с OpenAI | Apache-2.0 |
 | [google-genai](https://github.com/googleapis/python-genai) | връзка с Gemini | Apache-2.0 |
 | [mysqlclient](https://github.com/PyMySQL/mysqlclient) | връзка с MySQL (по избор) | GPL-2.0-or-later |
+| [WhiteNoise](https://whitenoise.readthedocs.io/) | статичните файлове в публикуваната версия | MIT |
+| [waitress](https://docs.pylonsproject.org/projects/waitress/) | уеб сървър в публикуваната версия | ZPL-2.1 |
+| [Onest](https://fonts.google.com/specimen/Onest) | шрифтът на сайта (през Google Fonts) | SIL OFL 1.1 |
+| [JetBrains Mono](https://www.jetbrains.com/lp/mono/) | шрифтът в панелите с код (през Google Fonts) | SIL OFL 1.1 |
 | [Material Symbols](https://fonts.google.com/icons) | иконите в администрацията (идват с django-unfold) | Apache-2.0 |
 | [Inter](https://rsms.me/inter/) | шрифтът на администрацията (идва с django-unfold) | SIL OFL 1.1 |
 
