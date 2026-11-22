@@ -124,3 +124,23 @@ def give_badge(teacher, student, badge, note=""):
         text = f"Нова значка от {teacher.get_full_name() or 'учител'}: „{badge.name}“"
         notify(student, Notification.Kind.BADGE, text + (f" – {note}" if note else "."), link=reverse("profile"))
     return award
+
+
+def take_badge(actor, award, why):
+    """Отнема значка, дадена ръчно (напр. дадена на грешния ученик)."""
+    from economy.services import can_undo
+    from missions.services import GameRuleError
+    from notifications.models import Notification
+    from notifications.services import notify
+
+    why = (why or "").strip()
+    if len(why) < 3:
+        raise GameRuleError("Напишете защо отменяте.")
+    if award.badge.rule != Badge.Rule.MANUAL:
+        raise GameRuleError("Отнемат се само значки, дадени от учител.")
+    if not can_undo(actor, award.given_by_id, award.awarded_at):
+        raise GameRuleError("Можете да отнемете само значка, която вие сте дали, и то до няколко дни след това.")
+    with transaction.atomic():
+        award.delete()
+        notify(award.student, Notification.Kind.UNDONE, f"Значката „{award.badge.name}“ е отнета: {why[:200]}",
+               link=reverse("profile"))

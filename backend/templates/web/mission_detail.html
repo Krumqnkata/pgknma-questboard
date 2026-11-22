@@ -105,6 +105,7 @@
                 <td>
                   {% include "web/_claim_status.html" %}
                   {% if claim.review_comment %}<p class="muted small">„{{ claim.review_comment }}“</p>{% endif %}
+                  {% if claim.status == "approved" %}{% url 'claim_undo' claim.pk as undo_url %}{% include "web/_undo_form.html" with url=undo_url action="" id="" %}{% endif %}
                 </td>
               </tr>
               {% if claim.status == "pending" %}

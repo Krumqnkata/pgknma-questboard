@@ -1,0 +1,13 @@
+{# Малка форма „Отмени“ с причина. Ползва се в „Награди“ и при потвърдените заявки. #}
+<details class="undo">
+  <summary>Отмени</summary>
+  <form method="post" action="{{ url }}" class="undo-form">
+    {% csrf_token %}
+    {% if action %}<input type="hidden" name="action" value="{{ action }}">{% endif %}
+    {% if id %}<input type="hidden" name="id" value="{{ id }}">{% endif %}
+    <label class="sr-only" for="why-{{ action }}-{{ id }}">Защо отменяте</label>
+    <input type="text" name="why" id="why-{{ action }}-{{ id }}" required minlength="3" maxlength="200"
+           placeholder="Защо? Ученикът ще го види">
+    <button type="submit" class="btn-danger btn-small">Отмени</button>
+  </form>
+</details>

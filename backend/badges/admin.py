@@ -32,9 +32,25 @@ class BadgeAdmin(ModelAdmin):
 
 @admin.register(StudentBadge)
 class StudentBadgeAdmin(ModelAdmin):
-    """Само за преглед – значките се дават от самата игра."""
+    """Само за преглед – значките се дават от играта или от учител. Ръчните могат да се отнемат."""
 
-    list_display = ["student", "badge", "awarded_at"]
+    list_display = ["student", "badge", "awarded_at", "given_by", "note"]
+    actions = ["take_selected"]
+
+    @admin.action(description="Отнеми избраните значки, дадени от учител")
+    def take_selected(self, request, queryset):
+        from missions.services import GameRuleError
+
+        from .services import take_badge
+
+        done = 0
+        for award in queryset.select_related("badge", "student"):
+            try:
+                take_badge(request.user, award, "отнета от администратора")
+                done += 1
+            except GameRuleError:
+                pass
+        self.message_user(request, f"Отнети значки: {done}. Автоматичните значки не се отнемат.", messages.SUCCESS)
     list_filter = ["badge"]
     search_fields = ["student__nickname", "student__email"]
     list_select_related = ["student", "badge"]

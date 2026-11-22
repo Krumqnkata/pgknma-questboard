@@ -138,8 +138,8 @@ def award_xp(student, amount, reason, created_by=None, claim=None, now=None, is_
     Връща колко монети са дадени.
     """
     rules = GameSettings.load()
-    XPTransaction.objects.create(student=student, amount=amount, reason=reason, claim=claim, created_by=created_by,
-                                 is_bonus=is_bonus)
+    entry = XPTransaction.objects.create(student=student, amount=amount, reason=reason, claim=claim,
+                                         created_by=created_by, is_bonus=is_bonus)
 
     week = _current_week(student, rules, now)
     week.xp_earned += amount
@@ -157,6 +157,8 @@ def award_xp(student, amount, reason, created_by=None, claim=None, now=None, is_
             reason=f"{new_coins * rules.xp_per_coin} XP по курс {rules.xp_per_coin} XP = 1 монета",
             claim=claim, created_by=created_by,
         )
+        entry.coins = new_coins
+        entry.save(update_fields=["coins"])
     return new_coins
 
 
@@ -288,6 +290,94 @@ def give_bonus(teacher, student, xp, reason, now=None):
             notify(student, Notification.Kind.LEVEL_UP, f"Мина на {str(new_level).lower()}!", link=reverse("home"))
         award_badges(student)
     return coins
+
+
+# ---------- Отмяна на награда ----------
+# Нищо не се изтрива: отмяната е ново движение с минус и причина, затова в
+# журнала се вижда и наградата, и отмяната ѝ. Монетите, дадени заради това
+# XP, също се връщат – ако вече са похарчени, сметката може да стане на минус
+# и ученикът не може да пазарува, докато не спечели нови.
+
+
+def can_undo(actor, given_by, given_at, now=None):
+    """Администраторът – винаги; учителят – само своите награди и само няколко дни след това."""
+    if actor.is_admin_role:
+        return True
+    if not actor.is_teacher or given_by != actor.pk:
+        return False
+    return (now or timezone.now()) - given_at <= timedelta(days=GameSettings.load().undo_days)
+
+
+def _undo_xp(entry, actor, why, now=None):
+    if hasattr(entry, "reversal"):
+        raise GameRuleError("Тази награда вече е отменена.")
+    if entry.amount <= 0 or entry.reverses_id:
+        raise GameRuleError("Това движение не може да се отмени.")
+    rules = GameSettings.load()
+    XPTransaction.objects.create(
+        student=entry.student, amount=-entry.amount, reason=f"Отменено: {entry.reason} ({why})"[:255],
+        claim=entry.claim, created_by=actor, is_bonus=entry.is_bonus, reverses=entry,
+    )
+    if entry.coins:
+        CoinTransaction.objects.create(
+            student=entry.student, amount=-entry.coins, kind=CoinTransaction.Kind.CORRECTION,
+            reason=f"Отменено: {entry.reason}"[:255], claim=entry.claim, created_by=actor,
+        )
+    # Ако наградата е от тази седмица, седмичната сметка се връща назад,
+    # за да може ученикът пак да спечели тези монети.
+    week = CoinWeek.objects.filter(student=entry.student, week_start=week_start_for(now)).first()
+    if week and entry.created_at.date() >= week.week_start:
+        week.xp_earned = max(0, week.xp_earned - entry.amount)
+        week.coins_earned = max(0, week.coins_earned - entry.coins)
+        week.xp_used = max(0, min(week.xp_used - entry.coins * rules.xp_per_coin, week.xp_earned + week.carry_in))
+        week.save()
+
+
+def _check_reason(why):
+    why = (why or "").strip()
+    if len(why) < 3:
+        raise GameRuleError("Напишете защо отменяте.")
+    return why[:200]
+
+
+def undo_bonus(actor, entry, why, now=None):
+    """Отменя бонус XP (и монетите от него)."""
+    why = _check_reason(why)
+    if not entry.is_bonus:
+        raise GameRuleError("Това не е бонус.")
+    if not can_undo(actor, entry.created_by_id, entry.created_at, now):
+        raise GameRuleError("Можете да отмените само свой бонус, и то до "
+                            f"{GameSettings.load().undo_days} дни след като сте го дали.")
+    with transaction.atomic():
+        User.objects.select_for_update().get(pk=entry.student_id)
+        _undo_xp(entry, actor, why, now)
+        notify(entry.student, Notification.Kind.UNDONE,
+               f"Бонусът „{entry.reason.removeprefix('Бонус: ')}“ (+{entry.amount} XP) е отменен: {why}",
+               link=reverse("home"))
+
+
+def undo_approval(actor, claim, why, now=None):
+    """
+    Потвърдената заявка става отказана: XP и монетите се връщат, а ученикът
+    вижда причината и може да подаде заявката отново, докато мисията е отворена.
+    """
+    why = _check_reason(why)
+    if claim.status != Claim.Status.APPROVED:
+        raise GameRuleError("Само потвърдена заявка може да се отмени.")
+    if not can_undo(actor, claim.mission.created_by_id, claim.reviewed_at, now):
+        raise GameRuleError("Можете да отмените само потвърждение по своя мисия, и то до "
+                            f"{GameSettings.load().undo_days} дни след него.")
+    with transaction.atomic():
+        User.objects.select_for_update().get(pk=claim.student_id)
+        for entry in claim.xp_transactions.filter(amount__gt=0, reversal__isnull=True):
+            _undo_xp(entry, actor, why, now)
+        Claim.objects.filter(pk=claim.pk).update(status=Claim.Status.REJECTED, reviewed_by=actor,
+                                                 reviewed_at=timezone.now(), review_comment=why)
+        claim.refresh_from_db()
+        notify(claim.student, Notification.Kind.UNDONE,
+               f"Потвърждението на „{claim.mission.title}“ е отменено: {why}",
+               link=reverse("mission_detail", args=[claim.mission_id]))
+    return claim
 
 
 # ---------- Магазин ----------

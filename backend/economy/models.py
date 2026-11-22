@@ -110,6 +110,11 @@ class GameSettings(models.Model):
         help_text="Общо за всички ученици. Монетите от бонуса пак спазват седмичния лимит.",
     )
 
+    undo_days = models.PositiveIntegerField(
+        "учителят може да отмени награда до (дни)", default=7,
+        help_text="Бонус XP, потвърдена заявка или ръчна значка. Администраторът може винаги.",
+    )
+
     # --- Файлове към доказателствата ---
     evidence_max_files = models.PositiveIntegerField(
         "файлове към една заявка", default=3,
@@ -203,6 +208,11 @@ class XPTransaction(models.Model):
     claim = models.ForeignKey("missions.Claim", verbose_name="заявка", on_delete=models.PROTECT,
                               null=True, blank=True, related_name="xp_transactions")
     is_bonus = models.BooleanField("бонус от учител", default=False)
+    coins = models.PositiveIntegerField("дадени монети", default=0,
+                                        help_text="Колко монети са дадени заради това XP – връщат се при отмяна.")
+    # Отмяната е ново движение с минус, което сочи към отмененото. Нищо не се изтрива.
+    reverses = models.OneToOneField("self", verbose_name="отменя", on_delete=models.PROTECT, null=True, blank=True,
+                                    related_name="reversal")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="начислено от",
                                    on_delete=models.PROTECT, null=True, blank=True, related_name="+")
     created_at = models.DateTimeField("кога", auto_now_add=True)

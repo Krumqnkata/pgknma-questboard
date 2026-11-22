@@ -23,7 +23,7 @@ class GameSettingsAdmin(ModelAdmin):
             "assistant_status", "assistant_enabled", "llm_provider", "llm_model", "assistant_daily_limit",
         ]}),
         ("Училище", {"fields": ["school_name", "school_logo", "contact_email"]}),
-        ("Бонус XP от учител", {"fields": ["bonus_max_xp", "bonus_weekly_xp"]}),
+        ("Бонус XP от учител", {"fields": ["bonus_max_xp", "bonus_weekly_xp", "undo_days"]}),
         ("Доказателства", {"fields": ["evidence_max_files", "evidence_max_mb"]}),
         ("Псевдоними", {"fields": ["nickname_change_days", "banned_words"]}),
         ("Защита на входа", {"fields": ["login_max_attempts", "login_lockout_minutes"]}),
@@ -89,6 +89,27 @@ class ReadOnlyLedgerAdmin(ModelAdmin):
 class XPTransactionAdmin(ReadOnlyLedgerAdmin):
     list_display = ["created_at", "student", "amount", "reason", "is_bonus", "created_by"]
     list_filter = ["is_bonus", "created_at"]
+    actions = ["undo_selected"]
+
+    @admin.action(description="Отмени избраните награди (XP и монетите от тях)")
+    def undo_selected(self, request, queryset):
+        from economy.services import undo_approval, undo_bonus
+        from missions.services import GameRuleError
+
+        done, problems = 0, []
+        for entry in queryset.select_related("claim", "claim__mission", "student"):
+            try:
+                if entry.is_bonus:
+                    undo_bonus(request.user, entry, "отменено от администратора")
+                elif entry.claim_id:
+                    undo_approval(request.user, entry.claim, "отменено от администратора")
+                else:
+                    raise GameRuleError("не е бонус или мисия")
+                done += 1
+            except GameRuleError as error:
+                problems.append(f"{entry}: {error}")
+        self.message_user(request, f"Отменени: {done}." + (" Пропуснати: " + "; ".join(problems) if problems else ""),
+                          messages.SUCCESS if not problems else messages.WARNING)
     search_fields = ["student__nickname", "student__email", "reason"]
 
 

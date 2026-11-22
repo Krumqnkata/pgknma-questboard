@@ -18,7 +18,7 @@ from accounts.permissions import role_required
 from badges.services import award_badges, badge_cards
 from economy import leaderboard
 from economy.models import GameSettings, Privilege, Purchase, XPTransaction
-from economy.services import owned_cosmetics, wear
+from economy.services import owned_cosmetics, undo_approval, wear
 from economy.services import (
     active_privileges, approve_claim, buy_privilege, mark_purchase_used, pending_claims_for,
     reject_claim, student_stats, unused_purchases,
@@ -273,3 +273,18 @@ def leaderboard_view(request):
         "selected_guild": guild_id,
         "selected_class": class_id,
     })
+
+
+
+@require_POST
+@role_required(TEACHER, User.Role.ADMIN)
+def claim_undo(request, pk):
+    """Учителят отменя потвърждение, дадено по грешка: XP и монетите се връщат, заявката става отказана."""
+    claim = get_object_or_404(Claim.objects.select_related("mission", "student"), pk=pk)
+    try:
+        undo_approval(request.user, claim, request.POST.get("why", ""))
+    except GameRuleError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"Потвърждението за {claim.student.nickname} е отменено.")
+    return redirect("mission_detail", pk=claim.mission_id)
