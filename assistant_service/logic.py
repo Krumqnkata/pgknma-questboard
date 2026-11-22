@@ -4,37 +4,48 @@
 Тук се подготвят инструкциите към модела и се проверява отговорът му,
 преди да се върне на Django. Функциите се ползват от main.py (HTTP).
 
-Трите доставчика работят заедно: заявката съдържа доставчиците по ред и
-асистентът опитва следващия, ако предишният не е отговорил или е върнал
-невалиден отговор.
+Всяка заявка казва кой доставчик и модел да се ползва (избират се в Django admin).
+Ако моделът не отговори или върне невалиден отговор, грешката се връща на Django
+с ясно съобщение – резервни доставчици няма.
 """
 import json
+import time
 
 from pydantic import ValidationError
 
 import prompts
-from providers import NAMES, ProviderError, ToolCall, get_provider
+from providers import ProviderError, ToolCall, get_provider
 from schemas import (
-    AnswerRequest, AnswerResponse, DraftRequest, DraftResponse, HintRequest, HintResponse, MissionDraft,
-    PlanRequest, PlanResponse,
+    AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DraftRequest, DraftResponse, HintRequest,
+    HintResponse, MissionDraft, PlanRequest, PlanResponse,
 )
 
 
-def first_answer(choices, action):
+def answer_with(choice, action):
     """
-    Вика action(доставчик) за всеки доставчик по ред и връща (резултат, име на доставчика)
-    от първия успешен. Ако никой не отговори, грешката изрежда какво се е случило с всеки.
+    Вика action(модел) с избрания доставчик и връща (резултат, име на доставчика).
+    Грешките на модела стигат до Django като ProviderError с ясно съобщение.
     """
-    problems = []
-    for choice in choices:
-        try:
-            provider = get_provider(choice.provider, choice.model)
-            return action(provider), choice.provider
-        except (ProviderError, ValueError) as error:  # ValueError – невалиден JSON
-            problems.append(f"{NAMES.get(choice.provider, choice.provider)}: {error}")
-    if len(problems) == 1:
-        raise ProviderError(problems[0].split(": ", 1)[1])
-    raise ProviderError("Нито един езиков модел не отговори. " + " ".join(problems))
+    provider = get_provider(choice.provider, choice.model)
+    try:
+        return action(provider), choice.provider
+    except ValueError:  # моделът е върнал невалиден JSON
+        raise ProviderError("Моделът върна отговор в неочакван формат. Опитайте отново.")
+
+
+# ---------- Проверка от администрацията ----------
+
+def check_model(request: CheckRequest) -> CheckResponse:
+    """Една кратка заявка към избрания модел – за бутона „Провери асистента“ в admin."""
+    started = time.monotonic()
+    try:
+        answer, used = answer_with(request, lambda provider: provider.text(prompts.CHECK, "Готов ли си?"))
+    except ProviderError as error:
+        return CheckResponse(ok=False, provider=request.provider, model=request.model,
+                             seconds=round(time.monotonic() - started, 1), error=str(error), detail=error.detail)
+    return CheckResponse(ok=bool(answer), provider=used, model=request.model,
+                         seconds=round(time.monotonic() - started, 1), answer=answer[:200],
+                         error="" if answer else "Моделът върна празен отговор.")
 
 
 # ---------- Ф10: подсказка ----------
@@ -50,7 +61,7 @@ def make_hint(request: HintRequest) -> HintResponse:
             raise ProviderError("празен отговор")
         return hint
 
-    hint, used = first_answer(request.providers, ask)
+    hint, used = answer_with(request, ask)
     return HintResponse(hint=hint, provider=used)
 
 
@@ -80,7 +91,7 @@ def make_draft(request: DraftRequest) -> DraftResponse:
     def ask(provider):
         raw = provider.json(system, request.idea, draft_schema(names))
         # Проверяваме отговора, преди да го покажем (раздел 3.2 на плана).
-        # Ако е невалиден, се опитва следващият доставчик.
+        # Ако е невалиден, потребителят получава ясна грешка вместо съмнителна чернова.
         try:
             draft = MissionDraft.model_validate(raw)
         except ValidationError:
@@ -90,7 +101,7 @@ def make_draft(request: DraftRequest) -> DraftResponse:
         draft.xp = max(1, min(draft.xp, request.max_xp))  # XP се ограничава от правилата на играта
         return draft
 
-    draft, used = first_answer(request.providers, ask)
+    draft, used = answer_with(request, ask)
     return DraftResponse(**draft.model_dump(), provider=used)
 
 
@@ -108,7 +119,7 @@ def plan_query(request: PlanRequest) -> PlanResponse:
             raise ProviderError("избрана е справка, която не е разрешена")
         return result
 
-    result, used = first_answer(request.providers, ask)
+    result, used = answer_with(request, ask)
     if isinstance(result, ToolCall):
         return PlanResponse(tool=result.name, arguments=result.arguments, provider=used)
     return PlanResponse(answer=result or "Не разбрах въпроса. Опитайте да го зададете по друг начин.",
@@ -125,5 +136,5 @@ def answer_query(request: AnswerRequest) -> AnswerResponse:
             raise ProviderError("празен отговор")
         return answer
 
-    answer, used = first_answer(request.providers, ask)
+    answer, used = answer_with(request, ask)
     return AnswerResponse(answer=answer, provider=used)

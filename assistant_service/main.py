@@ -17,13 +17,14 @@ import config
 import logic
 from providers import NAMES, ProviderError
 from schemas import (
-    AnswerRequest, AnswerResponse, DraftRequest, DraftResponse, HintRequest, HintResponse, PlanRequest, PlanResponse,
+    AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DraftRequest, DraftResponse, HintRequest,
+    HintResponse, PlanRequest, PlanResponse,
 )
 
 app = FastAPI(
     title="Questboard – асистент",
     description="Подсказки, чернови на мисии и справки по разписанието.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 
@@ -55,6 +56,15 @@ def health():
     Казва и за кои доставчици има ключ – самите ключове никога не се връщат.
     """
     return {"status": "ok", "providers": {name: bool(config.LLM_API_KEYS.get(name)) for name in NAMES}}
+
+
+@router.post("/check", response_model=CheckResponse)
+def check(request: CheckRequest):
+    """
+    Бутонът „Провери асистента“ в admin: една кратка заявка към избрания модел.
+    Връща отговора или грешката заедно с оригиналното съобщение на доставчика.
+    """
+    return logic.check_model(request)
 
 
 # Функциите са обикновени (def), затова FastAPI ги пуска в отделни нишки

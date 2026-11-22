@@ -15,6 +15,14 @@ from .words import coins_text
 LOGO_MAX_BYTES = 1024 * 1024
 
 
+# Препоръчаните модели – ползват се, когато полето „модел“ в настройките е празно.
+DEFAULT_MODELS = {
+    "claude": "claude-opus-5-5",
+    "gemini": "gemini-3.5-flash-lite",
+    "openai": "gpt-5-mini",
+}
+
+
 def validate_logo_size(file):
     if file.size > LOGO_MAX_BYTES:
         raise ValidationError("Логото трябва да е до 1 MB.")
@@ -59,19 +67,16 @@ class GameSettings(models.Model):
         "асистентът е включен", default=True,
         help_text="Ако е изключен, платформата работи, а ученикът вижда съобщение, че асистентът не е достъпен.",
     )
-    # Трите доставчика се ползват заедно: първо основният, а ако той не отговори
-    # (няма ключ, грешка, забавяне), асистентът опитва другите по ред.
-    llm_provider = models.CharField("основен доставчик", max_length=10,
-                                    choices=LlmProvider.choices, default=LlmProvider.CLAUDE)
-    use_other_providers = models.BooleanField(
-        "резервни доставчици", default=True,
-        help_text="Ако основният модел не отговори, асистентът опитва другите два.",
+    # Асистентът ползва един доставчик. Ключът за него трябва да е в .env.
+    llm_provider = models.CharField(
+        "доставчик", max_length=10, choices=LlmProvider.choices, default=LlmProvider.CLAUDE,
+        help_text="Ключът за избрания доставчик трябва да е в .env (ANTHROPIC_API_KEY, GEMINI_API_KEY или OPENAI_API_KEY).",
     )
-    claude_model = models.CharField("модел на Claude", max_length=100, default="claude-opus-5-5")
-    openai_model = models.CharField("модел на OpenAI", max_length=100, blank=True,
-                                    help_text="Празно – OpenAI не се ползва.")
-    gemini_model = models.CharField("модел на Gemini", max_length=100, blank=True,
-                                    help_text="Празно – Gemini не се ползва.")
+    llm_model = models.CharField(
+        "модел", max_length=100, blank=True,
+        help_text="Празно – препоръчаният модел: Claude – claude-opus-5-5, Gemini – gemini-3.5-flash-lite, "
+                  "OpenAI – gpt-5-mini. След промяна запазете и натиснете „Провери асистента“.",
+    )
     assistant_daily_limit = models.PositiveIntegerField("заявки към асистента на потребител на ден", default=20)
 
     # --- Училище ---
@@ -110,21 +115,14 @@ class GameSettings(models.Model):
     def delete(self, *args, **kwargs):
         raise ValidationError("Настройките на играта не могат да се изтрият.")
 
-    def provider_order(self):
-        """
-        Доставчиците по реда, в който асистентът да ги опитва: [{"provider", "model"}, ...].
-        Доставчик без име на модел се пропуска.
-        """
-        models_by_provider = {
-            self.LlmProvider.CLAUDE: self.claude_model,
-            self.LlmProvider.OPENAI: self.openai_model,
-            self.LlmProvider.GEMINI: self.gemini_model,
-        }
-        order = [self.llm_provider]
-        if self.use_other_providers:
-            order += [name for name in models_by_provider if name != self.llm_provider]
-        return [{"provider": name, "model": models_by_provider[name]}
-                for name in order if models_by_provider[name].strip()]
+    @property
+    def model_name(self):
+        """Моделът, който реално се ползва: въведеният или препоръчаният."""
+        return self.llm_model.strip() or DEFAULT_MODELS[self.llm_provider]
+
+    def assistant_model(self):
+        """Какво се праща на асистента с всяка заявка: {"provider": ..., "model": ...}."""
+        return {"provider": str(self.llm_provider), "model": self.model_name}
 
     @classmethod
     def load(cls):

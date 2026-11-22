@@ -1,9 +1,9 @@
 """
 Пуска 20-те контролни случая срещу истинските езикови модели (раздел 3.2 на плана):
 
-    python manage.py evaluate_assistant                    # с реда на доставчиците от admin
-    python manage.py evaluate_assistant --provider claude  # само един доставчик
-    python manage.py evaluate_assistant --provider all     # всеки от трите поотделно – за сравнение
+    python manage.py evaluate_assistant                    # с доставчика и модела от admin
+    python manage.py evaluate_assistant --provider gemini  # с друг доставчик (препоръчаният му модел)
+    python manage.py evaluate_assistant --provider all     # всеки доставчик с ключ – за сравнение
 
 Нужно е: асистентът да работи (python start.py) и в .env да има API ключ
 за доставчика. Всеки случай е една заявка към модела и се плаща по цената
@@ -26,7 +26,7 @@ from django.utils import timezone
 
 from assistant_bridge import client
 from assistant_bridge.tools import TOOLS
-from economy.models import GameSettings
+from economy.models import DEFAULT_MODELS, GameSettings
 
 CASES = Path(__file__).resolve().parents[2] / "evaluation" / "cases.json"
 REPORT = Path(settings.PROJECT_ROOT) / "docs" / "assistant-evaluation.md"
@@ -44,27 +44,29 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--provider", choices=PROVIDERS + ["all"],
-                            help="Само този доставчик (или „all“ – всеки поотделно). По подразбиране – редът от admin.")
+                            help="Друг доставчик (или „all“ – всеки с ключ поотделно). По подразбиране – от admin.")
 
     def handle(self, *args, **options):
         rules = GameSettings.load()
-        models = {"claude": rules.claude_model, "openai": rules.openai_model, "gemini": rules.gemini_model}
-
         if not options["provider"]:
-            self.evaluate(None, REPORT, "по реда от настройките (с резервни доставчици)")
+            choice = rules.assistant_model()
+            self.evaluate(choice, REPORT, f"{choice['provider']} · {choice['model']}")
             return
 
+        keys = client.provider_keys()
         for name in PROVIDERS if options["provider"] == "all" else [options["provider"]]:
-            if not models[name]:
-                self.stdout.write(self.style.WARNING(f"{name}: няма име на модел в настройките – пропуснат."))
+            if not keys.get(name):
+                self.stdout.write(self.style.WARNING(f"{name}: няма API ключ в .env (или асистентът е спрян) – пропуснат."))
                 continue
-            self.stdout.write(self.style.MIGRATE_HEADING(f"\n=== {name} ({models[name]}) ==="))
-            self.evaluate([{"provider": name, "model": models[name]}],
-                          REPORT.with_name(f"assistant-evaluation-{name}.md"), f"{name} · {models[name]}")
+            # Моделът от настройките, ако това е избраният доставчик; иначе препоръчаният.
+            model = rules.model_name if name == rules.llm_provider else DEFAULT_MODELS[name]
+            self.stdout.write(self.style.MIGRATE_HEADING(f"\n=== {name} ({model}) ==="))
+            self.evaluate({"provider": name, "model": model},
+                          REPORT.with_name(f"assistant-evaluation-{name}.md"), f"{name} · {model}")
 
-    def evaluate(self, providers, report_path, label):
-        """providers=None означава реда от настройките; иначе – само дадените доставчици."""
-        self.providers = providers
+    def evaluate(self, model, report_path, label):
+        """model – доставчикът и моделът {"provider", "model"}, с които се пускат случаите."""
+        self.model = model
         cases = json.loads(CASES.read_text(encoding="utf-8"))
         rows = []
 
@@ -91,7 +93,7 @@ class Command(BaseCommand):
         return {"id": case_id, "kind": kind, "ok": ok, "note": note, "seconds": seconds, "provider": provider}
 
     def check_hint(self, case):
-        answer = client.call("/hint", {"mission": case["mission"]}, self.providers)
+        answer = client.call("/hint", {"mission": case["mission"]}, self.model)
         hint = answer["hint"]
         leaked = [word for word in case["forbidden"] if word.lower() in hint.lower()]
         if leaked:
@@ -100,7 +102,7 @@ class Command(BaseCommand):
 
     def check_draft(self, case, cases):
         draft = client.call("/mission-draft", {"idea": case["idea"], "guilds": cases["guilds"],
-                                               "max_xp": cases["max_xp"]}, self.providers)
+                                               "max_xp": cases["max_xp"]}, self.model)
         names = {guild["name"] for guild in cases["guilds"]}
         problems = []
         if draft.get("guild") not in names:
@@ -118,7 +120,7 @@ class Command(BaseCommand):
             "question": case["question"],
             "tools": _tools(for_student=case["role"] == "ученик"),
             "context": {"today": "вторник", "now_period": "2", "role": case["role"]},
-        }, self.providers)
+        }, self.model)
         chosen = plan.get("tool")
         return (chosen == case["expected_tool"], f"избрана: {chosen}, очаквана: {case['expected_tool']}",
                 plan.get("provider", ""))

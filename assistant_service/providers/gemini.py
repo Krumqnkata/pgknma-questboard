@@ -1,33 +1,30 @@
 """Google Gemini през официалната библиотека google-genai."""
 import json
 
+import httpx
 from google import genai
 from google.genai import errors, types
 
-from .base import LLMProvider, ProviderError, ToolCall
+from .base import TIMEOUT_SECONDS, LLMProvider, ProviderError, ToolCall, connection_error, status_error, timeout_error
 
 
 class GeminiProvider(LLMProvider):
     def __init__(self, api_key, model=""):
         if not model:
             raise ProviderError("Задайте име на модела на Gemini в настройките на играта.")
-        # Кратко чакане (в милисекунди) – при проблем асистентът минава на следващия доставчик.
-        self.client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=15000))
+        # Времето за чакане е в милисекунди.
+        self.client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=TIMEOUT_SECONDS * 1000))
         self.model = model
 
     def _generate(self, user, config):
         try:
             return self.client.models.generate_content(model=self.model, contents=user, config=config)
-        except errors.ClientError as error:
-            if error.code in (401, 403):
-                raise ProviderError("Невалиден API ключ за Gemini.")
-            if error.code == 429:
-                raise ProviderError("Твърде много заявки към Gemini. Опитайте след малко.")
-            raise ProviderError(f"Gemini върна грешка {error.code}.")
         except errors.APIError as error:
-            raise ProviderError(f"Gemini върна грешка {error.code}.")
-        except OSError:
-            raise ProviderError("Няма връзка с Gemini.")
+            raise status_error("Gemini", self.model, error.code, error.message)
+        except httpx.TimeoutException:
+            raise timeout_error(self.model)
+        except (httpx.HTTPError, OSError):
+            raise connection_error("Gemini")
 
     def text(self, system, user):
         response = self._generate(user, types.GenerateContentConfig(system_instruction=system))

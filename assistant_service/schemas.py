@@ -11,18 +11,11 @@ from pydantic import BaseModel, Field
 Provider = Literal["openai", "gemini", "claude", "fake"]
 
 
-class ProviderChoice(BaseModel):
-    provider: Provider
-    model: str = ""
-
-
 class ModelChoice(BaseModel):
-    """
-    Доставчиците по ред – избират се в Django admin. Асистентът опитва първия,
-    а ако той не отговори (няма ключ, грешка, забавяне) – следващия.
-    """
+    """Доставчикът и моделът – избират се в Django admin („Настройки на играта“)."""
 
-    providers: list[ProviderChoice] = Field(min_length=1, max_length=3)
+    provider: Provider
+    model: str = Field(min_length=1, max_length=100)
 
 
 class Answered(BaseModel):
@@ -112,3 +105,20 @@ class AnswerRequest(ModelChoice):
 
 class AnswerResponse(Answered):
     answer: str
+
+
+# ---------- Проверка от администрацията ----------
+
+class CheckRequest(ModelChoice):
+    pass
+
+
+class CheckResponse(Answered):
+    """Резултатът от бутона „Провери асистента“: кратък отговор или ясна грешка."""
+
+    ok: bool
+    model: str
+    seconds: float = 0
+    answer: str = ""
+    error: str = ""
+    detail: str = ""  # оригиналното съобщение на доставчика (на английски) – за администратора

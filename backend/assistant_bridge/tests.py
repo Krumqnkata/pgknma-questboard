@@ -28,13 +28,19 @@ class AssistantHealthTests(TestCase):
     """Индикаторът в admin трябва да казва ясно какво е състоянието на асистента."""
 
     @patch("assistant_bridge.client.httpx.get")
-    def test_running_assistant(self, fake_get):
+    def test_running_assistant_with_key_for_chosen_provider(self, fake_get):
         fake_get.return_value = httpx.Response(200, json={"status": "ok",
-                                                          "providers": {"claude": True, "openai": False}})
-        ok, message = check_assistant_health()
+                                                          "providers": {"claude": False, "gemini": True}})
+        ok, message = check_assistant_health("gemini")
         self.assertTrue(ok)
-        self.assertIn("Claude ✓", message)
-        self.assertIn("OpenAI ✗", message)
+        self.assertIn("има API ключ за Google Gemini", message)
+
+    @patch("assistant_bridge.client.httpx.get")
+    def test_missing_key_for_chosen_provider_is_red(self, fake_get):
+        fake_get.return_value = httpx.Response(200, json={"status": "ok", "providers": {"claude": False}})
+        ok, message = check_assistant_health("claude")
+        self.assertFalse(ok)
+        self.assertIn("няма API ключ за Anthropic Claude", message)
 
     @patch("assistant_bridge.client.httpx.get", side_effect=httpx.ConnectError("спрян"))
     def test_stopped_assistant(self, fake_get):
@@ -233,7 +239,7 @@ class AskTests(TestCase):
 class EvaluationCommandTests(TestCase):
     """Командата с контролните случаи – с подставка вместо истински модел."""
 
-    def fake_call(self, path, payload, providers=None):
+    def fake_call(self, path, payload, model=None):
         if path == "/hint":
             return {"hint": "Започни, като прочетеш внимателно условието."}
         if path == "/mission-draft":
@@ -267,43 +273,88 @@ class EvaluationCommandTests(TestCase):
         from .management.commands import evaluate_assistant
 
         rules = GameSettings.load()
-        rules.gemini_model = "gemini-модел"
+        rules.llm_provider, rules.llm_model = "gemini", "gemini-модел"
         rules.save()
-        with tempfile.TemporaryDirectory() as folder,                 patch.object(evaluate_assistant, "REPORT", Path(folder) / "report.md"),                 patch("assistant_bridge.client.call", side_effect=self.fake_call) as fake:
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(evaluate_assistant, "REPORT", Path(folder) / "report.md"), \
+                patch("assistant_bridge.client.provider_keys", return_value={"claude": True, "gemini": True}), \
+                patch("assistant_bridge.client.call", side_effect=self.fake_call) as fake:
             call_command("evaluate_assistant", "--provider", "all", stdout=io.StringIO())
             reports = sorted(path.name for path in Path(folder).iterdir())
-        # OpenAI няма модел в настройките – пропуснат е.
+            used = {call.args[2]["provider"]: call.args[2]["model"] for call in fake.call_args_list}
+        # OpenAI няма ключ – пропуснат е.
         self.assertEqual(reports, ["assistant-evaluation-claude.md", "assistant-evaluation-gemini.md"])
-        self.assertEqual(fake.call_args.args[2], [{"provider": "gemini", "model": "gemini-модел"}])
+        # Избраният доставчик е с модела от настройките, другият – с препоръчания.
+        self.assertEqual(used, {"claude": "claude-opus-5-5", "gemini": "gemini-модел"})
 
 
-class ProviderOrderTests(TestCase):
-    """Трите доставчика заедно: основният първи, после резервните."""
+class ChosenModelTests(TestCase):
+    """Асистентът ползва един доставчик, избран в „Настройки на играта“."""
 
-    def test_primary_first_then_others(self):
+    def test_empty_model_means_recommended(self):
         rules = GameSettings.load()
-        rules.llm_provider = "gemini"
-        rules.gemini_model, rules.openai_model, rules.claude_model = "gemini-модел", "openai-модел", "claude-opus-5-5"
-        order = [p["provider"] for p in rules.provider_order()]
-        self.assertEqual(order[0], "gemini")
-        self.assertEqual(set(order), {"gemini", "openai", "claude"})
+        rules.llm_provider, rules.llm_model = "gemini", ""
+        self.assertEqual(rules.assistant_model(), {"provider": "gemini", "model": "gemini-3.5-flash-lite"})
 
-    def test_provider_without_model_is_skipped(self):
-        rules = GameSettings.load()  # по подразбиране само Claude има модел
-        self.assertEqual([p["provider"] for p in rules.provider_order()], ["claude"])
-
-    def test_only_primary_when_fallback_is_off(self):
+    def test_typed_model_is_used(self):
         rules = GameSettings.load()
-        rules.openai_model = "openai-модел"
-        rules.use_other_providers = False
-        self.assertEqual(len(rules.provider_order()), 1)
+        rules.llm_provider, rules.llm_model = "openai", "  gpt-модел "
+        self.assertEqual(rules.assistant_model(), {"provider": "openai", "model": "gpt-модел"})
 
     @patch("assistant_bridge.client.httpx.post")
-    def test_order_is_sent_to_assistant(self, fake_post):
+    def test_only_the_chosen_model_is_sent(self, fake_post):
         from . import client
-        fake_post.return_value = httpx.Response(200, json={"hint": "насока", "provider": "claude"})
+        rules = GameSettings.load()
+        rules.llm_provider = "gemini"
+        rules.save()
+        fake_post.return_value = httpx.Response(200, json={"hint": "насока", "provider": "gemini"})
         client.call("/hint", {"mission": {}})
-        self.assertEqual(fake_post.call_args.kwargs["json"]["providers"][0]["provider"], "claude")
+        body = fake_post.call_args.kwargs["json"]
+        self.assertEqual((body["provider"], body["model"]), ("gemini", "gemini-3.5-flash-lite"))
+        self.assertNotIn("providers", body)
+
+    @patch("assistant_bridge.client.httpx.post")
+    def test_model_error_reaches_the_user(self, fake_post):
+        from . import client
+        fake_post.return_value = httpx.Response(502, json={"detail": "Моделът „x“ е претоварен в момента."})
+        with self.assertRaisesMessage(AssistantUnavailable, "претоварен"):
+            client.call("/hint", {"mission": {}})
+
+
+class CheckButtonTests(TestCase):
+    """Бутонът „Провери асистента“ в „Настройки на играта“."""
+
+    def setUp(self):
+        from accounts.models import User
+        self.client.force_login(User.objects.create_superuser("a@example.com", "TaynaParola123"))
+        GameSettings.load()
+        self.url = reverse("admin:economy_gamesettings_check_assistant", args=[1])
+
+    @patch("assistant_bridge.client.httpx.post")
+    def test_success_message(self, fake_post):
+        fake_post.return_value = httpx.Response(200, json={
+            "ok": True, "provider": "claude", "model": "claude-opus-5-5", "seconds": 1.2, "answer": "Готов съм."})
+        response = self.client.get(self.url, follow=True)
+        self.assertContains(response, "работи – отговори за 1.2 s")
+
+    @patch("assistant_bridge.client.httpx.post")
+    def test_error_shows_reason_and_original_text(self, fake_post):
+        fake_post.return_value = httpx.Response(200, json={
+            "ok": False, "provider": "claude", "model": "claude-opus-5-5", "error": "Моделът е претоварен в момента.",
+            "detail": "Overloaded"})
+        response = self.client.get(self.url, follow=True)
+        self.assertContains(response, "претоварен")
+        self.assertContains(response, "Overloaded")
+
+    @patch("assistant_bridge.client.httpx.post", side_effect=httpx.ConnectError("спрян"))
+    def test_stopped_service(self, fake_post):
+        self.assertContains(self.client.get(self.url, follow=True), "не отговаря")
+
+    def test_settings_page_has_the_button(self):
+        with patch("assistant_bridge.client.httpx.get", side_effect=httpx.ConnectError("спрян")):
+            response = self.client.get(reverse("admin:economy_gamesettings_change", args=[1]))
+        self.assertContains(response, "Провери асистента")
+
 
     @patch("assistant_bridge.client.call", return_value={"hint": "насока", "provider": "gemini"})
     def test_log_records_which_model_answered(self, fake_call):

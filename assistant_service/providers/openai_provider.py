@@ -3,15 +3,15 @@ import json
 
 import openai
 
-from .base import LLMProvider, ProviderError, ToolCall
+from .base import TIMEOUT_SECONDS, LLMProvider, ProviderError, ToolCall, connection_error, status_error, timeout_error
 
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, api_key, model=""):
         if not model:
             raise ProviderError("Задайте име на модела на OpenAI в настройките на играта.")
-        # Кратко чакане и без повторен опит – при проблем асистентът минава на следващия доставчик.
-        self.client = openai.OpenAI(api_key=api_key, timeout=15.0, max_retries=0)
+        # Без повторен опит – иначе потребителят би чакал двойно повече.
+        self.client = openai.OpenAI(api_key=api_key, timeout=TIMEOUT_SECONDS, max_retries=0)
         self.model = model
 
     def _create(self, system, user, **kwargs):
@@ -21,16 +21,12 @@ class OpenAIProvider(LLMProvider):
                 messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
                 **kwargs,
             )
-        except openai.AuthenticationError:
-            raise ProviderError("Невалиден API ключ за OpenAI.")
-        except openai.RateLimitError:
-            raise ProviderError("Твърде много заявки към OpenAI. Опитайте след малко.")
         except openai.APITimeoutError:
-            raise ProviderError("OpenAI не отговори навреме.")
+            raise timeout_error(self.model)
         except openai.APIConnectionError:
-            raise ProviderError("Няма връзка с OpenAI.")
+            raise connection_error("OpenAI")
         except openai.APIStatusError as error:
-            raise ProviderError(f"OpenAI върна грешка {error.status_code}.")
+            raise status_error("OpenAI", self.model, error.status_code, error.message)
         return response.choices[0].message
 
     def text(self, system, user):

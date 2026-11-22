@@ -326,7 +326,7 @@ UNFOLD = {
 ASSISTANT_URL = os.getenv("ASSISTANT_URL", "http://127.0.0.1:8001")
 ASSISTANT_TOKEN = os.getenv("ASSISTANT_TOKEN", "")
 # Колко секунди чакаме асистента, преди да покажем съобщение за грешка.
-# Асистентът чака всеки доставчик до 15 s и може да опита и трите.
+# Асистентът чака модела до 40 s (assistant_service/providers/base.py), а Django чака асистента малко повече.
 ASSISTANT_TIMEOUT_SECONDS = 50
 
 

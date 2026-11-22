@@ -3,7 +3,7 @@ import json
 
 import anthropic
 
-from .base import LLMProvider, ProviderError, ToolCall
+from .base import TIMEOUT_SECONDS, LLMProvider, ProviderError, ToolCall, connection_error, status_error, timeout_error
 
 DEFAULT_MODEL = "claude-opus-5-5"
 
@@ -14,8 +14,8 @@ MODELS_WITH_FALLBACK = {"claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-
 
 class ClaudeProvider(LLMProvider):
     def __init__(self, api_key, model=""):
-        # Кратко чакане и без повторен опит – при проблем асистентът минава на следващия доставчик.
-        self.client = anthropic.Anthropic(api_key=api_key, timeout=15.0, max_retries=0)
+        # Без повторен опит – иначе потребителят би чакал двойно повече.
+        self.client = anthropic.Anthropic(api_key=api_key, timeout=TIMEOUT_SECONDS, max_retries=0)
         self.model = model or DEFAULT_MODEL
 
     def _create(self, output_config=None, **kwargs):
@@ -28,16 +28,12 @@ class ClaudeProvider(LLMProvider):
                     betas=["server-side-fallback-2026-07-01"], fallbacks="default", **params)
             else:
                 response = self.client.messages.create(**params)
-        except anthropic.AuthenticationError:
-            raise ProviderError("Невалиден API ключ за Claude.")
-        except anthropic.RateLimitError:
-            raise ProviderError("Твърде много заявки към Claude. Опитайте след малко.")
         except anthropic.APIStatusError as error:
-            raise ProviderError(f"Claude върна грешка {error.status_code}.")
+            raise status_error("Claude", self.model, error.status_code, error.message)
         except anthropic.APITimeoutError:
-            raise ProviderError("Claude не отговори навреме.")
+            raise timeout_error(self.model)
         except anthropic.APIConnectionError:
-            raise ProviderError("Няма връзка с Claude.")
+            raise connection_error("Claude")
 
         if response.stop_reason == "refusal":
             raise ProviderError("Моделът отказа да отговори на тази заявка.")
