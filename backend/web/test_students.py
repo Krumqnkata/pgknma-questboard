@@ -243,6 +243,15 @@ class AppTests(TestCase):
         self.assertContains(response, "/offline/")
         self.assertContains(self.client.get(reverse("offline")), "Няма връзка")
 
+    def test_favicon_everywhere(self):
+        self.assertRedirects(self.client.get("/favicon.ico"), "/static/icons/favicon.ico",
+                             status_code=301, fetch_redirect_response=False)
+        page = self.client.get(reverse("home"))
+        self.assertContains(page, "icons/favicon.svg")
+        self.assertContains(page, "icons/favicon.ico")
+        self.client.force_login(User.objects.create_superuser("a@example.com", "TaynaParola123"))
+        self.assertContains(self.client.get("/admin/"), "icons/favicon.svg")
+
     def test_student_has_bottom_menu(self):
         self.client.force_login(make_student())
         response = self.client.get(reverse("home"))

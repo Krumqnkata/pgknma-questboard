@@ -14,6 +14,7 @@ urlpatterns = [
     path("password/", views.QuestboardPasswordChangeView.as_view(), name="password_change"),
     path("school-logo/", views.school_logo, name="school_logo"),
     path("terms/", views.terms, name="terms"),
+    path("favicon.ico", views.favicon, name="favicon"),
     path("manifest.webmanifest", views.manifest, name="manifest"),
     path("sw.js", views.service_worker, name="service_worker"),
     path("offline/", views.offline, name="offline"),

@@ -5,7 +5,7 @@ service worker и страница „Няма връзка“.
 Service worker-ът НЕ пази страниците с данни – само показва „Няма връзка“,
 ако интернетът липсва. Така никой не вижда стари или чужди данни.
 """
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.views.decorators.cache import cache_control
@@ -64,3 +64,11 @@ def service_worker(request):
 
 def offline(request):
     return render(request, "web/offline.html")
+
+
+def favicon(request):
+    """
+    Браузърите търсят /favicon.ico сами – и на страници без <link rel="icon">
+    (администрацията, API-то, файлове). Пращаме ги към иконата в static/.
+    """
+    return HttpResponsePermanentRedirect(static("icons/favicon.ico"))

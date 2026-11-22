@@ -228,6 +228,11 @@ UNFOLD = {
     "SITE_SUBHEADER": "questboard.admin_config.admin_subheader",
     "SITE_ICON": "questboard.admin_config.school_logo_url",
     "SITE_SYMBOL": "swords",
+    # Същата малка икона (фавикон) като на сайта
+    "SITE_FAVICONS": [
+        {"rel": "icon", "sizes": "32x32", "type": "image/x-icon", "href": lambda request: static("icons/favicon.ico")},
+        {"rel": "icon", "type": "image/svg+xml", "href": lambda request: static("icons/favicon.svg")},
+    ],
     "SITE_URL": "/",
     "ENVIRONMENT": "questboard.admin_config.environment_label",
     "SHOW_HISTORY": True,
