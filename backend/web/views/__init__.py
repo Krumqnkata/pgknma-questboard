@@ -5,3 +5,4 @@ from .game import (  # noqa: F401
 from .missions import mission_create, mission_detail, mission_edit, mission_list  # noqa: F401
 from .assistant import assistant_chat, mission_hint  # noqa: F401
 from .reports import reports  # noqa: F401
+from .branding import school_logo  # noqa: F401

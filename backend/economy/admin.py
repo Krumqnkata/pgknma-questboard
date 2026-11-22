@@ -22,6 +22,7 @@ class GameSettingsAdmin(ModelAdmin):
             "assistant_status", "assistant_enabled", "llm_provider", "use_other_providers",
             "claude_model", "openai_model", "gemini_model", "assistant_daily_limit",
         ]}),
+        ("Училище", {"fields": ["school_name", "school_logo"]}),
         (None, {"fields": ["updated_at"]}),
     ]
     readonly_fields = ["assistant_status", "updated_at"]

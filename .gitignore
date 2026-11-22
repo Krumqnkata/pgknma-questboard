@@ -11,6 +11,9 @@ venv/
 *.sqlite3
 backend/staticfiles/
 
+# Качени файлове (логото на училището) – собственост на училището, не са част от кода
+backend/media/
+
 # Редактори и ОС
 .vscode/
 .idea/

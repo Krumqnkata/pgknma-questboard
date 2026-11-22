@@ -189,3 +189,76 @@ class ErrorPageTests(TestCase):
         response = self.client.get("/няма-такава-страница/")
         self.assertEqual(response.status_code, 404)
         self.assertContains(response, "Страницата не е намерена", status_code=404)
+
+
+class SchoolBrandingTests(TestCase):
+    """Името и логото на училището – качват се от администрацията."""
+
+    def setUp(self):
+        import tempfile
+
+        from django.test import override_settings
+
+        self.media = tempfile.TemporaryDirectory()
+        self.override = override_settings(MEDIA_ROOT=self.media.name)
+        self.override.enable()
+
+    def tearDown(self):
+        self.override.disable()
+        self.media.cleanup()
+
+    @staticmethod
+    def png(size=(8, 8)):
+        import io
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        buffer = io.BytesIO()
+        Image.new("RGB", size, "red").save(buffer, "PNG")
+        return SimpleUploadedFile("logo.png", buffer.getvalue(), content_type="image/png")
+
+    @staticmethod
+    def form(files, name="ПГ по компютърни науки"):
+        from django.forms import modelform_factory
+
+        from economy.models import GameSettings
+
+        form_class = modelform_factory(GameSettings, fields=["school_name", "school_logo"])
+        return form_class(data={"school_name": name}, files=files, instance=GameSettings.load())
+
+    def test_without_logo_nothing_is_shown(self):
+        self.assertEqual(self.client.get(reverse("school_logo")).status_code, 404)
+        self.assertNotContains(self.client.get(reverse("home")), "brand-logo")
+
+    def test_uploaded_logo_is_shown_and_served(self):
+        form = self.form({"school_logo": self.png()})
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+
+        page = self.client.get(reverse("home"))
+        self.assertContains(page, "brand-logo")
+        self.assertContains(page, "ПГ по компютърни науки")
+
+        logo = self.client.get(reverse("school_logo"))
+        self.assertEqual(logo.status_code, 200)
+        self.assertEqual(logo["Content-Type"], "image/png")
+        logo.close()  # FileResponse държи файла отворен, докато отговорът не се затвори
+
+    def test_svg_is_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        svg = SimpleUploadedFile("logo.svg", b"<svg><script>alert(1)</script></svg>", content_type="image/svg+xml")
+        self.assertFalse(self.form({"school_logo": svg}).is_valid())
+
+    def test_file_that_is_not_an_image_is_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake = SimpleUploadedFile("logo.png", b"not really a picture", content_type="image/png")
+        self.assertFalse(self.form({"school_logo": fake}).is_valid())
+
+    def test_too_big_logo_is_rejected(self):
+        from unittest.mock import patch
+
+        with patch("economy.models.LOGO_MAX_BYTES", 10):
+            self.assertFalse(self.form({"school_logo": self.png()}).is_valid())

@@ -1,0 +1,7 @@
+{# Логото и името на училището, ако са качени от администрацията. #}
+{% if school.name or school.logo_url %}
+  <div class="school-mark">
+    {% if school.logo_url %}<img src="{{ school.logo_url }}" alt="Лого на {{ school.name|default:'училището' }}" width="56" height="56">{% endif %}
+    {% if school.name %}<span>{{ school.name }}</span>{% endif %}
+  </div>
+{% endif %}

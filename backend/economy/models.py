@@ -6,10 +6,18 @@
 """
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
 
 from .words import coins_text
+
+
+LOGO_MAX_BYTES = 1024 * 1024
+
+
+def validate_logo_size(file):
+    if file.size > LOGO_MAX_BYTES:
+        raise ValidationError("Логото трябва да е до 1 MB.")
 
 
 class GameSettings(models.Model):
@@ -65,6 +73,16 @@ class GameSettings(models.Model):
     gemini_model = models.CharField("модел на Gemini", max_length=100, blank=True,
                                     help_text="Празно – Gemini не се ползва.")
     assistant_daily_limit = models.PositiveIntegerField("заявки към асистента на потребител на ден", default=20)
+
+    # --- Училище ---
+    # Името и логото се качват от администрацията и не са част от кода в GitHub:
+    # логото е собственост на училището, а платформата може да се ползва и от други училища.
+    school_name = models.CharField("име на училището", max_length=150, blank=True)
+    school_logo = models.ImageField(
+        "лого на училището", upload_to="branding/", blank=True,
+        validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"]), validate_logo_size],
+        help_text="PNG, JPG или WebP, до 1 MB. Показва се в заглавната лента, на началната страница и на входа.",
+    )
 
     updated_at = models.DateTimeField("последна промяна", auto_now=True)
 

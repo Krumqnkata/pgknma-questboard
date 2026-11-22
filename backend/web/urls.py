@@ -8,6 +8,7 @@ urlpatterns = [
     path("login/", auth_views.LoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    path("school-logo/", views.school_logo, name="school_logo"),
     # Мисии
     path("missions/", views.mission_list, name="mission_list"),
     path("missions/new/", views.mission_create, name="mission_create"),

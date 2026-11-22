@@ -93,6 +93,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.navigation",
+                "web.context_processors.school",
             ],
         },
     },
@@ -167,6 +168,10 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Качени файлове (засега само логото на училището). Папката не е в GitHub.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # В публикуваната версия файловете се компресират и получават уникални имена,
 # за да може браузърът да ги пази дълго, без да показва стара версия.
 if not DEBUG and "test" not in sys.argv:
@@ -208,7 +213,9 @@ def _admin_link(name):
 UNFOLD = {
     "SITE_TITLE": "Questboard",
     "SITE_HEADER": "Questboard",
-    "SITE_SUBHEADER": "Администрация",
+    # Името и логото на училището, ако са качени в „Настройки на играта“
+    "SITE_SUBHEADER": "questboard.admin_config.admin_subheader",
+    "SITE_ICON": "questboard.admin_config.school_logo_url",
     "SITE_SYMBOL": "swords",
     "SITE_URL": "/",
     "ENVIRONMENT": "questboard.admin_config.environment_label",

@@ -102,6 +102,11 @@ python start.py
 
 Спиране: **Ctrl+C**. Портовете се сменят от `.env` (`DJANGO_PORT`, `ASSISTANT_PORT`).
 
+Името и логото на училището се качват от администрацията → „Настройки на
+играта“ → „Училище“ (PNG, JPG или WebP до 1 MB). Логото е собственост на
+училището, затова не е в GitHub и не е под лиценза GPL; файлът стои само на
+сървъра (папка `backend/media/`).
+
 Сайтът има светла и тъмна тема (бутонът горе вдясно). По подразбиране следва
 настройката на устройството, а изборът се запомня в браузъра.
 
@@ -212,6 +217,7 @@ Questboard се разпространява под лиценза GNU General P
 | [openai](https://github.com/openai/openai-python) | връзка с OpenAI | Apache-2.0 |
 | [google-genai](https://github.com/googleapis/python-genai) | връзка с Gemini | Apache-2.0 |
 | [mysqlclient](https://github.com/PyMySQL/mysqlclient) | връзка с MySQL (по избор) | GPL-2.0-or-later |
+| [Pillow](https://python-pillow.org/) | проверка, че каченото лого е изображение | MIT-CMU |
 | [WhiteNoise](https://whitenoise.readthedocs.io/) | статичните файлове в публикуваната версия | MIT |
 | [waitress](https://docs.pylonsproject.org/projects/waitress/) | уеб сървър в публикуваната версия | ZPL-2.1 |
 | [Onest](https://fonts.google.com/specimen/Onest) | шрифтът на сайта (през Google Fonts) | SIL OFL 1.1 |

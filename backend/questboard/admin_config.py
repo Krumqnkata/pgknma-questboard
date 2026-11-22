@@ -18,3 +18,17 @@ def pending_claims_badge(request):
 
     count = Claim.objects.filter(status=Claim.Status.PENDING).count()
     return count or None  # при 0 не показваме нищо
+
+
+def admin_subheader(request):
+    """Под „Questboard“ в администрацията: името на училището, ако е зададено."""
+    from economy.models import GameSettings
+
+    return GameSettings.load().school_name or "Администрация"
+
+
+def school_logo_url(request):
+    """Логото на училището в администрацията или None – тогава се показва иконата по подразбиране."""
+    from web.context_processors import school
+
+    return school(request)["school"]["logo_url"]

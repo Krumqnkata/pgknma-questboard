@@ -31,8 +31,11 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="{% url 'home' %}">
-        <strong>Questboard</strong>
-        <span>Мисии в училищния живот</span>
+        {% if school.logo_url %}<img class="brand-logo" src="{{ school.logo_url }}" alt="" width="36" height="36">{% endif %}
+        <span class="brand-text">
+          <strong>Questboard</strong>
+          <span>{{ school.name|default:"Мисии в училищния живот" }}</span>
+        </span>
       </a>
 
       {% if user.is_authenticated %}
@@ -90,7 +93,7 @@
 
   <footer class="site-footer">
     <div class="footer-inner">
-      <span>Questboard – училищна платформа с мисии, точки и асистент.</span>
+      <span>Questboard{% if school.name %} в {{ school.name }}{% endif %} – училищна платформа с мисии, точки и асистент.</span>
       <span>Отворен код под лиценз GPL-3.0</span>
     </div>
   </footer>
