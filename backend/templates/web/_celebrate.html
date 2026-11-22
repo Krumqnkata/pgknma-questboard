@@ -1,0 +1,16 @@
+{% load questboard %}
+{# Голяма карта при ново ниво или значка. Отваря се от static/js/celebrate.js. #}
+<dialog class="celebrate" id="celebrate" aria-labelledby="celebrate-title">
+  <div class="confetti" aria-hidden="true">{% for _ in "123456789012345678"|make_list %}<i></i>{% endfor %}</div>
+  <p class="celebrate-kicker">Браво, {{ user.nickname }}!</p>
+  <h2 id="celebrate-title">{% if celebrations|length == 1 %}{{ celebrations.0.get_kind_display }}{% else %}Имаш нови постижения{% endif %}</h2>
+  <ul class="celebrate-list">
+    {% for item in celebrations %}
+      <li>
+        <span class="badge-icon">{% if item.kind == "level_up" %}{% badge_icon "bolt" %}{% else %}{% badge_icon "star" %}{% endif %}</span>
+        <span>{{ item.text }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+  <form method="dialog"><button type="submit" class="btn btn-block" autofocus>Продължи</button></form>
+</dialog>

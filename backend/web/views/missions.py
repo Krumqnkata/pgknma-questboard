@@ -4,14 +4,18 @@
 Тук няма правила на играта – те са в missions/services.py.
 Изгледите само проверяват ролята, показват данни и викат услугите.
 """
+from datetime import timedelta
+
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from accounts.models import Guild, User
 from accounts.permissions import role_required
 from assistant_bridge.models import Hint
 from assistant_bridge.services import AssistantError, draft_mission, unused_hint_tokens
+from economy.models import GameSettings
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
 
@@ -29,7 +33,10 @@ def mission_list(request):
 
 
 def _student_mission_list(request):
-    missions = missions_for_student()
+    # Колко ученици са изпълнили всяка мисия – показва се на картата.
+    missions = missions_for_student().annotate(
+        done_count=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
+    )
 
     # Филтър по гилдия: ?guild=<id>
     selected_guild = request.GET.get("guild", "")
@@ -40,10 +47,14 @@ def _student_mission_list(request):
     my_claims = {c.mission_id: c for c in Claim.objects.filter(student=request.user)}
     rows = [(mission, my_claims.get(mission.id)) for mission in missions]
 
+    now = timezone.now()
     return render(request, "web/student_missions.html", {
         "rows": rows,
         "guilds": Guild.objects.all(),
         "selected_guild": selected_guild,
+        "max_xp": GameSettings.load().max_xp_per_mission,
+        "new_since": now - timedelta(days=3),   # „нова“ – създадена през последните 3 дни
+        "soon": now + timedelta(days=3),        # „остават N дни“ – срокът е до 3 дни
     })
 
 

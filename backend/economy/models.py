@@ -23,6 +23,13 @@ DEFAULT_MODELS = {
 }
 
 
+def logo_storage():
+    """Логото се показва от /school-logo/, а не от /media/ (вижте questboard/storage.py)."""
+    from questboard.storage import LogoStorage
+
+    return LogoStorage()
+
+
 def validate_logo_size(file):
     if file.size > LOGO_MAX_BYTES:
         raise ValidationError("Логото трябва да е до 1 MB.")
@@ -84,7 +91,7 @@ class GameSettings(models.Model):
     # логото е собственост на училището, а платформата може да се ползва и от други училища.
     school_name = models.CharField("име на училището", max_length=150, blank=True)
     school_logo = models.ImageField(
-        "лого на училището", upload_to="branding/", blank=True,
+        "лого на училището", upload_to="branding/", blank=True, storage=logo_storage,
         validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"]), validate_logo_size],
         help_text="PNG, JPG или WebP, до 1 MB. Показва се в заглавната лента, на началната страница и на входа.",
     )
@@ -254,12 +261,29 @@ class CoinTransaction(models.Model):
 
 
 class Privilege(models.Model):
-    """Привилегия в магазина, напр. Deadline Pass или Hint Token (Ф8)."""
+    """
+    Артикул в магазина (Ф8). Два вида:
+      - привилегия (Deadline Pass, Hint Token) – учителят я отбелязва като използвана;
+      - за профила (титла или рамка на аватара) – само външен вид, не влияе на ученето.
+    """
+
+    class Kind(models.TextChoices):
+        PRIVILEGE = "privilege", "Привилегия"
+        TITLE = "title", "Титла до псевдонима"
+        FRAME = "frame", "Рамка на аватара"
+
+    class FrameStyle(models.TextChoices):
+        GOLD = "gold", "Златна"
+        NEON = "neon", "Неонова"
+        RAINBOW = "rainbow", "Дъга"
 
     code = models.SlugField("код", unique=True, help_text="Ползва се в кода, напр. hint_token.")
-    name = models.CharField("име", max_length=100)
+    kind = models.CharField("вид", max_length=10, choices=Kind.choices, default=Kind.PRIVILEGE)
+    name = models.CharField("име", max_length=100, help_text="При титлите това е самата титла.")
     description = models.TextField("описание", blank=True)
     price = models.PositiveIntegerField("цена в монети", validators=[MinValueValidator(1)])
+    frame_style = models.CharField("вид на рамката", max_length=10, choices=FrameStyle.choices, blank=True,
+                                   help_text="Само за рамки на аватара.")
     is_active = models.BooleanField("продава се", default=True)
 
     class Meta:
@@ -269,6 +293,15 @@ class Privilege(models.Model):
 
     def __str__(self):
         return f"{self.name} ({coins_text(self.price)})"
+
+    @property
+    def is_cosmetic(self):
+        """Титлите и рамките са само за външен вид – учителят не ги отбелязва."""
+        return self.kind != self.Kind.PRIVILEGE
+
+    def clean(self):
+        if self.kind == self.Kind.FRAME and not self.frame_style:
+            raise ValidationError({"frame_style": "Изберете вид на рамката."})
 
 
 class Purchase(models.Model):

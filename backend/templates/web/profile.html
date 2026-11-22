@@ -26,6 +26,56 @@
 </section>
 
 {% if user.is_student %}
+<section class="panel section" aria-labelledby="look-title">
+  <h2 id="look-title">Как изглеждаш в класацията</h2>
+  <div class="look">
+    <div class="who who-large">
+      {% avatar user 64 %}
+      <span><strong>{{ user.nickname }}</strong>{% if user.shown_title %}<span class="player-title">{{ user.shown_title.name }}</span>{% endif %}</span>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="avatar">
+      <button type="submit" class="btn btn-outline btn-small">Нова шарка на аватара</button>
+    </form>
+  </div>
+
+  {% if titles or frames %}
+    <div class="look-choices">
+      {% if titles %}
+        <form method="post" class="inline-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="title">
+          <div class="field">
+            <label for="id_title">Титла</label>
+            <select name="title" id="id_title">
+              <option value="">Без титла</option>
+              {% for item in titles %}<option value="{{ item.pk }}" {% if user.shown_title_id == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn-outline">Запази</button>
+        </form>
+      {% endif %}
+      {% if frames %}
+        <form method="post" class="inline-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="frame">
+          <div class="field">
+            <label for="id_frame">Рамка на аватара</label>
+            <select name="frame" id="id_frame">
+              <option value="">Без рамка</option>
+              {% for item in frames %}<option value="{{ item.pk }}" {% if user.shown_frame_id == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn-outline">Запази</button>
+        </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="muted small">Титли и рамки за аватара се купуват с монети в <a href="{% url 'shop' %}">магазина</a>.</p>
+  {% endif %}
+</section>
+
 <section class="panel section" aria-labelledby="nickname-title">
   <h2 id="nickname-title">Смяна на псевдонима</h2>
   <p class="muted small">

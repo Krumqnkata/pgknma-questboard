@@ -18,6 +18,7 @@ from accounts.permissions import role_required
 from badges.services import award_badges, badge_cards
 from economy import leaderboard
 from economy.models import GameSettings, Privilege, Purchase, XPTransaction
+from economy.services import owned_cosmetics, wear
 from economy.services import (
     active_privileges, approve_claim, buy_privilege, mark_purchase_used, pending_claims_for,
     reject_claim, student_stats, unused_purchases,
@@ -25,6 +26,7 @@ from economy.services import (
 from economy.words import coins_text
 from missions.models import Claim
 from missions.services import GameRuleError, missions_for_student
+from notifications.models import Notification
 
 from ..forms import NicknameForm, ReviewForm
 
@@ -68,6 +70,11 @@ def student_home(request):
     stats = student_stats(student)
     award_badges(student)  # ако администраторът е добавил нова значка, която ученикът вече е заслужил
     cards = badge_cards(student)
+    # Ново ниво и нови значки се показват веднъж с голяма карта, после са прочетени.
+    celebrations = list(student.notifications.filter(
+        read_at__isnull=True, kind__in=[Notification.Kind.LEVEL_UP, Notification.Kind.BADGE]).order_by("created_at"))
+    if celebrations:
+        student.notifications.filter(pk__in=[n.pk for n in celebrations]).update(read_at=timezone.now())
     return render(request, "web/student_home.html", {
         "stats": stats,
         # Данните за панела „player.ts“ – само неща, които ученикът и без това вижда.
@@ -84,6 +91,7 @@ def student_home(request):
         "recent_coins": student.coin_transactions.order_by("-created_at")[:5],
         "badge_cards": cards,
         "badges_earned": sum(card.earned for card in cards),
+        "celebrations": celebrations,
     })
 
 
@@ -92,6 +100,9 @@ def profile(request):
     user = request.user
     context = {}
     if user.is_student:
+        action = request.POST.get("action", "nickname")
+        if request.method == "POST" and action != "nickname":
+            return _profile_look(request, action)
         form = NicknameForm(request.POST or None, initial={"nickname": user.nickname})
         if request.method == "POST" and form.is_valid():
             try:
@@ -106,8 +117,30 @@ def profile(request):
             "nickname_form": form,
             "next_nickname_change": next_change_at(user),
             "nickname_change_days": GameSettings.load().nickname_change_days,
+            "titles": [item for item in owned_cosmetics(user) if item.kind == Privilege.Kind.TITLE],
+            "frames": [item for item in owned_cosmetics(user) if item.kind == Privilege.Kind.FRAME],
         }
     return render(request, "web/profile.html", context)
+
+
+def _profile_look(request, action):
+    """Външният вид в класациите: нова шарка на аватара, титла и рамка."""
+    user = request.user
+    if action == "avatar":
+        user.avatar_seed += 1
+        user.save(update_fields=["avatar_seed"])
+        messages.success(request, "Аватарът ти има нова шарка.")
+    elif action in ("title", "frame"):
+        chosen = request.POST.get(action, "")
+        item = Privilege.objects.filter(pk=chosen).first() if chosen.isdigit() else None
+        kind = Privilege.Kind.TITLE if action == "title" else Privilege.Kind.FRAME
+        try:
+            wear(user, item, kind=kind)
+        except GameRuleError as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Запазено.")
+    return redirect("profile")
 
 
 # ---------- Проверка на заявки (учител) ----------
@@ -163,8 +196,12 @@ def _safe_next(request):
 
 @role_required(STUDENT)
 def shop(request):
+    items = list(active_privileges())
+    owned = {item.pk for item in owned_cosmetics(request.user)}
     return render(request, "web/shop.html", {
-        "privileges": active_privileges(),
+        "privileges": [item for item in items if not item.is_cosmetic],
+        "cosmetics": [item for item in items if item.is_cosmetic],
+        "owned": owned,
         "stats": student_stats(request.user),
         "purchases": Purchase.objects.filter(student=request.user).select_related("privilege"),
     })
@@ -179,7 +216,10 @@ def shop_buy(request, pk):
     except GameRuleError as error:
         messages.error(request, str(error))
     else:
-        messages.success(request, f"Купено: {privilege.name}. Покажи го на учителя, когато го използваш.")
+        if privilege.is_cosmetic:
+            messages.success(request, f"Купено: {privilege.name}. Вече се вижда в класацията – смени го от профила.")
+        else:
+            messages.success(request, f"Купено: {privilege.name}. Покажи го на учителя, когато го използваш.")
     return redirect("shop")
 
 
@@ -209,13 +249,24 @@ def purchase_use(request, pk):
 def leaderboard_view(request):
     guild_id = request.GET.get("guild", "")
     class_id = request.GET.get("class", "")
+    period = "week" if request.GET.get("period") == "week" else "all"
+    tables = leaderboard.rankings(
+        period,
+        guild_id=int(guild_id) if guild_id.isdigit() else None,
+        class_id=int(class_id) if class_id.isdigit() else None,
+        limit=None,  # всички – за да намерим и мястото на ученика, ако не е в първите 50
+    )
+    everyone = tables["students"]
+    shown = everyone[:50]
+    me = None
+    if request.user.is_student and not any(row.user.pk == request.user.pk for row in shown):
+        me = next((row for row in everyone if row.user.pk == request.user.pk), None)
     return render(request, "web/leaderboard.html", {
-        "guild_rows": leaderboard.guild_ranking(),
-        "class_rows": leaderboard.class_ranking(),
-        "student_rows": leaderboard.student_ranking(
-            guild_id=int(guild_id) if guild_id.isdigit() else None,
-            class_id=int(class_id) if class_id.isdigit() else None,
-        ),
+        "guild_rows": tables["guilds"],
+        "class_rows": tables["classes"],
+        "student_rows": shown,
+        "my_row": me,
+        "period": period,
         "guilds": Guild.objects.all(),
         "classes": SchoolClass.objects.all(),
         "selected_guild": guild_id,

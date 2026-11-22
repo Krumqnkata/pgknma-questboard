@@ -17,6 +17,7 @@ class Progress:
     xp: int = 0
     level: int = 0
     purchases: int = 0
+    streak: int = 0
 
     def value_for(self, badge):
         """Докъде е стигнал ученикът по правилото на значката."""
@@ -32,11 +33,13 @@ class Progress:
             return self.level
         if badge.rule == Badge.Rule.PURCHASES:
             return self.purchases
+        if badge.rule == Badge.Rule.STREAK:
+            return self.streak
         return 0
 
 
 def progress_for(student):
-    from economy.services import level_for_xp, xp_total  # тук, за да няма кръгов import
+    from economy.services import level_for_xp, streak_weeks, xp_total  # тук, за да няма кръгов import
     from missions.models import Claim
 
     approved = Claim.objects.filter(student=student, status=Claim.Status.APPROVED)
@@ -49,6 +52,7 @@ def progress_for(student):
         xp=xp,
         level=level.number if level else 0,
         purchases=student.purchases.count(),
+        streak=streak_weeks(student),
     )
 
 

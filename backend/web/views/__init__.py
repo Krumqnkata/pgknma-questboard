@@ -9,3 +9,4 @@ from .branding import school_logo  # noqa: F401
 from .password import QuestboardPasswordChangeView  # noqa: F401
 from .notifications import notifications  # noqa: F401
 from .pages import privacy, terms  # noqa: F401
+from .app import manifest, offline, service_worker  # noqa: F401

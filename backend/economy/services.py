@@ -50,6 +50,7 @@ class StudentStats:
     coins: int
     coins_this_week: int
     weekly_limit: int
+    streak: int = 0  # поредни седмици с потвърдена мисия
 
     @property
     def progress_percent(self):
@@ -74,7 +75,31 @@ def student_stats(student, now=None):
         coins=coin_balance(student),
         coins_this_week=week.coins_earned if week else 0,
         weekly_limit=GameSettings.load().weekly_coin_limit,
+        streak=streak_weeks(student, now),
     )
+
+
+def streak_weeks(student, now=None):
+    """
+    Колко поредни седмици ученикът има поне една потвърдена мисия.
+    Серията не се губи, докато текущата седмица не е свършила: ако тази
+    седмица още няма мисия, се брои от миналата назад.
+    """
+    current = week_start_for(now)
+    start_day = (current.weekday()) % 7
+    reviewed = Claim.objects.filter(student=student, status=Claim.Status.APPROVED).values_list("reviewed_at", flat=True)
+    weeks = set()
+    for moment in reviewed:
+        if moment:
+            day = timezone.localdate(moment)
+            weeks.add(day - timedelta(days=(day.weekday() - start_day) % 7))
+    if current not in weeks:
+        current -= timedelta(days=7)
+    count = 0
+    while current in weeks:
+        count += 1
+        current -= timedelta(days=7)
+    return count
 
 
 # ---------- Седмици и монети ----------
@@ -230,17 +255,42 @@ def buy_privilege(student, privilege):
 
     with transaction.atomic():
         User.objects.select_for_update().get(pk=student.pk)
+        if privilege.is_cosmetic and student.purchases.filter(privilege=privilege).exists():
+            raise GameRuleError(f"Вече имаш „{privilege.name}“.")
         balance = coin_balance(student)
         if balance < privilege.price:
             raise GameRuleError(f"Нямаш достатъчно монети: нужни са {privilege.price}, имаш {balance}.")
 
-        purchase = Purchase.objects.create(student=student, privilege=privilege, price_paid=privilege.price)
+        # Титлите и рамките не се отбелязват от учител – „използвани“ са веднага.
+        purchase = Purchase.objects.create(student=student, privilege=privilege, price_paid=privilege.price,
+                                           used_at=timezone.now() if privilege.is_cosmetic else None)
         CoinTransaction.objects.create(
             student=student, amount=-privilege.price, kind=CoinTransaction.Kind.SPENT,
             reason=f"Покупка: {privilege.name}", purchase=purchase, created_by=student,
         )
+        if privilege.is_cosmetic:
+            wear(student, privilege)  # новото се слага веднага
         award_badges(student)
     return purchase
+
+
+def owned_cosmetics(student):
+    """Титлите и рамките, които ученикът е купил."""
+    return Privilege.objects.filter(purchases__student=student).exclude(kind=Privilege.Kind.PRIVILEGE).distinct()
+
+
+def wear(student, privilege=None, kind=None):
+    """
+    Слага купена титла или рамка (или маха текущата, ако privilege е None).
+    Може да се сложи само нещо, което ученикът е купил.
+    """
+    if privilege is not None:
+        if not privilege.is_cosmetic or not owned_cosmetics(student).filter(pk=privilege.pk).exists():
+            raise GameRuleError("Можеш да сложиш само титла или рамка, която си купил.")
+        kind = privilege.kind
+    field = "shown_title" if kind == Privilege.Kind.TITLE else "shown_frame"
+    setattr(student, field, privilege)
+    student.save(update_fields=[field])
 
 
 def mark_purchase_used(purchase, teacher, mission=None):
@@ -258,7 +308,8 @@ def mark_purchase_used(purchase, teacher, mission=None):
 
 def unused_purchases():
     """Неизползваните покупки, които учителят отбелязва. Hint Token се харчи сам – през асистента."""
-    return Purchase.objects.filter(used_at__isnull=True).exclude(privilege__code="hint_token").select_related(
+    return Purchase.objects.filter(used_at__isnull=True, privilege__kind=Privilege.Kind.PRIVILEGE).exclude(
+        privilege__code="hint_token").select_related(
         "student", "student__school_class", "privilege").order_by("purchased_at")
 
 

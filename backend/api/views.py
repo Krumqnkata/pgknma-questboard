@@ -257,18 +257,17 @@ class LeaderboardView(APIView):
     }), parameters=[
         OpenApiParameter("guild", int, description="само ученици от тази гилдия"),
         OpenApiParameter("class", int, description="само ученици от този клас"),
+        OpenApiParameter("period", str, enum=["all", "week"], description="week – само XP от тази седмица"),
     ])
     def get(self, request):
         guild = request.query_params.get("guild", "")
         school_class = request.query_params.get("class", "")
-        return Response({
-            "guilds": RankingRowSerializer(leaderboard.guild_ranking(), many=True).data,
-            "classes": RankingRowSerializer(leaderboard.class_ranking(), many=True).data,
-            "students": RankingRowSerializer(leaderboard.student_ranking(
-                guild_id=int(guild) if guild.isdigit() else None,
-                class_id=int(school_class) if school_class.isdigit() else None,
-            ), many=True).data,
-        })
+        tables = leaderboard.rankings(
+            "week" if request.query_params.get("period") == "week" else "all",
+            guild_id=int(guild) if guild.isdigit() else None,
+            class_id=int(school_class) if school_class.isdigit() else None,
+        )
+        return Response({name: RankingRowSerializer(rows, many=True).data for name, rows in tables.items()})
 
 
 # ---------- Асистент и справки ----------

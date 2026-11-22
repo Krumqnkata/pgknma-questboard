@@ -98,6 +98,8 @@ class RankingRowSerializer(serializers.Serializer):
     average = serializers.IntegerField()
     guild = serializers.CharField()
     level = serializers.IntegerField(source="level.number", allow_null=True, default=None)
+    movement = serializers.IntegerField(help_text="Места нагоре (+) или надолу (-) от началото на седмицата.")
+    title = serializers.CharField(source="user.shown_title.name", allow_null=True, default=None)
 
 
 class QuestionSerializer(serializers.Serializer):

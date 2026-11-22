@@ -9,6 +9,12 @@
     <h1>Класация</h1>
     <p>Учениците се показват само с псевдоними.</p>
   </div>
+  <nav class="segmented" aria-label="Период">
+    <a href="?period=week{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
+       {% if period == "week" %}aria-current="page"{% endif %}>Тази седмица</a>
+    <a href="?period=all{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
+       {% if period == "all" %}aria-current="page"{% endif %}>Общо</a>
+  </nav>
 </div>
 
 <div class="columns">
@@ -19,7 +25,7 @@
         <thead><tr><th>#</th><th>Гилдия</th><th class="num">XP</th><th class="num">Членове</th></tr></thead>
         <tbody>
           {% for row in guild_rows %}
-            <tr class="{% if row.rank == 1 and row.xp %}top-1{% endif %}">
+            <tr class="{% if row.rank == 1 and row.xp %}top-1{% endif %}{% if user.is_student and row.name == user.guild.name %} mine{% endif %}">
               <td class="rank">{{ row.rank }}</td>
               <td><span class="chip {{ row.name|guild_class }}">{{ row.name }}</span></td>
               <td class="num">{{ row.xp }}</td><td class="num">{{ row.members }}</td>
@@ -52,8 +58,9 @@
 
 <section class="section">
   <div class="section-head">
-    <h2>Ученици</h2>
+    <h2>Ученици{% if period == "week" %} <span class="muted small">· XP от началото на седмицата</span>{% endif %}</h2>
     <form method="get" class="inline-form" aria-label="Филтър">
+      <input type="hidden" name="period" value="{{ period }}">
       <div class="field">
         <label for="filter-guild" class="sr-only">Гилдия</label>
         <select name="guild" id="filter-guild">
@@ -77,22 +84,21 @@
   </div>
 
   <div class="table-wrap">
-    <table>
+    <table class="ranking">
       <thead><tr><th>#</th><th>Псевдоним</th><th>Гилдия</th><th class="num">Ниво</th><th class="num">XP</th></tr></thead>
       <tbody>
         {% for row in student_rows %}
-          <tr class="{% if user.is_student and row.name == user.nickname %}me{% endif %} {% if row.rank == 1 and row.xp %}top-1{% endif %}">
-            <td class="rank">{{ row.rank }}</td>
-            <td>{{ row.name }}{% if user.is_student and row.name == user.nickname %} <span class="muted small">(ти)</span>{% endif %}</td>
-            <td><span class="chip {{ row.guild|guild_class }}">{{ row.guild }}</span></td>
-            <td class="num">{{ row.level.number|default:"0" }}</td>
-            <td class="num"><strong>{{ row.xp }}</strong></td>
-          </tr>
+          {% include "web/_ranking_row.html" %}
         {% empty %}
           <tr><td colspan="5" class="muted">Няма ученици по този филтър.</td></tr>
         {% endfor %}
+        {% if my_row %}
+          <tr class="gap" aria-hidden="true"><td colspan="5">⋯</td></tr>
+          {% include "web/_ranking_row.html" with row=my_row %}
+        {% endif %}
       </tbody>
     </table>
   </div>
+  {% if period == "all" %}<p class="muted small">Стрелките показват с колко места се е качил или паднал всеки от началото на седмицата.</p>{% endif %}
 </section>
 {% endblock %}

@@ -64,6 +64,8 @@ BADGE_ICONS = {
     "shield": '<path d="m12 3 8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
     "bolt": '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
     "bag": '<path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/>',
+    "flame": '<path d="M12 22c4 0 7-2.7 7-6.8 0-3.6-2.4-6-4.3-8.2-.4 2-1.6 3.4-3.2 3.9.6-3.1-.6-6.5-3.5-8.9 '
+             '.3 3.6-1.6 5.7-3 7.8A8 8 0 0 0 5 15.2C5 19.3 8 22 12 22z"/>',
 }
 
 
@@ -119,3 +121,45 @@ def page_text(text, school=None):
             paragraph.append(line)
     flush()
     return mark_safe("\n".join(html))
+
+
+@register.filter
+def guild_slug(guild):
+    """{{ user.guild|guild_slug }} → „builders“ (за цвета на сайта според гилдията)."""
+    return slugify(str(guild)) if guild else ""
+
+
+@register.simple_tag
+def avatar(user, size=40, frame_style=None):
+    """{% avatar user 40 %} → аватарът на ученика (web/avatars.py). В магазина – с рамка за преглед."""
+    from web.avatars import avatar_html
+
+    return avatar_html(user, size, frame_style)
+
+
+@register.filter
+def difficulty(xp, max_xp):
+    """
+    Трудност на мисия според XP спрямо най-многото позволено:
+    до 1/3 – лесна, до 2/3 – средна, над това – трудна.
+    """
+    share = (xp or 0) / (max_xp or 1)
+    if share <= 1 / 3:
+        return {"slug": "easy", "name": "Лесна", "pips": 1}
+    if share <= 2 / 3:
+        return {"slug": "medium", "name": "Средна", "pips": 2}
+    return {"slug": "hard", "name": "Трудна", "pips": 3}
+
+
+@register.filter
+def time_left(deadline):
+    """Колко остава до срока: „последен ден“, „остава 1 ден“, „остават 3 дни“."""
+    import math
+
+    from django.utils import timezone
+
+    hours = (deadline - timezone.now()).total_seconds() / 3600
+    if hours <= 24:
+        return "последен ден"
+    days = math.ceil(hours / 24)
+    return "остава 1 ден" if days == 1 else f"остават {days} дни"

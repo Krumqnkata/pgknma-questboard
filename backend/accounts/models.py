@@ -91,6 +91,18 @@ class User(AbstractUser):
         null=True, blank=True, related_name="members",
     )
 
+    # Външен вид в класациите: аватарът се рисува от това число (web/avatars.py),
+    # а титлата и рамката се купуват в магазина и ученикът избира коя да се вижда.
+    avatar_seed = models.PositiveIntegerField("шарка на аватара", default=0)
+    shown_title = models.ForeignKey(
+        "economy.Privilege", verbose_name="показвана титла", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
+    shown_frame = models.ForeignKey(
+        "economy.Privilege", verbose_name="показвана рамка", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 

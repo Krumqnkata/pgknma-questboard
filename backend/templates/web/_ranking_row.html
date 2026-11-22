@@ -1,0 +1,23 @@
+{% load questboard %}
+{# Един ред от класацията на учениците: място, движение, аватар, псевдоним и титла. #}
+<tr class="{% if row.user.pk == user.pk %}me{% endif %}{% if row.rank <= 3 and row.xp %} top-{{ row.rank }}{% endif %}">
+  <td class="rank">
+    {{ row.rank }}
+    {% if period == "all" and row.movement %}
+      <span class="move {% if row.movement > 0 %}up{% else %}down{% endif %}"
+            title="{% if row.movement > 0 %}нагоре{% else %}надолу{% endif %} с {{ row.moved }} от началото на седмицата">{% if row.movement > 0 %}▲{% else %}▼{% endif %}{{ row.moved }}</span>
+    {% endif %}
+  </td>
+  <td>
+    <span class="who">
+      {% avatar row.user 32 %}
+      <span>
+        <strong>{{ row.name }}</strong>{% if row.user.pk == user.pk %} <span class="muted small">(ти)</span>{% endif %}
+        {% if row.user.shown_title %}<span class="player-title">{{ row.user.shown_title.name }}</span>{% endif %}
+      </span>
+    </span>
+  </td>
+  <td><span class="chip {{ row.guild|guild_class }}">{{ row.guild }}</span></td>
+  <td class="num">{{ row.level.number|default:"0" }}</td>
+  <td class="num"><strong>{{ row.xp }}</strong></td>
+</tr>

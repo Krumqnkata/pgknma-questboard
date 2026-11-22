@@ -12,6 +12,7 @@
   <div class="stat-value" aria-label="Твоите монети">{{ stats.coins|coins }}</div>
 </div>
 
+<h2 class="section-title">Привилегии</h2>
 <div class="mission-grid">
   {% for privilege in privileges %}
     <section class="mission-card">
@@ -34,6 +35,42 @@
   {% endfor %}
 </div>
 
+{% if cosmetics %}
+<section class="section">
+  <div class="section-head">
+    <h2>За профила</h2>
+    <span class="muted small">Само за външен вид в класациите. Слагаш ги от <a href="{% url 'profile' %}">профила</a>.</span>
+  </div>
+  <div class="mission-grid">
+    {% for item in cosmetics %}
+      <section class="mission-card cosmetic-card">
+        <div class="mission-meta">
+          <h3>{{ item.name }}</h3>
+          <span class="xp">{{ item.price|coins }}</span>
+        </div>
+        <div class="cosmetic-preview">
+          {% if item.kind == "frame" %}
+            <span class="who">{% avatar user 48 item.frame_style %}<strong>{{ user.nickname }}</strong></span>
+          {% else %}
+            <span class="who">{% avatar user 32 %}<span><strong>{{ user.nickname }}</strong><span class="player-title">{{ item.name }}</span></span></span>
+          {% endif %}
+        </div>
+        <form method="post" action="{% url 'shop_buy' item.pk %}" class="mission-foot">
+          {% csrf_token %}
+          {% if item.pk in owned %}
+            <span class="badge status-approved">твоя</span>
+          {% elif stats.coins < item.price %}
+            <button type="submit" class="btn-small" disabled>Не стигат монетите</button>
+          {% else %}
+            <button type="submit" class="btn-small">Купи за {{ item.price|coins }}</button>
+          {% endif %}
+        </form>
+      </section>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <section class="section">
   <div class="section-head"><h2>Моите покупки</h2></div>
   {% if purchases %}
@@ -47,7 +84,8 @@
               <td>{{ purchase.price_paid|coins }}</td>
               <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
               <td>
-                {% if purchase.is_used %}<span class="badge">използвана на {{ purchase.used_at|date:"j F"|lower }}</span>
+                {% if purchase.privilege.is_cosmetic %}<span class="badge">за профила</span>
+                {% elif purchase.is_used %}<span class="badge">използвана на {{ purchase.used_at|date:"j F"|lower }}</span>
                 {% else %}<span class="badge status-approved">неизползвана</span>{% endif %}
               </td>
             </tr>

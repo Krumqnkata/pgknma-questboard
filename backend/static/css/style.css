@@ -54,6 +54,7 @@
   --code-comment: #8b9098;
 
   --radius: 4px;
+  --on-accent: #fff;  /* текст върху акцентния цвят */
   --font: "Sofia Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Cascadia Mono", ui-monospace, Consolas, monospace;
   color-scheme: light;
@@ -81,6 +82,20 @@
   --code-comment: #6c727c;
   color-scheme: dark;
 }
+
+/* ---------- Цвят по гилдия ----------
+ * Когато влезе ученик, <html> получава клас accent-<гилдия> и акцентът на сайта
+ * става в цвета на гилдията му. Цветовете са проверени за контраст: текстът
+ * върху тях и те върху фона са поне 4.5:1.
+ */
+:root.accent-builders { --accent: #a65400; --accent-soft: #fbefe3; }
+:root.accent-guardians { --accent: #1d5bbf; --accent-soft: #e8effb; }
+:root.accent-explorers { --accent: #137544; --accent-soft: #e3f3ea; }
+:root.accent-citizens { --accent: #6b3fb5; --accent-soft: #efe9fa; }
+:root[data-theme="dark"].accent-builders { --accent: var(--builders); --accent-soft: #3a2a14; --on-accent: #121316; }
+:root[data-theme="dark"].accent-guardians { --accent: var(--guardians); --accent-soft: #172840; --on-accent: #121316; }
+:root[data-theme="dark"].accent-explorers { --accent: var(--explorers); --accent-soft: #133224; --on-accent: #121316; }
+:root[data-theme="dark"].accent-citizens { --accent: var(--citizens); --accent-soft: #2a2140; --on-accent: #121316; }
 
 /* ---------- Основа ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -160,13 +175,13 @@ a:hover { color: var(--accent); }
 .nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
 .nav .count {
   display: inline-block; min-width: 1.35em; padding: 0 0.35em; margin-left: 0.15em;
-  border-radius: 999px; background: var(--accent); color: #fff;
+  border-radius: 999px; background: var(--accent); color: var(--on-accent);
   font-size: 0.72rem; font-weight: 700; text-align: center; line-height: 1.5;
 }
 
 .header-tools { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
 .user-link { text-decoration: none; font-size: 0.9rem; font-weight: 600; text-align: right; line-height: 1.2; }
-.user-link span { display: block; color: var(--muted); font-weight: 400; font-size: 0.75rem; }
+.user-text > span { display: block; color: var(--muted); font-weight: 400; font-size: 0.75rem; }
 
 .icon-button {
   display: inline-grid; place-items: center;
@@ -206,7 +221,7 @@ a:hover { color: var(--accent); }
   background: var(--ink); color: var(--paper);
   text-decoration: none; cursor: pointer;
 }
-.btn:hover, button:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:hover, button:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn-outline, button.btn-outline { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn-outline:hover, button.btn-outline:hover { background: transparent; color: var(--ink); border-color: var(--ink); }
 .btn-danger, button.btn-danger { background: transparent; color: var(--bad); border-color: currentColor; }
@@ -440,7 +455,7 @@ input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--acce
 .bell-count {
   position: absolute; top: -0.45rem; right: -0.45rem;
   min-width: 1.15rem; height: 1.15rem; padding: 0 0.3rem;
-  border-radius: 999px; background: var(--accent); color: #fff;
+  border-radius: 999px; background: var(--accent); color: var(--on-accent);
   font-size: 0.68rem; font-weight: 700; line-height: 1.15rem; text-align: center;
 }
 .notification { align-items: center; }
@@ -479,6 +494,147 @@ input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--acce
 .footer-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; align-items: center; }
 .footer-links a { color: inherit; }
 .auth-note { margin: 1rem 0 0; text-align: center; }
+
+/* ---------- Аватари (web/avatars.py) ---------- */
+.avatar {
+  --avatar-size: 40px;
+  flex: none; display: inline-grid; place-items: center;
+  width: var(--avatar-size); height: var(--avatar-size); border-radius: 28%;
+  color: var(--chip-color, var(--accent));
+  background: color-mix(in srgb, var(--chip-color, var(--accent)) 14%, var(--surface));
+}
+.avatar svg { width: 100%; height: 100%; display: block; }
+/* Рамки от магазина – само външен вид */
+.avatar.frame-gold { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #d4a017; }
+.avatar.frame-neon { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #00c2ff, 0 0 12px 2px rgba(0, 194, 255, 0.55); }
+.avatar.frame-rainbow { position: relative; }
+.avatar.frame-rainbow::before {
+  content: ""; position: absolute; inset: -4px; border-radius: 32%; z-index: -1;
+  background: conic-gradient(#ff4d5e, #f0a53a, #ffe066, #4ecb84, #6aa5ff, #b48cff, #ff4d5e);
+}
+.avatar.frame-rainbow { isolation: isolate; outline: 2px solid var(--surface); }
+
+.user-link { display: inline-flex; align-items: center; gap: 0.55rem; }
+.user-text { display: block; }
+.who { display: inline-flex; align-items: center; gap: 0.6rem; }
+.who > span { display: inline-flex; flex-direction: column; line-height: 1.25; }
+.who-large strong { font-size: 1.15rem; }
+.player-title {
+  display: inline-block; width: fit-content; margin-top: 0.1rem;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent);
+}
+.hero-player { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+.hero-player .hero-title { margin: 0; }
+.streak {
+  display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.4rem; padding: 0.15rem 0.6rem;
+  border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 0.85rem; font-weight: 700;
+  vertical-align: middle;
+}
+.streak svg { width: 1rem; height: 1rem; }
+
+/* ---------- Мисиите като в игра ---------- */
+.mission-card { --tier: var(--line); border-top: 3px solid var(--tier); }
+.mission-card.tier-easy { --tier: #b07a4a; }
+.mission-card.tier-medium { --tier: #8d99a8; }
+.mission-card.tier-hard { --tier: #d4a017; }
+.mission-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; font-size: 0.78rem; }
+.tier { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pips { display: inline-flex; gap: 2px; }
+.pips i { width: 7px; height: 7px; transform: rotate(45deg); border: 1.5px solid var(--tier); }
+.pips i.on { background: var(--tier); }
+.tag { font-weight: 700; border-radius: 999px; padding: 0.05rem 0.5rem; }
+.tag-new { background: var(--accent); color: var(--on-accent); }
+.tag-soon { color: var(--bad); border: 1px solid currentColor; }
+
+/* ---------- Класация ---------- */
+.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.segmented a { padding: 0.35rem 0.95rem; border-radius: 999px; text-decoration: none; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+.segmented a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+.ranking td { vertical-align: middle; }
+.rank { white-space: nowrap; }
+.move { display: inline-block; margin-left: 0.25rem; font-size: 0.72rem; font-weight: 700; }
+.move.up { color: var(--ok); }
+.move.down { color: var(--bad); }
+tr.top-2 .rank, tr.top-3 .rank { color: var(--ink); }
+tr.top-1 .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #d4a017; }
+tr.gap td { text-align: center; color: var(--muted); padding: 0.2rem; }
+tr.mine td { background: var(--accent-soft); }
+
+/* ---------- Профил и магазин ---------- */
+.look { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.look-choices { display: grid; gap: 0.75rem; margin-top: 1.25rem; }
+.section-title { font-size: 1.15rem; margin: 0 0 1rem; }
+.cosmetic-preview { padding: 0.75rem; border-radius: var(--radius); background: var(--sunken); }
+
+/* ---------- Празнуване на ново ниво или значка ---------- */
+.celebrate {
+  width: min(26rem, calc(100vw - 2rem)); padding: 2rem 1.75rem 1.5rem; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
+  text-align: center; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  animation: celebrate-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.celebrate::backdrop { background: rgba(10, 12, 16, 0.55); }
+.celebrate h2 { font-size: 1.9rem; margin: 0.2rem 0 1rem; }
+.celebrate-kicker { margin: 0; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.8rem; }
+.celebrate-list { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: 0.6rem; text-align: left; }
+.celebrate-list li { display: flex; gap: 0.75rem; align-items: center; }
+.celebrate-list .badge-icon { border: 0; background: var(--accent-soft); color: var(--accent); }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i {
+  position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+  background: var(--accent); animation: confetti-fall 2.4s ease-in 0.15s forwards;
+}
+.confetti i:nth-child(3n) { background: #d4a017; }
+.confetti i:nth-child(3n+1) { background: var(--guardians); }
+.confetti i:nth-child(4n) { width: 6px; height: 6px; border-radius: 50%; }
+.confetti i:nth-child(1) { left: 6%; animation-delay: 0.1s; }
+.confetti i:nth-child(2) { left: 12%; animation-delay: 0.5s; }
+.confetti i:nth-child(3) { left: 18%; animation-delay: 0.25s; }
+.confetti i:nth-child(4) { left: 24%; animation-delay: 0.7s; }
+.confetti i:nth-child(5) { left: 30%; animation-delay: 0.05s; }
+.confetti i:nth-child(6) { left: 36%; animation-delay: 0.6s; }
+.confetti i:nth-child(7) { left: 42%; animation-delay: 0.3s; }
+.confetti i:nth-child(8) { left: 48%; animation-delay: 0.8s; }
+.confetti i:nth-child(9) { left: 54%; animation-delay: 0.15s; }
+.confetti i:nth-child(10) { left: 60%; animation-delay: 0.55s; }
+.confetti i:nth-child(11) { left: 66%; animation-delay: 0.35s; }
+.confetti i:nth-child(12) { left: 72%; animation-delay: 0.75s; }
+.confetti i:nth-child(13) { left: 78%; animation-delay: 0.2s; }
+.confetti i:nth-child(14) { left: 84%; animation-delay: 0.65s; }
+.confetti i:nth-child(15) { left: 90%; animation-delay: 0.4s; }
+.confetti i:nth-child(16) { left: 95%; animation-delay: 0.85s; }
+.confetti i:nth-child(17) { left: 3%; animation-delay: 0.95s; }
+.confetti i:nth-child(18) { left: 50%; animation-delay: 1s; }
+@keyframes celebrate-in { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(420px) rotate(540deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebrate { animation: none; }
+  .confetti { display: none; }
+}
+
+/* ---------- Долно меню на телефон (само за ученици) ---------- */
+.tabbar { display: none; }
+@media (max-width: 700px) {
+  .has-tabbar .nav { display: none; }
+  .has-tabbar .user-text { display: none; }
+  .has-tabbar .site-footer { padding-bottom: 4.5rem; }
+  .tabbar {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
+  }
+  .tabbar a {
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    padding: 0.3rem 0; text-decoration: none; color: var(--muted); font-size: 0.68rem; font-weight: 600;
+  }
+  .tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar a[aria-current="page"] { color: var(--accent); }
+  .hero-player .avatar { --avatar-size: 56px !important; }
+}
 
 /* ---------- Страници за грешки ---------- */
 .error-page { padding: 4rem 0; max-width: 40rem; }

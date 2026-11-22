@@ -1,15 +1,24 @@
 {% extends "base.html" %}
-{% load questboard %}
+{% load questboard static %}
 
 {% block title %}Начало – Questboard{% endblock %}
 
 {% block content %}
 <section class="hero">
   <div>
-    <h1 class="hero-title">Здравей, {{ user.nickname }}</h1>
+    <div class="hero-player">
+      {% avatar user 72 %}
+      <div>
+        <h1 class="hero-title">Здравей, {{ user.nickname }}</h1>
+        {% if user.shown_title %}<span class="player-title">{{ user.shown_title.name }}</span>{% endif %}
+      </div>
+    </div>
     <p class="hero-sub">
       {% if stats.level %}Ниво {{ stats.level.number }}{% if stats.level.title %}, {{ stats.level.title|lower }}{% endif %}{% endif %}
       в гилдия <span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>
+      {% if stats.streak %}
+        <span class="streak" title="Поредни седмици с изпълнена мисия">{% badge_icon "flame" %} {{ stats.streak }} {% if stats.streak == 1 %}седмица{% else %}седмици{% endif %} подред</span>
+      {% endif %}
     </p>
     <div class="progress" role="progressbar" aria-valuenow="{{ stats.progress_percent }}" aria-valuemin="0"
          aria-valuemax="100" aria-label="Напредък до следващото ниво"><span style="width: {{ stats.progress_percent }}%"></span></div>
@@ -75,4 +84,12 @@
   {% include "web/_badges.html" %}
 </section>
 {% endif %}
+
+{% if celebrations %}
+  {% include "web/_celebrate.html" %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if celebrations %}<script src="{% static 'js/celebrate.js' %}" defer></script>{% endif %}
 {% endblock %}

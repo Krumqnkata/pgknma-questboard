@@ -9,7 +9,13 @@ collectstatic: компресират се и получават уникалн�
 стандартното хранилище на Django хвърля грешка и всяка страница дава грешка 500.
 Това хранилище в такъв случай просто връща обикновения адрес (style.css),
 а WhiteNoise намира файла направо в папката static/.
+
+Тук е и хранилището за логото на училището (LogoStorage).
 """
+from urllib.parse import quote
+
+from django.core.files.storage import FileSystemStorage
+from django.urls import reverse
 from whitenoise.storage import CompressedManifestStaticFilesStorage
 
 
@@ -22,3 +28,14 @@ class ForgivingManifestStorage(CompressedManifestStaticFilesStorage):
         except ValueError:
             # Файлът не е подготвен с collectstatic – адрес без уникалното име.
             return f"{self.base_url}{name}"
+
+
+class LogoStorage(FileSystemStorage):
+    """
+    Логото на училището се пази в media/branding/, но се показва от адреса
+    /school-logo/ (web/views/branding.py). Така прегледът в администрацията
+    работи и в публикуваната версия, където папката media/ не се сервира.
+    """
+
+    def url(self, name):
+        return f"{reverse('school_logo')}?v={quote(name or '')}"

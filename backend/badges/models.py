@@ -19,6 +19,7 @@ class Badge(models.Model):
         XP = "xp", "Натрупан опит (XP)"
         LEVEL = "level", "Достигнато ниво"
         PURCHASES = "purchases", "Покупки от магазина"
+        STREAK = "streak", "Поредни седмици с изпълнена мисия"
 
     class Icon(models.TextChoices):
         FLAG = "flag", "Флаг"
@@ -27,6 +28,7 @@ class Badge(models.Model):
         SHIELD = "shield", "Щит"
         BOLT = "bolt", "Мълния"
         BAG = "bag", "Торба"
+        FLAME = "flame", "Пламък"
 
     name = models.CharField("име", max_length=60, unique=True)
     description = models.CharField("описание", max_length=200)
