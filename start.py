@@ -46,6 +46,21 @@ def prepare_production():
     manage("check", "--deploy")
 
 
+def proxy_args():
+    """
+    Зад прокси сървър (Apache, nginx) на същата машина: waitress приема от него
+    истинския адрес на потребителя и дали връзката е по HTTPS. Без тези флагове
+    waitress маха заглавките X-Forwarded-* и всички потребители изглеждат като
+    127.0.0.1 – тогава защитата на входа би заключила всички наведнъж.
+    Вярваме само на един прокси и само на 127.0.0.1, за да не може някой отвън
+    да подправи адреса си.
+    """
+    if os.getenv("DJANGO_BEHIND_PROXY", "").lower() not in ("1", "true", "yes", "on"):
+        return []
+    return ["--trusted-proxy=127.0.0.1", "--trusted-proxy-count=1",
+            "--trusted-proxy-headers=x-forwarded-for x-forwarded-proto"]
+
+
 def start_django():
     host = os.getenv("DJANGO_HOST", "127.0.0.1")
     port = os.getenv("DJANGO_PORT", "8000")
@@ -54,7 +69,7 @@ def start_django():
         # waitress – сървър за реална работа, работи и под Windows, и под Linux
         # --max-request-body-size: заявка над 64 MB се спира още в сървъра (качените файлове са много по-малки)
         command = [sys.executable, "-m", "waitress", f"--listen={host}:{port}", "--threads=8",
-                   "--max-request-body-size=67108864",
+                   "--max-request-body-size=67108864", *proxy_args(),
                    "questboard.wsgi:application"]
     else:
         command = [sys.executable, "manage.py", "runserver", f"{host}:{port}"]
