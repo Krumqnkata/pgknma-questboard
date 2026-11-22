@@ -235,10 +235,9 @@ Questboard се разпространява под лиценза GNU General P
 | [Pillow](https://python-pillow.org/) | проверка, че каченото лого е изображение | MIT-CMU |
 | [WhiteNoise](https://whitenoise.readthedocs.io/) | статичните файлове в публикуваната версия | MIT |
 | [waitress](https://docs.pylonsproject.org/projects/waitress/) | уеб сървър в публикуваната версия | ZPL-2.1 |
-| [Onest](https://fonts.google.com/specimen/Onest) | шрифтът на сайта (през Google Fonts) | SIL OFL 1.1 |
-| [JetBrains Mono](https://www.jetbrains.com/lp/mono/) | шрифтът в панелите с код (през Google Fonts) | SIL OFL 1.1 |
+| [Sofia Sans](https://github.com/lettersoup/Sofia-Sans) | шрифтът на сайта и администрацията – с българска кирилица (в `static/fonts/`) | SIL OFL 1.1 |
+| [Cascadia Mono](https://github.com/microsoft/cascadia-code) | шрифтът в панелите с код – с български форми на буквите (в `static/fonts/`) | SIL OFL 1.1 |
 | [Material Symbols](https://fonts.google.com/icons) | иконите в администрацията (идват с django-unfold) | Apache-2.0 |
-| [Inter](https://rsms.me/inter/) | шрифтът на администрацията (идва с django-unfold) | SIL OFL 1.1 |
 
 django-unfold включва и свои JavaScript библиотеки (Alpine.js, htmx, Chart.js
 и др.). Лицензите им са в пакета на django-unfold.

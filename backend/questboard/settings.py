@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from django.templatetags.static import static
 from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
@@ -225,6 +226,8 @@ UNFOLD = {
     "SITE_URL": "/",
     "ENVIRONMENT": "questboard.admin_config.environment_label",
     "SHOW_HISTORY": True,
+    # Същият шрифт като на сайта – с българска кирилица
+    "STYLES": [lambda request: static("css/admin.css")],
     "COLORS": {
         # Червено – същият акцент като в страниците за ученици и учители
         "primary": {

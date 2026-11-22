@@ -18,10 +18,8 @@
     })();
   </script>
 
-  {# Шрифтове: Onest (създаден за кирилица) и JetBrains Mono – и двата са със свободен лиценз OFL. #}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  {# Шрифтовете са на нашия сървър (без заявки към Google), с българските форми на буквите. #}
+  <link rel="preload" href="{% static 'fonts/SofiaSans-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>

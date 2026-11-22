@@ -6,6 +6,27 @@
  * или сама, ако устройството е в тъмен режим и потребителят не е избрал друго.
  */
 
+/* ---------- Шрифтове ----------
+ * И двата са със свободен лиценз SIL OFL 1.1 (текстът е до файловете в static/fonts/).
+ * Sofia Sans е създаден от българското студио Lettersoup: българските форми на
+ * буквите (д, л, ж, в, к...) са основните, руските са само като допълнение.
+ * Cascadia Mono има български форми, които браузърът включва заради lang="bg".
+ */
+@font-face {
+  font-family: "Sofia Sans";
+  src: url("../fonts/SofiaSans-wght.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cascadia Mono";
+  src: url("../fonts/CascadiaMono.woff2") format("woff2");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ---------- Цветове ---------- */
 :root {
   --paper: #f7f7f5;      /* фон на страницата */
@@ -33,8 +54,8 @@
   --code-comment: #8b9098;
 
   --radius: 4px;
-  --font: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --font: "Sofia Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Cascadia Mono", ui-monospace, Consolas, monospace;
   color-scheme: light;
 }
 
