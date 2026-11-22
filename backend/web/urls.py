@@ -13,6 +13,8 @@ urlpatterns = [
     path("notifications/", views.notifications, name="notifications"),
     path("password/", views.QuestboardPasswordChangeView.as_view(), name="password_change"),
     path("school-logo/", views.school_logo, name="school_logo"),
+    path("terms/", views.terms, name="terms"),
+    path("privacy/", views.privacy, name="privacy"),
     # Мисии
     path("missions/", views.mission_list, name="mission_list"),
     path("missions/new/", views.mission_create, name="mission_create"),

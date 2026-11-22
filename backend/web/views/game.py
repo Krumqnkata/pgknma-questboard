@@ -4,6 +4,7 @@
 """
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -12,10 +13,11 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import Guild, SchoolClass, User
+from accounts.nicknames import change_nickname, next_change_at
 from accounts.permissions import role_required
 from badges.services import award_badges, badge_cards
 from economy import leaderboard
-from economy.models import Privilege, Purchase, XPTransaction
+from economy.models import GameSettings, Privilege, Purchase, XPTransaction
 from economy.services import (
     active_privileges, approve_claim, buy_privilege, mark_purchase_used, pending_claims_for,
     reject_claim, student_stats, unused_purchases,
@@ -24,7 +26,7 @@ from economy.words import coins_text
 from missions.models import Claim
 from missions.services import GameRuleError, missions_for_student
 
-from ..forms import ReviewForm
+from ..forms import NicknameForm, ReviewForm
 
 STUDENT = User.Role.STUDENT
 TEACHER = User.Role.TEACHER
@@ -87,10 +89,25 @@ def student_home(request):
 
 @login_required
 def profile(request):
-    earned = []
-    if request.user.is_student:
-        earned = [card for card in badge_cards(request.user) if card.earned]
-    return render(request, "web/profile.html", {"earned_badges": earned})
+    user = request.user
+    context = {}
+    if user.is_student:
+        form = NicknameForm(request.POST or None, initial={"nickname": user.nickname})
+        if request.method == "POST" and form.is_valid():
+            try:
+                nickname = change_nickname(user, form.cleaned_data["nickname"])
+            except ValidationError as error:
+                form.add_error("nickname", error)
+            else:
+                messages.success(request, f"Псевдонимът ти вече е „{nickname}“.")
+                return redirect("profile")
+        context = {
+            "earned_badges": [card for card in badge_cards(user) if card.earned],
+            "nickname_form": form,
+            "next_nickname_change": next_change_at(user),
+            "nickname_change_days": GameSettings.load().nickname_change_days,
+        }
+    return render(request, "web/profile.html", context)
 
 
 # ---------- Проверка на заявки (учител) ----------

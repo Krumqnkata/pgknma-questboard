@@ -49,3 +49,9 @@ class ClaimForm(forms.Form):
         max_length=EVIDENCE_MAX_LENGTH,
         widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Кратко описание или връзка към работата ти"}),
     )
+
+
+class NicknameForm(forms.Form):
+    """Ученикът сменя псевдонима си. Правилата са в accounts/nicknames.py."""
+
+    nickname = forms.CharField(label="Нов псевдоним", max_length=20)

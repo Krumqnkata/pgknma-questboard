@@ -30,6 +30,10 @@
       <input type="hidden" name="next" value="{{ next }}">
       <button type="submit" class="btn btn-block">Влез</button>
     </form>
+    <p class="muted small auth-note">
+      С влизането приемате <a href="{% url 'terms' %}">условията за ползване</a> и
+      <a href="{% url 'privacy' %}">политиката за поверителност</a>.
+    </p>
   </div>
 </section>
 {% endblock %}

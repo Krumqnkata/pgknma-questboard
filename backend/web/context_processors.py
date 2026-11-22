@@ -23,4 +23,4 @@ def school(request):
     if rules.school_logo:
         # ?v=… се сменя при всяка промяна на настройките – браузърът взима новото лого.
         logo_url = f"{reverse('school_logo')}?v={int(rules.updated_at.timestamp())}"
-    return {"school": {"name": rules.school_name, "logo_url": logo_url}}
+    return {"school": {"name": rules.school_name, "logo_url": logo_url, "email": rules.contact_email}}

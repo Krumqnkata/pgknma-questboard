@@ -153,3 +153,25 @@ class LoginAttempt(models.Model):
 
     def __str__(self):
         return f"{self.email} ({self.ip_address or '—'})"
+
+
+class NicknameChange(models.Model):
+    """
+    История на псевдонимите. Пази се, за да може администраторът да види кой
+    кой е бил и да върне стар псевдоним, ако новият е неподходящ.
+    """
+
+    student = models.ForeignKey(User, verbose_name="ученик", on_delete=models.CASCADE, related_name="nickname_changes")
+    old = models.CharField("стар псевдоним", max_length=30, blank=True)
+    new = models.CharField("нов псевдоним", max_length=30)
+    changed_by = models.ForeignKey(User, verbose_name="сменен от", on_delete=models.SET_NULL, null=True,
+                                   related_name="+")
+    changed_at = models.DateTimeField("кога", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "смяна на псевдоним"
+        verbose_name_plural = "смени на псевдоними"
+        ordering = ["-changed_at", "-id"]
+
+    def __str__(self):
+        return f"{self.old or '—'} → {self.new}"

@@ -8,15 +8,30 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group
 from django.shortcuts import render
 from django.utils.cache import add_never_cache_headers
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .importer import COLUMNS, import_users
-from .models import Guild, LoginAttempt, SchoolClass, User
+from .models import Guild, LoginAttempt, NicknameChange, SchoolClass, User
 
 # Ролите са в полето User.role, затова групите на Django не ни трябват.
 admin.site.unregister(Group)
+
+
+class NicknameChangeInline(TabularInline):
+    """Историята на псевдонима на ученика – само за четене."""
+
+    model = NicknameChange
+    fk_name = "student"
+    fields = ["old", "new", "changed_by", "changed_at"]
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+    verbose_name_plural = "история на псевдонима"
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(User)
@@ -48,6 +63,16 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
     ]
     readonly_fields = ["last_login", "date_joined"]
     actions_list = ["import_csv"]  # бутон над списъка с потребители
+
+    def get_inlines(self, request, obj):
+        return [NicknameChangeInline] if obj and obj.is_student else []
+
+    def save_model(self, request, obj, form, change):
+        """Смяната на псевдоним от администратора също влиза в историята."""
+        old = User.objects.get(pk=obj.pk).nickname if change else None
+        super().save_model(request, obj, form, change)
+        if change and "nickname" in form.changed_data and obj.nickname:
+            NicknameChange.objects.create(student=obj, old=old or "", new=obj.nickname, changed_by=request.user)
 
     @action(description="Внеси от CSV", url_path="import-csv", icon="upload_file")
     def import_csv(self, request):

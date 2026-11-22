@@ -290,6 +290,13 @@ UNFOLD = {
                 ],
             },
             {
+                "title": "Сайт",
+                "separator": True,
+                "items": [
+                    {"title": "Условия и поверителност", "icon": "gavel", "link": _admin_link("web_sitepage")},
+                ],
+            },
+            {
                 "title": "Разписание",
                 "separator": True,
                 "collapsible": True,

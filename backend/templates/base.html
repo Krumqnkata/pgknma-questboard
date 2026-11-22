@@ -99,7 +99,11 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <span>Questboard{% if school.name %} в {{ school.name }}{% endif %} – училищна платформа с мисии, точки и асистент.</span>
-      <span>Отворен код под лиценз GPL-3.0</span>
+      <nav class="footer-links" aria-label="Правна информация">
+        <a href="{% url 'terms' %}">Условия за ползване</a>
+        <a href="{% url 'privacy' %}">Поверителност</a>
+        <span>Отворен код под лиценз GPL-3.0</span>
+      </nav>
     </div>
   </footer>
 

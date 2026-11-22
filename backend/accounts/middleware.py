@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 
 # Адреси, които са позволени и с временна парола
-ALLOWED_PATHS = ("password_change", "logout")
+ALLOWED_PATHS = ("password_change", "logout", "terms", "privacy")
 
 
 class ForcePasswordChangeMiddleware:

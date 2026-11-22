@@ -1,5 +1,6 @@
 """Собствени филтри и тагове за шаблоните. Зареждат се с {% load questboard %}."""
 from django import template
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
@@ -74,3 +75,47 @@ def badge_icon(name):
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
         f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{path}</svg>'
     )
+
+
+@register.filter
+def page_text(text, school=None):
+    """
+    Превръща текста на страница от администрацията в HTML:
+    празен ред – нов абзац, „## “ – заглавие, „- “ – точка от списък.
+    Всеки ред се екранира, затова в текста не може да се вмъкне HTML или скрипт.
+    „[училище]“ и „[имейл]“ се заменят с данните от „Настройки на играта“.
+    """
+    school = school or {}
+    replacements = {
+        "[училище]": escape(school.get("name") or "училището"),
+        "[имейл]": escape(school.get("email") or "администратора на платформата"),
+    }
+    html, paragraph, items = [], [], []
+
+    def flush():
+        if paragraph:
+            html.append("<p>" + " ".join(paragraph) + "</p>")
+            paragraph.clear()
+        if items:
+            html.append("<ul>" + "".join(f"<li>{item}</li>" for item in items) + "</ul>")
+            items.clear()
+
+    for raw in (text or "").splitlines():
+        line = escape(raw.strip())
+        for placeholder, value in replacements.items():
+            line = line.replace(escape(placeholder), value)
+        if not line:
+            flush()
+        elif line.startswith("## "):
+            flush()
+            html.append(f"<h2>{line[3:]}</h2>")
+        elif line.startswith("- "):
+            if paragraph:
+                flush()
+            items.append(line[2:])
+        else:
+            if items:
+                flush()
+            paragraph.append(line)
+    flush()
+    return mark_safe("\n".join(html))

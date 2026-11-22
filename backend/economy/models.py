@@ -88,6 +88,22 @@ class GameSettings(models.Model):
         validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"]), validate_logo_size],
         help_text="PNG, JPG или WebP, до 1 MB. Показва се в заглавната лента, на началната страница и на входа.",
     )
+    contact_email = models.EmailField(
+        "имейл за връзка", blank=True,
+        help_text="Показва се в условията за ползване и политиката за поверителност.",
+    )
+
+    # --- Псевдоними (учениците ги сменят сами от „Профил“) ---
+    nickname_change_days = models.PositiveIntegerField(
+        "смяна на псевдонима веднъж на (дни)", default=30,
+        help_text="0 – ученикът може да сменя псевдонима си без ограничение.",
+    )
+    banned_words = models.TextField(
+        "забранени думи в псевдонимите", blank=True,
+        default="\n".join(["admin", "админ", "администратор", "учител", "директор", "модератор"]),
+        help_text="По една на ред. Псевдоним, който съдържа някоя от тях (без значение главни или малки букви), "
+                  "не се приема. Не важи за вече дадените псевдоними.",
+    )
 
     # --- Защита на входа ---
     login_max_attempts = models.PositiveIntegerField(
@@ -114,6 +130,9 @@ class GameSettings(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Настройките на играта не могат да се изтрият.")
+
+    def banned_word_list(self):
+        return [word.strip().casefold() for word in self.banned_words.splitlines() if word.strip()]
 
     @property
     def model_name(self):
