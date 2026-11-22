@@ -7,6 +7,7 @@ from accounts.models import User
 from economy.models import Privilege, Purchase
 from missions.models import Claim, Mission
 from missions.services import EVIDENCE_MAX_LENGTH
+from notifications.models import Notification
 
 
 class MeSerializer(serializers.ModelSerializer):
@@ -124,3 +125,23 @@ class DraftSerializer(serializers.Serializer):
 class HintSerializer(serializers.Serializer):
     hint = serializers.CharField(source="text")
     created_at = serializers.DateTimeField()
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    is_read = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = ["id", "kind", "text", "link", "created_at", "is_read"]
+
+
+class BadgeCardSerializer(serializers.Serializer):
+    """Значка и докъде е стигнал ученикът до нея."""
+
+    name = serializers.CharField(source="badge.name")
+    description = serializers.CharField(source="badge.description")
+    icon = serializers.CharField(source="badge.icon")
+    rule = serializers.CharField(source="badge.rule")
+    threshold = serializers.IntegerField(source="badge.threshold")
+    value = serializers.IntegerField()
+    earned = serializers.BooleanField()

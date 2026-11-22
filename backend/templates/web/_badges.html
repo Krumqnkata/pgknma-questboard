@@ -1,0 +1,20 @@
+{% load questboard %}
+{# Значките на ученика (Ф16). badge_cards идват от badges/services.py → badge_cards(). #}
+<ul class="badge-grid">
+  {% for card in badge_cards %}
+    <li class="badge-card{% if card.earned %} earned{% endif %}">
+      <span class="badge-icon">{% badge_icon card.badge.icon %}</span>
+      <div class="badge-body">
+        <strong>{{ card.badge.name }}</strong>
+        <span class="muted small">{{ card.badge.description }}</span>
+        {% if card.earned %}
+          <span class="badge-state">Получена</span>
+        {% else %}
+          <div class="progress progress-thin" role="progressbar" aria-valuenow="{{ card.value }}" aria-valuemin="0"
+               aria-valuemax="{{ card.badge.threshold }}" aria-label="Напредък към „{{ card.badge.name }}“"><span style="width: {{ card.percent }}%"></span></div>
+          <span class="badge-state">{{ card.value }} от {{ card.badge.threshold }}</span>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+</ul>

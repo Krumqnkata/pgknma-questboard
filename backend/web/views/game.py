@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import Guild, SchoolClass, User
 from accounts.permissions import role_required
+from badges.services import award_badges, badge_cards
 from economy import leaderboard
 from economy.models import Privilege, Purchase, XPTransaction
 from economy.services import (
@@ -63,6 +64,8 @@ def landing(request):
 def student_home(request):
     student = request.user
     stats = student_stats(student)
+    award_badges(student)  # ако администраторът е добавил нова значка, която ученикът вече е заслужил
+    cards = badge_cards(student)
     return render(request, "web/student_home.html", {
         "stats": stats,
         # Данните за панела „player.ts“ – само неща, които ученикът и без това вижда.
@@ -77,12 +80,17 @@ def student_home(request):
                                       .order_by("-reviewed_at", "-submitted_at")[:5],
         "recent_xp": student.xp_transactions.order_by("-created_at")[:5],
         "recent_coins": student.coin_transactions.order_by("-created_at")[:5],
+        "badge_cards": cards,
+        "badges_earned": sum(card.earned for card in cards),
     })
 
 
 @login_required
 def profile(request):
-    return render(request, "web/profile.html")
+    earned = []
+    if request.user.is_student:
+        earned = [card for card in badge_cards(request.user) if card.earned]
+    return render(request, "web/profile.html", {"earned_badges": earned})
 
 
 # ---------- Проверка на заявки (учител) ----------

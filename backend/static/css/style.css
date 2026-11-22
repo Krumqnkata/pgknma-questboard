@@ -434,6 +434,41 @@ input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--acce
 .chat-form { display: flex; gap: 0.5rem; padding: 1rem 1.25rem; border-top: 1px solid var(--line); }
 .chat-form input { flex: 1; }
 
+/* ---------- Звънче и известия (Ф15) ---------- */
+.bell { position: relative; text-decoration: none; }
+.bell.active { border-color: var(--ink); }
+.bell-count {
+  position: absolute; top: -0.45rem; right: -0.45rem;
+  min-width: 1.15rem; height: 1.15rem; padding: 0 0.3rem;
+  border-radius: 999px; background: var(--accent); color: #fff;
+  font-size: 0.68rem; font-weight: 700; line-height: 1.15rem; text-align: center;
+}
+.notification { align-items: center; }
+.notification.unread { box-shadow: inset 3px 0 0 var(--accent); padding-left: 0.85rem; }
+.notification-kind { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.notification-kind.kind-claim_approved, .notification-kind.kind-level_up, .notification-kind.kind-badge { color: var(--ok); }
+.notification-kind.kind-claim_rejected { color: var(--bad); }
+.new-label { font-size: 0.7rem; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 0 0.45rem; }
+.notification time { margin-left: auto; }
+
+/* ---------- Значки (Ф16) ---------- */
+.badge-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; }
+.badge-card {
+  display: flex; gap: 0.9rem; align-items: flex-start;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1rem;
+}
+.badge-icon {
+  flex: none; display: grid; place-items: center; width: 2.75rem; height: 2.75rem;
+  border-radius: 50%; border: 1px dashed var(--line); color: var(--muted);
+}
+.badge-icon svg { width: 1.35rem; height: 1.35rem; }
+.badge-card.earned .badge-icon { border: 0; background: var(--accent-soft); color: var(--accent); }
+.badge-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
+.badge-card:not(.earned) .badge-body strong { color: var(--muted); }
+.badge-state { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+.badge-card.earned .badge-state { color: var(--ok); }
+.progress-thin { height: 4px; margin: 0.4rem 0 0.1rem; }
+
 /* ---------- Страници за грешки ---------- */
 .error-page { padding: 4rem 0; max-width: 40rem; }
 .error-code { font-size: clamp(5rem, 16vw, 9rem); font-weight: 800; letter-spacing: -0.06em; line-height: 0.9; color: var(--accent); }

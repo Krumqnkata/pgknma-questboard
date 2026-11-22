@@ -7,7 +7,7 @@ REST API на Questboard. Отговорите са в JSON.
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from accounts.permissions import IsStudent, IsTeacher
 from assistant_bridge.services import AssistantError, ask, draft_mission, request_hint
+from badges.services import badge_cards
 from economy import leaderboard
 from economy.models import Purchase
 from economy.services import (
@@ -23,12 +24,13 @@ from economy.services import (
 )
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
+from notifications.services import mark_all_read, recent_for, unread_count
 from timetable import queries
 
 from .serializers import (
-    AnswerSerializer, ClaimCreateSerializer, ClaimSerializer, DraftSerializer, HintSerializer, IdeaSerializer,
-    MeSerializer, MissionSerializer, PrivilegeSerializer, PurchaseSerializer, QuestionSerializer,
-    RankingRowSerializer, ReviewSerializer, StatsSerializer,
+    AnswerSerializer, BadgeCardSerializer, ClaimCreateSerializer, ClaimSerializer, DraftSerializer, HintSerializer,
+    IdeaSerializer, MeSerializer, MissionSerializer, NotificationSerializer, PrivilegeSerializer, PurchaseSerializer,
+    QuestionSerializer, RankingRowSerializer, ReviewSerializer, StatsSerializer,
 )
 
 
@@ -162,6 +164,40 @@ class MyStatsView(APIView):
     @extend_schema(responses=StatsSerializer)
     def get(self, request):
         return Response(StatsSerializer(student_stats(request.user)).data)
+
+
+class MyBadgesView(APIView):
+    """Всички значки и докъде е стигнал влезлият ученик до всяка (Ф16)."""
+
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    @extend_schema(responses=BadgeCardSerializer(many=True))
+    def get(self, request):
+        return Response(BadgeCardSerializer(badge_cards(request.user), many=True).data)
+
+
+class NotificationsView(APIView):
+    """Последните известия на влезлия потребител и колко от тях са непрочетени (Ф15)."""
+
+    @extend_schema(responses=inline_serializer("Notifications", fields={
+        "unread": serializers.IntegerField(),
+        "items": NotificationSerializer(many=True),
+    }))
+    def get(self, request):
+        return Response({
+            "unread": unread_count(request.user),
+            "items": NotificationSerializer(recent_for(request.user), many=True).data,
+        })
+
+
+class NotificationsReadView(APIView):
+    """Отбелязва всички известия като прочетени."""
+
+    @extend_schema(request=None, responses=inline_serializer("NotificationsRead", fields={
+        "marked": serializers.IntegerField(),
+    }))
+    def post(self, request):
+        return Response({"marked": mark_all_read(request.user)})
 
 
 class PrivilegeViewSet(viewsets.ReadOnlyModelViewSet):

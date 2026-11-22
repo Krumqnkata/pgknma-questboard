@@ -24,6 +24,12 @@
   </dl>
   <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'password_change' %}">Смени паролата</a></div>
 </section>
+{% if earned_badges %}
+<section class="section">
+  <div class="section-head"><h2>Значки</h2></div>
+  {% include "web/_badges.html" with badge_cards=earned_badges %}
+</section>
+{% endif %}
 {% if user.is_student %}
   <p class="muted small section">В класациите другите виждат само псевдонима ти. Ако искаш да го смениш, обърни се към администратора.</p>
 {% endif %}

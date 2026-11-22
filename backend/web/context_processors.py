@@ -1,8 +1,9 @@
-"""Данни, нужни на всяка страница (броят чакащи заявки, името и логото на училището)."""
+"""Данни, нужни на всяка страница (броят чакащи заявки и известия, името и логото на училището)."""
 from django.urls import reverse
 
 from economy.models import GameSettings
 from missions.models import Claim
+from notifications.services import unread_count
 
 
 def navigation(request):
@@ -10,6 +11,8 @@ def navigation(request):
     if user.is_authenticated and user.is_teacher:
         count = Claim.objects.filter(mission__created_by=user, status=Claim.Status.PENDING).count()
         return {"pending_review_count": count}
+    if user.is_authenticated and user.is_student:
+        return {"unread_notifications": unread_count(user)}
     return {}
 
 

@@ -9,13 +9,18 @@ from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import Sum
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
+from badges.services import award_badges
 from missions.models import Claim
 from missions.services import GameRuleError
+from notifications.models import Notification
+from notifications.services import notify
 
 from .models import CoinTransaction, CoinWeek, GameSettings, Level, Privilege, Purchase, XPTransaction
+from .words import coins_text
 
 # ---------- Наличности (винаги се изчисляват от движенията) ----------
 
@@ -171,9 +176,23 @@ def approve_claim(claim, reviewer, comment="", now=None):
         coins = award_xp(student, xp, reason=f"Мисия „{claim.mission.title}“",
                          created_by=reviewer, claim=claim, now=now)
         new_level = level_for_xp(xp_total(student))
+        new_level = new_level if new_level != old_level else None
 
-    return ReviewResult(claim=claim, xp=xp, coins=coins,
-                        new_level=new_level if new_level != old_level else None)
+        # Известия за ученика (Ф15) и значки (Ф16) – в същата транзакция като XP
+        text = f"Заявката за „{claim.mission.title}“ е потвърдена: +{xp} XP"
+        if coins:
+            text += f" и +{coins_text(coins)}"
+        notify(student, Notification.Kind.CLAIM_APPROVED, text + "." + _teacher_says(claim),
+               link=reverse("mission_detail", args=[claim.mission_id]))
+        if new_level:
+            notify(student, Notification.Kind.LEVEL_UP, f"Мина на {str(new_level).lower()}!", link=reverse("home"))
+        award_badges(student)
+
+    return ReviewResult(claim=claim, xp=xp, coins=coins, new_level=new_level)
+
+
+def _teacher_says(claim):
+    return f" Учителят: „{claim.review_comment}“" if claim.review_comment else ""
 
 
 def reject_claim(claim, reviewer, comment=""):
@@ -181,6 +200,9 @@ def reject_claim(claim, reviewer, comment=""):
     _check_reviewer(claim, reviewer)
     with transaction.atomic():
         _mark_reviewed(claim, reviewer, Claim.Status.REJECTED, comment.strip())
+        notify(claim.student, Notification.Kind.CLAIM_REJECTED,
+               f"Заявката за „{claim.mission.title}“ е отказана.{_teacher_says(claim)} Можеш да я подадеш отново.",
+               link=reverse("mission_detail", args=[claim.mission_id]))
     return ReviewResult(claim=claim)
 
 
@@ -217,6 +239,7 @@ def buy_privilege(student, privilege):
             student=student, amount=-privilege.price, kind=CoinTransaction.Kind.SPENT,
             reason=f"Покупка: {privilege.name}", purchase=purchase, created_by=student,
         )
+        award_badges(student)
     return purchase
 
 

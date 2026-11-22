@@ -10,6 +10,7 @@ urlpatterns = [
     path("login/", auth_views.LoginView.as_view(authentication_form=LoginForm), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    path("notifications/", views.notifications, name="notifications"),
     path("password/", views.QuestboardPasswordChangeView.as_view(), name="password_change"),
     path("school-logo/", views.school_logo, name="school_logo"),
     # Мисии

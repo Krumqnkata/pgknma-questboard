@@ -65,4 +65,14 @@
     {% if not recent_xp and not recent_coins %}<p class="muted">Тук ще видиш опита и монетите, които печелиш и харчиш.</p>{% endif %}
   </section>
 </div>
+
+{% if badge_cards %}
+<section class="section">
+  <div class="section-head">
+    <h2>Значки</h2>
+    <span class="muted">{{ badges_earned }} от {{ badge_cards|length }}</span>
+  </div>
+  {% include "web/_badges.html" %}
+</section>
+{% endif %}
 {% endblock %}

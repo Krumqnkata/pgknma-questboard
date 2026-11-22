@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     "economy",
     "timetable",
     "assistant_bridge",
+    "notifications",
+    "badges",
     "api",
     "web",
 ]
@@ -264,6 +266,7 @@ UNFOLD = {
                      "link": _admin_link("economy_gamesettings")},
                     {"title": "Нива", "icon": "military_tech", "link": _admin_link("economy_level")},
                     {"title": "Магазин", "icon": "storefront", "link": _admin_link("economy_privilege")},
+                    {"title": "Значки", "icon": "workspace_premium", "link": _admin_link("badges_badge")},
                 ],
             },
             {
@@ -303,6 +306,8 @@ UNFOLD = {
                     {"title": "Движения на монети", "icon": "paid", "link": _admin_link("economy_cointransaction")},
                     {"title": "Седмични сметки", "icon": "date_range", "link": _admin_link("economy_coinweek")},
                     {"title": "Покупки", "icon": "shopping_bag", "link": _admin_link("economy_purchase")},
+                    {"title": "Получени значки", "icon": "military_tech", "link": _admin_link("badges_studentbadge")},
+                    {"title": "Известия", "icon": "notifications", "link": _admin_link("notifications_notification")},
                     {"title": "Ползване на асистента", "icon": "smart_toy",
                      "link": _admin_link("assistant_bridge_assistantlog")},
                     {"title": "Дадени подсказки", "icon": "lightbulb", "link": _admin_link("assistant_bridge_hint")},

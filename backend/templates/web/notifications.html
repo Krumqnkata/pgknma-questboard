@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Известия – Questboard{% endblock %}
+{% block page_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Известия</h1>
+    <p>Потвърдени и отказани заявки, нови нива и значки.</p>
+  </div>
+</div>
+
+<section class="panel">
+  {% for item in notifications %}
+    <div class="list-row notification{% if not item.is_read %} unread{% endif %}">
+      <span class="notification-kind kind-{{ item.kind }}">{{ item.get_kind_display }}</span>
+      {% if not item.is_read %}<span class="new-label">ново</span>{% endif %}
+      <time class="muted small" datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|date:"j E, H:i"|lower }}</time>
+      <p>{% if item.link %}<a href="{{ item.link }}">{{ item.text }}</a>{% else %}{{ item.text }}{% endif %}</p>
+    </div>
+  {% empty %}
+    <p class="muted">Още нямаш известия. Тук ще разбереш, когато учителят провери заявката ти.</p>
+  {% endfor %}
+</section>
+{% endblock %}
