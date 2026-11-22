@@ -152,6 +152,9 @@ if "test" in sys.argv:
 # При изтекла форма (CSRF) – нашата страница на български вместо стандартната
 CSRF_FAILURE_VIEW = "web.views.errors.csrf_failure"
 
+# Входът спира временно след много грешни пароли (accounts/lockout.py)
+AUTHENTICATION_BACKENDS = ["accounts.backends.LockoutModelBackend"]
+
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
@@ -304,6 +307,7 @@ UNFOLD = {
                      "link": _admin_link("assistant_bridge_assistantlog")},
                     {"title": "Дадени подсказки", "icon": "lightbulb", "link": _admin_link("assistant_bridge_hint")},
                     {"title": "Промени в администрацията", "icon": "history", "link": _admin_link("admin_logentry")},
+                    {"title": "Неуспешни входове", "icon": "lock_clock", "link": _admin_link("accounts_loginattempt")},
                 ],
             },
         ],
@@ -320,6 +324,10 @@ ASSISTANT_TIMEOUT_SECONDS = 50
 
 
 # ---------- Сигурност в публикуваната версия ----------
+# Има ли пред приложението обратен прокси сървър (nginx, хостинг). Тогава истинският
+# IP адрес на потребителя е в заглавката X-Forwarded-For (ползва се от защитата на входа).
+BEHIND_PROXY = env_bool("DJANGO_BEHIND_PROXY")
+
 # Сайтът се пуска само на този компютър (127.0.0.1 / localhost) – тогава няма HTTPS.
 LOCAL_ONLY = all(host in ("127.0.0.1", "localhost", "[::1]") for host in ALLOWED_HOSTS)
 
@@ -330,7 +338,7 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
     CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
     # Ако пред приложението има обратен прокси сървър (nginx, хостинг), той казва дали заявката е по HTTPS.
-    if env_bool("DJANGO_BEHIND_PROXY"):
+    if BEHIND_PROXY:
         SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = env_bool("DJANGO_SSL_REDIRECT")
     # HSTS: браузърът помни, че сайтът е само по HTTPS. Включва се, когато HTTPS работи сигурно.

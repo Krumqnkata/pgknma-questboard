@@ -137,3 +137,19 @@ class User(AbstractUser):
         self.is_staff = self.is_admin_role
         self.is_superuser = self.is_admin_role
         super().save(*args, **kwargs)
+
+
+class LoginAttempt(models.Model):
+    """Неуспешен опит за вход. Пази се, за да може входът да се спре след много грешки."""
+
+    email = models.CharField("имейл", max_length=254, db_index=True)
+    ip_address = models.GenericIPAddressField("IP адрес", null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField("час", auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "неуспешен вход"
+        verbose_name_plural = "неуспешни входове"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.email} ({self.ip_address or '—'})"

@@ -13,7 +13,7 @@ from unfold.decorators import action
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .importer import COLUMNS, import_users
-from .models import Guild, SchoolClass, User
+from .models import Guild, LoginAttempt, SchoolClass, User
 
 # Ролите са в полето User.role, затова групите на Django не ни трябват.
 admin.site.unregister(Group)
@@ -119,4 +119,28 @@ class LogEntryAdmin(ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(LoginAttempt)
+class LoginAttemptAdmin(ModelAdmin):
+    """Неуспешните входове. Изтриването на записите за един имейл го отключва веднага."""
+
+    list_display = ["email", "ip_address", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["email", "ip_address"]
+    actions = ["unlock"]
+
+    @admin.action(description="Отключи входа за избраните имейли и адреси")
+    def unlock(self, request, queryset):
+        emails = set(queryset.values_list("email", flat=True))
+        addresses = set(queryset.exclude(ip_address=None).values_list("ip_address", flat=True))
+        deleted, _ = LoginAttempt.objects.filter(email__in=emails).delete()
+        deleted += LoginAttempt.objects.filter(ip_address__in=addresses).delete()[0]
+        self.message_user(request, f"Входът е отключен. Изтрити записи: {deleted}.", messages.SUCCESS)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False

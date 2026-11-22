@@ -23,6 +23,7 @@ class GameSettingsAdmin(ModelAdmin):
             "claude_model", "openai_model", "gemini_model", "assistant_daily_limit",
         ]}),
         ("Училище", {"fields": ["school_name", "school_logo"]}),
+        ("Защита на входа", {"fields": ["login_max_attempts", "login_lockout_minutes"]}),
         (None, {"fields": ["updated_at"]}),
     ]
     readonly_fields = ["assistant_status", "updated_at"]

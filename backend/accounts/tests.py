@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
@@ -151,3 +153,96 @@ class ForcePasswordChangeTests(TestCase):
         self.assertFalse(self.user.must_change_password)
         self.assertTrue(self.user.check_password("NovaSigurnaParola!42"))
         self.assertEqual(self.client.get(reverse("mission_list")).status_code, 200)
+
+
+class LoginLockoutTests(TestCase):
+    """След много грешни пароли входът спира временно (защита от отгатване)."""
+
+    def setUp(self):
+        User.objects.create_user("t@example.com", "TaynaParola123", role=User.Role.TEACHER)
+        # Предупрежденията за спрян вход само пълнят изхода на тестовете
+        security_log = logging.getLogger("questboard.security")
+        security_log.disabled = True
+        self.addCleanup(setattr, security_log, "disabled", False)
+
+    def login(self, password, email="t@example.com", ip="10.0.0.1"):
+        return self.client.post(reverse("login"), {"username": email, "password": password}, REMOTE_ADDR=ip)
+
+    def fail(self, times, **kwargs):
+        for _ in range(times):
+            self.login("GreshnaParola", **kwargs)
+
+    def test_correct_password_is_refused_while_locked(self):
+        self.fail(5)
+        response = self.login("TaynaParola123")
+        self.assertEqual(response.status_code, 200)  # остава на входа
+        self.assertContains(response, "Твърде много неуспешни опити")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_the_last_allowed_attempt_already_shows_the_lock(self):
+        self.fail(4)
+        self.assertContains(self.login("GreshnaParola"), "Опитайте отново след 15 мин.")
+
+    def test_lock_expires(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from .models import LoginAttempt
+
+        self.fail(5)
+        LoginAttempt.objects.update(created_at=timezone.now() - timedelta(minutes=16))
+        self.assertRedirects(self.login("TaynaParola123"), reverse("home"), fetch_redirect_response=False)
+
+    def test_attempts_during_lock_do_not_extend_it(self):
+        from .models import LoginAttempt
+
+        self.fail(12)
+        self.assertEqual(LoginAttempt.objects.count(), 5)
+
+    def test_success_clears_old_mistakes(self):
+        from .models import LoginAttempt
+
+        self.fail(4)
+        self.login("TaynaParola123")
+        self.assertEqual(LoginAttempt.objects.count(), 0)
+
+    def test_email_is_case_insensitive(self):
+        self.fail(5, email="T@Example.COM")
+        self.assertContains(self.login("TaynaParola123"), "Твърде много неуспешни опити")
+
+    def test_one_address_trying_many_emails_is_stopped(self):
+        for number in range(20):
+            self.login("GreshnaParola", email=f"user{number}@example.com")
+        self.assertContains(self.login("TaynaParola123"), "Твърде много неуспешни опити")
+        # от друг адрес същият имейл влиза нормално
+        response = self.login("TaynaParola123", ip="10.0.0.2")
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
+
+    def test_limits_come_from_game_settings(self):
+        from economy.models import GameSettings
+
+        game = GameSettings.load()
+        game.login_max_attempts, game.login_lockout_minutes = 2, 3
+        game.save()
+        self.fail(2)
+        self.assertContains(self.login("TaynaParola123"), "след 3 мин.")
+
+    def test_admin_login_is_protected_too(self):
+        User.objects.create_superuser("a@example.com", "TaynaParola123")
+        url = reverse("admin:login")
+        for _ in range(5):
+            self.client.post(url, {"username": "a@example.com", "password": "Greshna"}, REMOTE_ADDR="10.0.0.9")
+        response = self.client.post(url, {"username": "a@example.com", "password": "TaynaParola123"},
+                                    REMOTE_ADDR="10.0.0.9")
+        self.assertContains(response, "Твърде много неуспешни опити")
+
+    def test_forwarded_address_is_read_only_behind_proxy(self):
+        from django.test import RequestFactory, override_settings
+
+        from .lockout import client_ip
+
+        request = RequestFactory().get("/", REMOTE_ADDR="127.0.0.1", HTTP_X_FORWARDED_FOR="6.6.6.6, 1.2.3.4")
+        self.assertEqual(client_ip(request), "127.0.0.1")  # без прокси заглавката може да е подправена
+        with override_settings(BEHIND_PROXY=True):
+            self.assertEqual(client_ip(request), "1.2.3.4")  # адресът, добавен от нашия прокси

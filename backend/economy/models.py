@@ -84,6 +84,16 @@ class GameSettings(models.Model):
         help_text="PNG, JPG или WebP, до 1 MB. Показва се в заглавната лента, на началната страница и на входа.",
     )
 
+    # --- Защита на входа ---
+    login_max_attempts = models.PositiveIntegerField(
+        "грешни пароли преди спиране", default=5, validators=[MinValueValidator(1)],
+        help_text="След толкова грешни пароли за един имейл входът с него спира за известно време. "
+                  "От един IP адрес се позволяват 4 пъти повече (много ученици са зад един рутер).",
+    )
+    login_lockout_minutes = models.PositiveIntegerField(
+        "спиране за (минути)", default=15, validators=[MinValueValidator(1)],
+    )
+
     updated_at = models.DateTimeField("последна промяна", auto_now=True)
 
     class Meta:

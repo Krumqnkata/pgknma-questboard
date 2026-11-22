@@ -11,8 +11,10 @@
   </div>
 
   <div class="panel">
-    {% if form.errors %}
-      <p class="message message-error">Грешен имейл или парола. Проверете и опитайте отново.</p>
+    {% if form.locked_minutes %}
+      <p class="message message-error" role="alert">Твърде много неуспешни опити за вход. Опитайте отново след {{ form.locked_minutes }} мин.</p>
+    {% elif form.errors %}
+      <p class="message message-error" role="alert">Грешен имейл или парола. Проверете и опитайте отново.</p>
     {% endif %}
     <form method="post">
       {% csrf_token %}
