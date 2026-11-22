@@ -9,14 +9,13 @@
 Пример: timetable/sample/razpisanie_primer.csv. Ако има поне една грешка,
 нищо не се внася, а се връща списък с грешките и номерата на редовете.
 """
-import csv
-import io
 from dataclasses import dataclass, field
 from datetime import datetime
 
 from django.db import transaction
 
 from accounts.models import SchoolClass, User
+from questboard.csv_utils import read_csv_rows
 
 from .models import Lesson, Room, Subject
 
@@ -39,16 +38,6 @@ class ImportResult:
     @property
     def ok(self):
         return not self.errors
-
-
-def _read_rows(text):
-    """Разпознава разделителя (Excel с български настройки записва с „;“)."""
-    text = text.lstrip("﻿")  # BOM, който Excel добавя в началото
-    try:
-        dialect = csv.Sniffer().sniff(text.splitlines()[0], delimiters=",;\t")
-    except (csv.Error, IndexError):
-        dialect = csv.excel
-    return list(csv.DictReader(io.StringIO(text), dialect=dialect))
 
 
 def _parse_time(value):
@@ -84,7 +73,7 @@ def _parse_row(number, row):
 def import_timetable(text):
     """Заменя цялото разписание с това от CSV текста."""
     result = ImportResult()
-    rows = _read_rows(text)
+    rows = read_csv_rows(text)
     if not rows:
         result.errors.append("Файлът е празен.")
         return result

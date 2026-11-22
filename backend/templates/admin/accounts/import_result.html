@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load unfold %}
+
+{% block content %}
+  {% component "unfold/components/card.html" with title="Потребителите са внесени" %}
+    <div class="flex flex-col gap-4">
+      <p>
+        Създадени: <strong>{{ result.created|length }}</strong>.
+        {% if result.skipped %}Пропуснати, защото вече съществуват: <strong>{{ result.skipped|length }}</strong>.{% endif %}
+      </p>
+
+      <p class="font-semibold text-important">
+        Временните пароли се показват само сега. Свалете ги и ги раздайте на хората.
+        След като напуснете страницата, не могат да се видят отново – само да се зададат нови.
+      </p>
+
+      {% if result.created %}
+        <div>
+          <a href="{{ download }}" download="questboard-vremenni-paroli.csv"
+             class="bg-primary-600 text-white font-medium px-3 py-2 rounded-default inline-flex">Свали паролите (CSV)</a>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="text-left">
+                <th class="p-2">Имейл</th><th class="p-2">Име</th><th class="p-2">Роля</th>
+                <th class="p-2">Псевдоним</th><th class="p-2">Клас</th><th class="p-2">Временна парола</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in result.created %}
+                <tr class="border-t border-base-200 dark:border-base-800">
+                  <td class="p-2">{{ user.email }}</td><td class="p-2">{{ user.name }}</td><td class="p-2">{{ user.role }}</td>
+                  <td class="p-2">{{ user.nickname }}</td><td class="p-2">{{ user.school_class }}</td>
+                  <td class="p-2 font-mono">{{ user.password }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      {% if result.skipped %}
+        <p class="text-subtle">Пропуснати: {{ result.skipped|join:", " }}</p>
+      {% endif %}
+
+      <div><a href="{% url 'admin:accounts_user_changelist' %}" class="underline">Към потребителите</a></div>
+    </div>
+  {% endcomponent %}
+{% endblock %}

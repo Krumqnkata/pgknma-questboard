@@ -22,6 +22,7 @@
       <dt>Гилдия</dt><dd><span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span></dd>
     {% endif %}
   </dl>
+  <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'password_change' %}">Смени паролата</a></div>
 </section>
 {% if user.is_student %}
   <p class="muted small section">В класациите другите виждат само псевдонима ти. Ако искаш да го смениш, обърни се към администратора.</p>

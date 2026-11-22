@@ -6,3 +6,4 @@ from .missions import mission_create, mission_detail, mission_edit, mission_list
 from .assistant import assistant_chat, mission_hint  # noqa: F401
 from .reports import reports  # noqa: F401
 from .branding import school_logo  # noqa: F401
+from .password import QuestboardPasswordChangeView  # noqa: F401

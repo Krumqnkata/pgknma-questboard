@@ -1,10 +1,18 @@
-from django.contrib import admin
+import base64
+import csv
+import io
+
+from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group
+from django.shortcuts import render
+from django.utils.cache import add_never_cache_headers
 from unfold.admin import ModelAdmin
+from unfold.decorators import action
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
+from .importer import COLUMNS, import_users
 from .models import Guild, SchoolClass, User
 
 # Ролите са в полето User.role, затова групите на Django не ни трябват.
@@ -28,7 +36,7 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
     fieldsets = [
         (None, {"fields": ["email", "password"]}),
         ("Лични данни", {"fields": ["first_name", "last_name"]}),
-        ("Роля", {"fields": ["role", "is_active"]}),
+        ("Роля", {"fields": ["role", "is_active", "must_change_password"]}),
         ("Само за ученици", {"fields": ["nickname", "school_class", "guild"]}),
         ("Дати", {"fields": ["last_login", "date_joined"]}),
     ]
@@ -39,6 +47,49 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         }),
     ]
     readonly_fields = ["last_login", "date_joined"]
+    actions_list = ["import_csv"]  # бутон над списъка с потребители
+
+    @action(description="Внеси от CSV", url_path="import-csv", icon="upload_file")
+    def import_csv(self, request):
+        """Внася ученици и учители от CSV и показва временните им пароли – само веднъж."""
+        return _import_page(self, request)
+
+
+def _import_page(model_admin, request):
+    context = {
+        **model_admin.admin_site.each_context(request),
+        "title": "Внасяне на потребители",
+        "columns": ",".join(COLUMNS),
+        "opts": model_admin.model._meta,
+    }
+    if request.method == "POST" and request.FILES.get("file"):
+        try:
+            text = request.FILES["file"].read().decode("utf-8-sig")
+        except UnicodeDecodeError:
+            messages.error(request, "Файлът трябва да е записан в UTF-8 (в Excel: „CSV UTF-8“).")
+        else:
+            result = import_users(text)
+            if result.ok:
+                context.update(result=result, download=_passwords_csv(result.created))
+                response = render(request, "admin/accounts/import_result.html", context)
+                add_never_cache_headers(response)  # страницата с паролите не се пази в кеша на браузъра
+                return response
+            for error in result.errors[:20]:
+                messages.error(request, error)
+            if len(result.errors) > 20:
+                messages.error(request, f"… и още {len(result.errors) - 20} грешки.")
+    return render(request, "admin/accounts/import.html", context)
+
+
+def _passwords_csv(created):
+    """CSV с временните пароли като data: адрес – свалят се от браузъра, без да се пазят на сървъра."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["имейл", "име", "роля", "псевдоним", "клас", "временна парола"])
+    for user in created:
+        writer.writerow([user.email, user.name, user.role, user.nickname, user.school_class, user.password])
+    data = base64.b64encode(("﻿" + buffer.getvalue()).encode("utf-8")).decode("ascii")
+    return f"data:text/csv;charset=utf-8;base64,{data}"
 
 
 @admin.register(Guild)

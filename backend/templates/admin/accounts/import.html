@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{% load unfold %}
+
+{% block content %}
+  {% component "unfold/components/card.html" with title="Внасяне на ученици и учители от CSV" %}
+    <div class="flex flex-col gap-4 max-w-2xl">
+      <p>Първият ред трябва да е:</p>
+      <pre class="bg-base-50 dark:bg-base-800 p-3 rounded-default overflow-x-auto">{{ columns }}</pre>
+      <p>Примери:</p>
+      <pre class="bg-base-50 dark:bg-base-800 p-3 rounded-default overflow-x-auto">ivan.petrov@example.bg,Иван,Петров,ученик,Сокол,11Б,Explorers
+m.ivanova@example.bg,Мария,Иванова,учител,,,</pre>
+      <ul class="list-disc pl-5 flex flex-col gap-1">
+        <li>Ролята е „ученик“ или „учител“. Администратори не се внасят от файл.</li>
+        <li>За учениците псевдонимът, класът и гилдията са задължителни. Нов клас се създава сам.</li>
+        <li>Имейл, който вече съществува, се пропуска.</li>
+        <li>Ако има грешка дори на един ред, нищо не се внася.</li>
+        <li>Всеки получава временна парола и я сменя при първия вход.</li>
+      </ul>
+      <p class="text-subtle">В Excel запишете файла като „CSV UTF-8“. Разделителят може да е запетая или точка и запетая.</p>
+
+      <form method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".csv,text/csv" required
+               class="border border-base-200 dark:border-base-700 rounded-default p-2">
+        <div>
+          {% component "unfold/components/button.html" with submit=1 icon="upload_file" %}Внеси{% endcomponent %}
+        </div>
+      </form>
+    </div>
+  {% endcomponent %}
+{% endblock %}

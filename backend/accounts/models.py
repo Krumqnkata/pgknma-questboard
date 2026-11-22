@@ -71,6 +71,12 @@ class User(AbstractUser):
 
     role = models.CharField("роля", max_length=10, choices=Role.choices, default=Role.STUDENT)
 
+    # Потребителите, внесени от CSV, получават временна парола и трябва да я сменят при първия вход.
+    must_change_password = models.BooleanField(
+        "трябва да смени паролата", default=False,
+        help_text="При следващия вход потребителят ще бъде помолен да смени паролата си.",
+    )
+
     # Полета само за ученици. В класациите се показва псевдонимът, не името.
     nickname = models.CharField(
         "псевдоним", max_length=30, unique=True, null=True, blank=True,
