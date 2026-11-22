@@ -1,0 +1,133 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% comment %}
+  Таблото на администрацията. Числата идват от questboard/dashboard.py.
+  Графиките са HTML и CSS (static/css/admin.css): всяка колона и лента показва
+  стойността си при посочване или при фокус от клавиатурата, а под графиката
+  има и същите данни като таблица.
+{% endcomment %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+  {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="qb-dash">
+  <div class="qb-kpis">
+    {% for kpi in dashboard.kpis %}
+      <{% if kpi.link %}a href="{{ kpi.link }}"{% else %}div{% endif %} class="qb-card qb-kpi">
+        <span class="qb-kpi-label">{{ kpi.label }}</span>
+        <span class="qb-kpi-value">{{ kpi.value }}</span>
+        {% if kpi.note %}<span class="qb-kpi-note">{{ kpi.note }}</span>{% endif %}
+      </{% if kpi.link %}a{% else %}div{% endif %}>
+    {% endfor %}
+  </div>
+
+  <div class="qb-row">
+    <section class="qb-card qb-chart-card">
+      <header class="qb-card-head">
+        <h2>Потвърдени мисии по седмици</h2>
+        <p>Последните {{ dashboard.weekly.weeks|length }} седмици · общо {{ dashboard.weekly.total }}</p>
+      </header>
+      <div class="qb-columns-wrap">
+        <div class="qb-axis" aria-hidden="true">
+          {% for tick in dashboard.weekly.axis %}<span>{% if tick is not None %}{{ tick }}{% endif %}</span>{% endfor %}
+        </div>
+        <div class="qb-columns">
+          {% for week in dashboard.weekly.weeks %}
+            <div class="qb-col" tabindex="0" data-tip="{{ week.count }} · {{ week.range }}"
+                 aria-label="Седмица {{ week.range }}: {{ week.count }} потвърдени мисии">
+              <div class="qb-col-plot">
+                {% if forloop.last %}<span class="qb-col-value">{{ week.count }}</span>{% endif %}
+                <span class="qb-col-bar" style="height: {{ week.percent|stringformat:'s' }}%"></span>
+              </div>
+              <span class="qb-col-label">{{ week.label }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <details class="qb-table-view">
+        <summary>Покажи като таблица</summary>
+        <table class="qb-table">
+          <thead><tr><th>Седмица</th><th class="qb-num">Потвърдени мисии</th></tr></thead>
+          <tbody>
+            {% for week in dashboard.weekly.weeks %}<tr><td>{{ week.range }}</td><td class="qb-num">{{ week.count }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </details>
+    </section>
+
+    <section class="qb-card">
+      <header class="qb-card-head">
+        <h2>XP по гилдии</h2>
+        <p>Общо от началото на играта</p>
+      </header>
+      <ul class="qb-bars">
+        {% for guild in dashboard.guilds %}
+          <li class="qb-bar-row" tabindex="0" data-tip="{{ guild.xp_text }} XP · {{ guild.students }} ученици"
+              aria-label="{{ guild.name }}: {{ guild.xp_text }} XP, {{ guild.students }} ученици">
+            <span class="qb-bar-name">{{ guild.name }}</span>
+            <span class="qb-bar-track">
+              <span class="qb-bar" style="width: {{ guild.percent|stringformat:'s' }}%"></span>
+              <span class="qb-bar-value">{{ guild.xp_text }}</span>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <div class="qb-row">
+    <section class="qb-card">
+      <header class="qb-card-head">
+        <h2>Най-изпълнявани мисии</h2>
+        <p>По брой потвърдени заявки</p>
+      </header>
+      {% if dashboard.missions %}
+        <table class="qb-table">
+          <thead><tr><th>Мисия</th><th>Гилдия</th><th class="qb-num">Потвърдени</th><th class="qb-num">Чакат</th></tr></thead>
+          <tbody>
+            {% for mission in dashboard.missions %}
+              <tr>
+                <td><a href="{{ mission.link }}">{{ mission.mission__title }}</a></td>
+                <td>{{ mission.mission__guild__name }}</td>
+                <td class="qb-num">{{ mission.approved }}</td>
+                <td class="qb-num">{{ mission.pending }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="qb-empty">Още няма потвърдени мисии.</p>
+      {% endif %}
+    </section>
+
+    <section class="qb-card">
+      <header class="qb-card-head">
+        <h2>Асистент</h2>
+        <p>Заявки за последните 7 дни по модел, който е отговорил</p>
+      </header>
+      {% if dashboard.assistant %}
+        <table class="qb-table">
+          <thead><tr><th>Модел</th><th class="qb-num">Заявки</th><th class="qb-num">Успешни</th><th class="qb-num">Средно време</th></tr></thead>
+          <tbody>
+            {% for row in dashboard.assistant %}
+              <tr>
+                <td>{{ row.name }}</td>
+                <td class="qb-num">{{ row.requests }}</td>
+                <td class="qb-num">{{ row.ok }}</td>
+                <td class="qb-num">{% if row.seconds != "—" %}{{ row.seconds }} s{% else %}—{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="qb-empty">Асистентът не е ползван през последните 7 дни.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -231,6 +231,8 @@ UNFOLD = {
     "SITE_URL": "/",
     "ENVIRONMENT": "questboard.admin_config.environment_label",
     "SHOW_HISTORY": True,
+    # Таблото с основните числа и графики (questboard/dashboard.py)
+    "DASHBOARD_CALLBACK": "questboard.dashboard.dashboard_callback",
     # Същият шрифт като на сайта – с българска кирилица
     "STYLES": [lambda request: static("css/admin.css")],
     "COLORS": {

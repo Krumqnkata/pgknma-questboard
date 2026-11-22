@@ -13,3 +13,111 @@
 :root {
   --font-sans: "Sofia Sans", system-ui, "Segoe UI", sans-serif;
 }
+
+/* ---------- Табло (templates/admin/index.html) ----------
+ * Графиките са HTML и CSS. Колоните и лентите са с един цвят (червеното на сайта),
+ * проверен за контраст и за светлата, и за тъмната тема. Текстът е в цвета на
+ * текста, не в цвета на графиката.
+ */
+.qb-dash {
+  --qb-bar: #c8102e;
+  --qb-ink: var(--color-font-important-light);
+  --qb-text: var(--color-font-default-light);
+  --qb-muted: var(--color-font-subtle-light);
+  --qb-line: var(--color-base-200);
+  --qb-surface: #fff;
+  --qb-tip-bg: #16181d;
+  --qb-tip-ink: #fff;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  font-family: var(--font-sans);
+}
+.dark .qb-dash {
+  --qb-bar: #f0384b;
+  --qb-ink: var(--color-font-important-dark);
+  --qb-text: var(--color-font-default-dark);
+  --qb-muted: var(--color-font-subtle-dark);
+  --qb-line: var(--color-base-800);
+  --qb-surface: var(--color-base-900);
+  --qb-tip-bg: #f4f4f5;
+  --qb-tip-ink: #16181d;
+}
+
+.qb-card {
+  background: var(--qb-surface); border: 1px solid var(--qb-line); border-radius: 6px;
+  padding: 1.25rem 1.5rem; min-width: 0;
+}
+.qb-card-head { margin-bottom: 1.25rem; }
+.qb-card-head h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--qb-ink); }
+.qb-card-head p { margin: 0.15rem 0 0; color: var(--qb-muted); font-size: 13px; }
+.qb-empty { color: var(--qb-muted); margin: 0; }
+
+/* Основните числа */
+.qb-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
+.qb-kpi { display: flex; flex-direction: column; gap: 0.2rem; text-decoration: none; }
+a.qb-kpi:hover { border-color: var(--qb-muted); }
+.qb-kpi-label { color: var(--qb-muted); font-size: 13px; font-weight: 600; }
+.qb-kpi-value { color: var(--qb-ink); font-size: 32px; font-weight: 700; line-height: 1.15; }
+.qb-kpi-note { color: var(--qb-muted); font-size: 12px; }
+
+.qb-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.5rem; }
+.qb-row + .qb-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 1100px) { .qb-row, .qb-row + .qb-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* Колони по седмици */
+.qb-columns-wrap { display: flex; gap: 0.75rem; }
+.qb-axis {
+  display: flex; flex-direction: column; justify-content: space-between;
+  height: 180px; color: var(--qb-muted); font-size: 12px; text-align: right;
+  font-variant-numeric: tabular-nums; transform: translateY(-0.5em);
+}
+.qb-columns {
+  flex: 1; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr));
+  background: linear-gradient(var(--qb-line), var(--qb-line)) 0 90px / 100% 1px no-repeat; /* линия по средата */
+}
+.qb-col { position: relative; display: flex; flex-direction: column; align-items: center; outline: none; cursor: default; }
+.qb-col-plot {
+  position: relative; width: 100%; height: 180px; border-bottom: 1px solid var(--qb-muted);
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+}
+.qb-col-bar { display: block; width: min(24px, 70%); background: var(--qb-bar); border-radius: 4px 4px 0 0; transition: opacity 0.15s; }
+.qb-col-value { color: var(--qb-ink); font-weight: 700; font-size: 13px; margin-bottom: 0.2rem; }
+.qb-col-label { margin-top: 0.4rem; color: var(--qb-muted); font-size: 12px; white-space: nowrap; }
+.qb-col:hover .qb-col-bar, .qb-col:focus-visible .qb-col-bar { opacity: 0.8; }
+.qb-col:focus-visible .qb-col-plot { outline: 2px solid var(--qb-ink); outline-offset: 2px; }
+
+/* Ленти по гилдии */
+.qb-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+.qb-bar-row { position: relative; display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); align-items: center; gap: 0.75rem; outline: none; }
+.qb-bar-row:focus-visible { outline: 2px solid var(--qb-ink); outline-offset: 4px; border-radius: 2px; }
+.qb-bar-name { color: var(--qb-text); font-size: 14px; font-weight: 600; }
+.qb-bar-track { display: flex; align-items: center; gap: 0.5rem; border-left: 1px solid var(--qb-muted); min-height: 24px; }
+.qb-bar { display: block; height: 14px; min-width: 0; background: var(--qb-bar); border-radius: 0 4px 4px 0; transition: opacity 0.15s; }
+.qb-bar-value { color: var(--qb-ink); font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.qb-bar-row:hover .qb-bar, .qb-bar-row:focus-visible .qb-bar { opacity: 0.8; }
+
+/* Подсказка при посочване или фокус: първо стойността, после за какво е */
+.qb-col::after, .qb-bar-row::after {
+  content: attr(data-tip); position: absolute; z-index: 5; pointer-events: none;
+  background: var(--qb-tip-bg); color: var(--qb-tip-ink);
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 0.35rem 0.6rem; border-radius: 4px; opacity: 0; transition: opacity 0.1s;
+}
+.qb-col::after { bottom: calc(100% - 1.5rem); left: 50%; transform: translateX(-50%); }
+.qb-bar-row::after { right: 0; top: -1.9rem; }
+.qb-col:hover::after, .qb-col:focus-visible::after,
+.qb-bar-row:hover::after, .qb-bar-row:focus-visible::after { opacity: 1; }
+
+/* Таблици */
+.qb-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.qb-table th { text-align: left; color: var(--qb-muted); font-weight: 600; font-size: 12px; padding: 0 0.5rem 0.5rem 0; border-bottom: 1px solid var(--qb-line); }
+.qb-table td { padding: 0.6rem 0.5rem 0.6rem 0; border-bottom: 1px solid var(--qb-line); color: var(--qb-text); }
+.qb-table tr:last-child td { border-bottom: 0; }
+.qb-table a { color: var(--qb-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.qb-num { text-align: right !important; font-variant-numeric: tabular-nums; }
+.qb-table-view { margin-top: 1rem; }
+.qb-table-view summary { cursor: pointer; color: var(--qb-muted); font-size: 13px; }
+.qb-table-view .qb-table { margin-top: 0.75rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qb-col-bar, .qb-bar, .qb-col::after, .qb-bar-row::after { transition: none; }
+}
