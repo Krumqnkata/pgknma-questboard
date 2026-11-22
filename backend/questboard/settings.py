@@ -174,11 +174,14 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # В публикуваната версия файловете се компресират и получават уникални имена,
 # за да може браузърът да ги пази дълго, без да показва стара версия.
+# Ако не са подготвени с collectstatic, страниците пак работят (виж questboard/storage.py).
 if not DEBUG and "test" not in sys.argv:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+        "staticfiles": {"BACKEND": "questboard.storage.ForgivingManifestStorage"},
     }
+# WhiteNoise търси файловете и направо в папките static/, не само в подготвените.
+WHITENOISE_USE_FINDERS = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -312,10 +315,14 @@ ASSISTANT_TIMEOUT_SECONDS = 50
 
 
 # ---------- Сигурност в публикуваната версия ----------
+# Сайтът се пуска само на този компютър (127.0.0.1 / localhost) – тогава няма HTTPS.
+LOCAL_ONLY = all(host in ("127.0.0.1", "localhost", "[::1]") for host in ALLOWED_HOSTS)
+
 if not DEBUG:
-    # Бисквитките за вход и за формите се пращат само по HTTPS.
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # Бисквитките за вход и за формите се пращат само по HTTPS. При локална проба
+    # без HTTPS това би спряло входа, затова там не се изисква (може да се зададе и ръчно).
+    SESSION_COOKIE_SECURE = env_bool("DJANGO_SECURE_COOKIES", not LOCAL_ONLY)
+    CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
     CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
     # Ако пред приложението има обратен прокси сървър (nginx, хостинг), той казва дали заявката е по HTTPS.
     if env_bool("DJANGO_BEHIND_PROXY"):

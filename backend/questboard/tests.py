@@ -31,3 +31,23 @@ class AdminMenuTests(TestCase):
         self.client.force_login(teacher)
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 302)  # пренасочва към входа на admin
+
+
+class StaticFilesWithoutCollectstaticTests(TestCase):
+    """При DEBUG=False без подготвени статични файлове страниците не трябва да дават грешка 500."""
+
+    def test_pages_work_without_collectstatic(self):
+        import tempfile
+
+        from django.test import override_settings
+
+        with tempfile.TemporaryDirectory() as empty_static_root, override_settings(
+            STATIC_ROOT=empty_static_root,
+            STORAGES={
+                "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+                "staticfiles": {"BACKEND": "questboard.storage.ForgivingManifestStorage"},
+            },
+        ):
+            response = self.client.get("/")
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "/static/css/style.css")  # обикновеният адрес, без уникално име
