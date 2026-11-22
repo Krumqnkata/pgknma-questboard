@@ -112,10 +112,12 @@ def main():
     assistant_reported = False
     print("Спиране: Ctrl+C\n")
 
+    crashed = False
     try:
         while True:
             if django.poll() is not None:
                 print("\nОсновното API спря – спирам и асистента.")
+                crashed = True
                 break
             if assistant.poll() is not None and not assistant_reported:
                 print("\nВНИМАНИЕ: асистентът спря. Платформата продължава да работи без него.")
@@ -126,6 +128,9 @@ def main():
     finally:
         stop(django)
         stop(assistant)
+    if crashed:
+        # Код за грешка – така systemd (Restart=on-failure) пуска системата отново.
+        sys.exit(1)
 
 
 if __name__ == "__main__":
