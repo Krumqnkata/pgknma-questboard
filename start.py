@@ -52,7 +52,9 @@ def start_django():
     print(f"→ Questboard:  http://{host}:{port}")
     if PRODUCTION:
         # waitress – сървър за реална работа, работи и под Windows, и под Linux
+        # --max-request-body-size: заявка над 64 MB се спира още в сървъра (качените файлове са много по-малки)
         command = [sys.executable, "-m", "waitress", f"--listen={host}:{port}", "--threads=8",
+                   "--max-request-body-size=67108864",
                    "questboard.wsgi:application"]
     else:
         command = [sys.executable, "manage.py", "runserver", f"{host}:{port}"]

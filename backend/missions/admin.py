@@ -1,7 +1,30 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+from django.utils.html import format_html
+from unfold.admin import ModelAdmin, TabularInline
 
-from .models import Claim, Mission
+from .models import Claim, EvidenceFile, Mission
+
+
+class EvidenceFileInline(TabularInline):
+    """Файловете към заявката. Администраторът може да изтрие неподходящ файл."""
+
+    model = EvidenceFile
+    fields = ["preview", "kind", "size_kb", "uploaded_at"]
+    readonly_fields = fields
+    extra = 0
+    verbose_name_plural = "файлове към доказателството"
+
+    @admin.display(description="файл")
+    def preview(self, obj):
+        return format_html('<a href="{}" target="_blank" rel="noopener">{}</a>', obj.get_absolute_url(),
+                           obj.original_name)
+
+    @admin.display(description="размер")
+    def size_kb(self, obj):
+        return f"{max(1, obj.size // 1024)} KB"
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Mission)
@@ -20,3 +43,4 @@ class ClaimAdmin(ModelAdmin):
     # Потвърждаването става през правилата на играта (economy), не с ръчна промяна тук,
     # иначе XP няма да се начисли. Затова тези полета са само за четене.
     readonly_fields = ["status", "reviewed_by", "reviewed_at", "submitted_at"]
+    inlines = [EvidenceFileInline]

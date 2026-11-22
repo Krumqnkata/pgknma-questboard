@@ -233,7 +233,7 @@ def reject_claim(claim, reviewer, comment=""):
 
 def pending_claims_for(reviewer):
     claims = Claim.objects.filter(status=Claim.Status.PENDING).select_related(
-        "mission", "student", "student__school_class")
+        "mission", "student", "student__school_class").prefetch_related("files")
     if reviewer.is_admin_role:
         return claims
     return claims.filter(mission__created_by=reviewer)

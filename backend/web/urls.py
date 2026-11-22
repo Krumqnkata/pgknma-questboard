@@ -28,6 +28,7 @@ urlpatterns = [
     # Проверка на заявки (учител)
     path("review/", views.review_list, name="review_list"),
     path("claims/<int:pk>/review/", views.review_claim, name="review_claim"),
+    path("evidence/<int:pk>/", views.evidence_file, name="evidence_file"),
     # Магазин (ученик) и купени привилегии (учител)
     path("shop/", views.shop, name="shop"),
     path("shop/<int:pk>/buy/", views.shop_buy, name="shop_buy"),

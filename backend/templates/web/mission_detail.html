@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load questboard %}
+{% load questboard static %}
 
 {% block title %}{{ mission.title }} – Questboard{% endblock %}
 
@@ -24,13 +24,15 @@
             {% include "web/_claim_status.html" with claim=my_claim %}
             <span class="muted small">подадена на {{ my_claim.submitted_at|date:"j F, H:i"|lower }}</span>
           </div>
-          <p class="evidence pre">{{ my_claim.evidence }}</p>
+          {% if my_claim.evidence %}<p class="evidence pre">{{ my_claim.evidence }}</p>{% endif %}
+          {% include "web/_evidence_files.html" with claim=my_claim %}
           {% if my_claim.review_comment %}<p><strong>Учителят:</strong> {{ my_claim.review_comment }}</p>{% endif %}
         {% endif %}
 
         {% if can_claim %}
           {% if my_claim %}<p>Заявката е отказана. Поправи каквото трябва и я подай отново.</p>{% endif %}
-          <form method="post">
+          {% if my_claim and my_claim.files.all %}<p class="muted small">Ако прикачиш нови файлове, те заменят старите.</p>{% endif %}
+          <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% include "web/_form_fields.html" %}
             <button type="submit">Заяви изпълнение</button>
@@ -98,7 +100,7 @@
               <tr>
                 <td>{{ claim.student.get_full_name|default:claim.student.nickname }}<br><span class="muted small">{{ claim.student.nickname }}</span></td>
                 <td>{{ claim.student.school_class }}</td>
-                <td class="pre">{{ claim.evidence|urlize }}</td>
+                <td><div class="pre">{{ claim.evidence|urlize }}</div>{% include "web/_evidence_files.html" %}</td>
                 <td>{{ claim.submitted_at|date:"j F, H:i"|lower }}</td>
                 <td>
                   {% include "web/_claim_status.html" %}
@@ -117,4 +119,8 @@
     {% endif %}
   </section>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if can_claim %}<script src="{% static 'js/file-picker.js' %}" defer></script>{% endif %}
 {% endblock %}

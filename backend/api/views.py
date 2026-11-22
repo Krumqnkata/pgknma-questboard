@@ -87,10 +87,10 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
     def claim(self, request, pk=None):
         """Ученикът заявява изпълнение. Срокът се проверява в submit_claim."""
         mission = get_object_or_404(Mission, pk=pk, is_active=True)
-        data = ClaimCreateSerializer(data=request.data)
+        data = ClaimCreateSerializer(data={"evidence": request.data.get("evidence", "")})
         data.is_valid(raise_exception=True)
         try:
-            claim = submit_claim(request.user, mission, data.validated_data["evidence"])
+            claim = submit_claim(request.user, mission, data.validated_data["evidence"], request.FILES.getlist("files"))
         except GameRuleError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(ClaimSerializer(claim).data, status=status.HTTP_201_CREATED)

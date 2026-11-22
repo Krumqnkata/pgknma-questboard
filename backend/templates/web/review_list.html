@@ -22,7 +22,8 @@
       {{ claim.student.get_full_name|default:claim.student.nickname }} ({{ claim.student.nickname }}), {{ claim.student.school_class }},
       подадена на {{ claim.submitted_at|date:"j F, H:i"|lower }}
     </p>
-    <p class="evidence pre">{{ claim.evidence|urlize }}</p>
+    {% if claim.evidence %}<p class="evidence pre">{{ claim.evidence|urlize }}</p>{% endif %}
+    {% include "web/_evidence_files.html" %}
     <p class="small"><strong>Критерий:</strong> {{ claim.mission.criteria }}</p>
     {% include "web/_review_buttons.html" %}
   </section>

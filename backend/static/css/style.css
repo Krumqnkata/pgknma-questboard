@@ -636,6 +636,29 @@ tr.mine td { background: var(--accent-soft); }
   .hero-player .avatar { --avatar-size: 56px !important; }
 }
 
+/* ---------- Файлове към доказателство ---------- */
+.evidence-files { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.evidence-thumb img {
+  display: block; width: 112px; height: 112px; object-fit: cover;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--sunken);
+}
+.evidence-thumb:hover img { border-color: var(--ink); }
+.evidence-doc {
+  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; max-width: 260px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); text-decoration: none; color: var(--ink);
+}
+.evidence-doc:hover { border-color: var(--ink); }
+.evidence-doc svg { flex: none; width: 24px; height: 24px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linejoin: round; }
+.evidence-doc span { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; font-size: 0.88rem; font-weight: 600; }
+.evidence-doc small { color: var(--muted); font-weight: 400; }
+.field > .label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+.file-picker { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; cursor: pointer; }
+/* Истинското поле е невидимо, но остава достъпно от клавиатура и екранни четци */
+.file-picker input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.file-picker input[type="file"]:focus-visible + .btn { outline: 2px solid var(--accent); outline-offset: 2px; }
+.file-picker:hover .btn { border-color: var(--ink); }
+.file-names { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+
 /* ---------- Страници за грешки ---------- */
 .error-page { padding: 4rem 0; max-width: 40rem; }
 .error-code { font-size: clamp(5rem, 16vw, 9rem); font-weight: 800; letter-spacing: -0.06em; line-height: 0.9; color: var(--accent); }

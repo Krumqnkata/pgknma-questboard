@@ -115,7 +115,8 @@ def mission_detail(request, pk):
 
 def _teacher_mission_detail(request, pk):
     mission = get_object_or_404(Mission.objects.select_related("guild"), pk=pk, created_by=request.user)
-    claims = mission.claims.select_related("student", "student__school_class").order_by("status", "-submitted_at")
+    claims = mission.claims.select_related("student", "student__school_class").prefetch_related(
+        "files").order_by("status", "-submitted_at")
     return render(request, "web/mission_detail.html", {
         "mission": mission, "claims": claims, "review_form": ReviewForm(),
     })
@@ -129,11 +130,11 @@ def _student_mission_detail(request, pk):
     )
     my_claim = Claim.objects.filter(mission=mission, student=request.user).first()
     can_claim = mission.is_open() and (my_claim is None or my_claim.status == Claim.Status.REJECTED)
-    form = ClaimForm(request.POST or None)
+    form = ClaimForm(request.POST or None, request.FILES or None)
 
     if request.method == "POST" and form.is_valid():
         try:
-            submit_claim(request.user, mission, form.cleaned_data["evidence"])
+            submit_claim(request.user, mission, form.cleaned_data["evidence"], form.cleaned_data.get("files", []))
         except GameRuleError as error:
             messages.error(request, str(error))
         else:

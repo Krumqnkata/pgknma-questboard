@@ -5,9 +5,12 @@
 Учителят потвърждава или отказва заявката (Ф5) – XP се начислява само след
 потвърждение. Логиката по начисляването е в economy, тук са само данните.
 """
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Guild
@@ -106,3 +109,43 @@ class Claim(models.Model):
 
     def __str__(self):
         return f"{self.student} → {self.mission}"
+
+
+def evidence_path(instance, filename):
+    """Случайно име: никой не може да познае адреса на чужд файл, а и името не издава нищо."""
+    extension = ".pdf" if instance.kind == EvidenceFile.Kind.PDF else ".jpg"
+    return f"evidence/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{extension}"
+
+
+class EvidenceFile(models.Model):
+    """
+    Снимка или PDF към заявка. Файловете са в media/evidence/ и НЕ са публични:
+    показват се само през web/views/evidence.py, след проверка кой ги гледа
+    (ученикът, учителят на мисията или администраторът).
+    """
+
+    class Kind(models.TextChoices):
+        IMAGE = "image", "Снимка"
+        PDF = "pdf", "PDF документ"
+
+    claim = models.ForeignKey(Claim, verbose_name="заявка", on_delete=models.CASCADE, related_name="files")
+    file = models.FileField("файл", upload_to=evidence_path)
+    kind = models.CharField("вид", max_length=10, choices=Kind.choices)
+    original_name = models.CharField("име при качване", max_length=150)
+    size = models.PositiveIntegerField("размер (байта)")
+    uploaded_at = models.DateTimeField("качен на", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "файл към доказателство"
+        verbose_name_plural = "файлове към доказателства"
+        ordering = ["uploaded_at", "id"]
+
+    def __str__(self):
+        return self.original_name
+
+    def get_absolute_url(self):
+        return reverse("evidence_file", args=[self.pk])
+
+    @property
+    def is_image(self):
+        return self.kind == self.Kind.IMAGE

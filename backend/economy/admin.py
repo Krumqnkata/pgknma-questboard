@@ -23,6 +23,7 @@ class GameSettingsAdmin(ModelAdmin):
             "assistant_status", "assistant_enabled", "llm_provider", "llm_model", "assistant_daily_limit",
         ]}),
         ("Училище", {"fields": ["school_name", "school_logo", "contact_email"]}),
+        ("Доказателства", {"fields": ["evidence_max_files", "evidence_max_mb"]}),
         ("Псевдоними", {"fields": ["nickname_change_days", "banned_words"]}),
         ("Защита на входа", {"fields": ["login_max_attempts", "login_lockout_minutes"]}),
         (None, {"fields": ["updated_at"]}),

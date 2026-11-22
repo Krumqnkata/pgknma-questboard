@@ -2,6 +2,7 @@
 from django import forms
 
 from economy.models import GameSettings
+from missions.evidence import ACCEPT
 from missions.models import Mission
 from missions.services import EVIDENCE_MAX_LENGTH
 
@@ -41,14 +42,45 @@ class ReviewForm(forms.Form):
     )
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    """Поле за няколко файла наведнъж (както е в документацията на Django)."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single(item, initial) for item in data]
+        return [single(data, initial)] if data else []
+
+
 class ClaimForm(forms.Form):
-    """Ученикът заявява изпълнение с кратко доказателство (Ф4)."""
+    """Ученикът заявява изпълнение с доказателство (Ф4): текст и/или снимки и PDF."""
 
     evidence = forms.CharField(
         label="Доказателство",
-        max_length=EVIDENCE_MAX_LENGTH,
-        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Кратко описание или връзка към работата ти"}),
+        max_length=EVIDENCE_MAX_LENGTH, required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Кратко описание или връзка (например към видео)"}),
     )
+    files = MultipleFileField(label="Снимки или PDF", required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        rules = GameSettings.load()
+        if not rules.evidence_max_files:
+            del self.fields["files"]
+            return
+        self.fields["files"].widget.attrs["accept"] = ACCEPT
+        self.fields["files"].help_text = (
+            f"До {rules.evidence_max_files} файла по {rules.evidence_max_mb} MB: снимки (JPG, PNG, WebP) или PDF. "
+            "За видео сложи връзка в текста (YouTube, Google Drive)."
+        )
 
 
 class NicknameForm(forms.Form):

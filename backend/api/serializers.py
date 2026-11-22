@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from accounts.models import User
 from economy.models import Privilege, Purchase
-from missions.models import Claim, Mission
+from missions.models import Claim, EvidenceFile, Mission
 from missions.services import EVIDENCE_MAX_LENGTH
 from notifications.models import Notification
 
@@ -43,19 +43,34 @@ class MissionSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class EvidenceFileSerializer(serializers.ModelSerializer):
+    url = serializers.CharField(source="get_absolute_url", read_only=True,
+                                help_text="Отваря се само от ученика, учителя на мисията и администратора.")
+
+    class Meta:
+        model = EvidenceFile
+        fields = ["id", "kind", "original_name", "size", "url"]
+        read_only_fields = fields
+
+
 class ClaimSerializer(serializers.ModelSerializer):
     mission_title = serializers.CharField(source="mission.title", read_only=True)
     student = serializers.StringRelatedField()
+    files = EvidenceFileSerializer(many=True, read_only=True)
 
     class Meta:
         model = Claim
-        fields = ["id", "mission", "mission_title", "student", "evidence", "status",
+        fields = ["id", "mission", "mission_title", "student", "evidence", "files", "status",
                   "submitted_at", "reviewed_at", "review_comment"]
         read_only_fields = fields
 
 
 class ClaimCreateSerializer(serializers.Serializer):
-    evidence = serializers.CharField(max_length=EVIDENCE_MAX_LENGTH)
+    """JSON с текст или multipart/form-data с текст и файлове (полето files може да се повтаря)."""
+
+    evidence = serializers.CharField(max_length=EVIDENCE_MAX_LENGTH, required=False, allow_blank=True, default="")
+    files = serializers.ListField(child=serializers.FileField(), required=False,
+                                  help_text="Снимки (JPG, PNG, WebP) или PDF.")
 
 
 class ReviewSerializer(serializers.Serializer):

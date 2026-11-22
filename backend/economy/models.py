@@ -6,7 +6,7 @@
 """
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 
 from .words import coins_text
@@ -98,6 +98,16 @@ class GameSettings(models.Model):
     contact_email = models.EmailField(
         "имейл за връзка", blank=True,
         help_text="Показва се в условията за ползване и политиката за поверителност.",
+    )
+
+    # --- Файлове към доказателствата ---
+    evidence_max_files = models.PositiveIntegerField(
+        "файлове към една заявка", default=3,
+        help_text="Снимки (JPG, PNG, WebP) или PDF. 0 – само текст, без файлове.",
+    )
+    evidence_max_mb = models.PositiveIntegerField(
+        "най-голям файл (MB)", default=5, validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="Снимките се смаляват до 1600 px след качване, затова на диска заемат много по-малко.",
     )
 
     # --- Псевдоними (учениците ги сменят сами от „Профил“) ---

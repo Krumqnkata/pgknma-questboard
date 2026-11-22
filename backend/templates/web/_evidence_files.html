@@ -1,0 +1,19 @@
+{# Снимките и PDF файловете към една заявка. Отварят се през web/views/evidence.py (с проверка на правата). #}
+{% if claim.files.all %}
+  <ul class="evidence-files">
+    {% for item in claim.files.all %}
+      <li>
+        {% if item.is_image %}
+          <a href="{{ item.get_absolute_url }}" target="_blank" rel="noopener" class="evidence-thumb">
+            <img src="{{ item.get_absolute_url }}" alt="Снимка към доказателството: {{ item.original_name }}" loading="lazy">
+          </a>
+        {% else %}
+          <a href="{{ item.get_absolute_url }}" target="_blank" rel="noopener" class="evidence-doc">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6"/></svg>
+            <span>{{ item.original_name }}<small>PDF · {{ item.size|filesizeformat }}</small></span>
+          </a>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
