@@ -100,6 +100,16 @@ class GameSettings(models.Model):
         help_text="Показва се в условията за ползване и политиката за поверителност.",
     )
 
+    # --- Бонус XP от учител (без мисия) ---
+    bonus_max_xp = models.PositiveIntegerField(
+        "бонус XP наведнъж (най-много)", default=50,
+        help_text="0 – учителите не могат да дават бонус XP.",
+    )
+    bonus_weekly_xp = models.PositiveIntegerField(
+        "бонус XP от един учител на седмица (най-много)", default=150,
+        help_text="Общо за всички ученици. Монетите от бонуса пак спазват седмичния лимит.",
+    )
+
     # --- Файлове към доказателствата ---
     evidence_max_files = models.PositiveIntegerField(
         "файлове към една заявка", default=3,
@@ -192,6 +202,7 @@ class XPTransaction(models.Model):
     reason = models.CharField("основание", max_length=255)
     claim = models.ForeignKey("missions.Claim", verbose_name="заявка", on_delete=models.PROTECT,
                               null=True, blank=True, related_name="xp_transactions")
+    is_bonus = models.BooleanField("бонус от учител", default=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="начислено от",
                                    on_delete=models.PROTECT, null=True, blank=True, related_name="+")
     created_at = models.DateTimeField("кога", auto_now_add=True)

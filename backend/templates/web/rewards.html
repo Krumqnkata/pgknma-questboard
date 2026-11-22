@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Награди – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Награди</h1>
+    <p>Бонус XP или значка за нещо, което не е мисия. Ученикът получава известие.</p>
+  </div>
+</div>
+
+<div class="columns">
+  <section class="panel" aria-labelledby="bonus-title">
+    <h2 id="bonus-title">Бонус XP</h2>
+    {% if rules.bonus_max_xp %}
+      <p class="muted small">Тази седмица можете да дадете още <strong>{{ bonus_left }} XP</strong> (лимит {{ rules.bonus_weekly_xp }}).
+        Монетите от бонуса спазват седмичния лимит на ученика.</p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="bonus">
+        {% include "web/_form_fields.html" with form=bonus_form %}
+        <button type="submit" {% if not bonus_left %}disabled{% endif %}>Дай бонус</button>
+      </form>
+    {% else %}
+      <p class="muted">Бонус XP е изключен от администратора.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel" aria-labelledby="badge-title">
+    <h2 id="badge-title">Значка</h2>
+    {% if badge_form.fields.badge.queryset %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="badge">
+        {% include "web/_form_fields.html" with form=badge_form %}
+        <button type="submit">Дай значка</button>
+      </form>
+    {% else %}
+      <p class="muted">Няма значки за даване. Администраторът ги добавя с правило „Дава се от учител“.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="section">
+  <div class="section-head"><h2>Последно дадени от вас</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ученик</th><th>Награда</th><th>Кога</th></tr></thead>
+      <tbody>
+        {% for entry in recent_bonuses %}
+          <tr><td>{{ entry.student.get_full_name|default:entry.student.nickname }} <span class="muted small">({{ entry.student.nickname }})</span></td>
+              <td><span class="plus">+{{ entry.amount }} XP</span> · {{ entry.reason }}</td>
+              <td>{{ entry.created_at|date:"j F, H:i"|lower }}</td></tr>
+        {% endfor %}
+        {% for award in recent_badges %}
+          <tr><td>{{ award.student.get_full_name|default:award.student.nickname }} <span class="muted small">({{ award.student.nickname }})</span></td>
+              <td>Значка „{{ award.badge.name }}“{% if award.note %} · {{ award.note }}{% endif %}</td>
+              <td>{{ award.awarded_at|date:"j F, H:i"|lower }}</td></tr>
+        {% endfor %}
+        {% if not recent_bonuses and not recent_badges %}
+          <tr><td colspan="3" class="muted">Още не сте давали награди.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

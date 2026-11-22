@@ -36,6 +36,7 @@ urlpatterns = [
     path("purchases/<int:pk>/use/", views.purchase_use, name="purchase_use"),
     # Класация
     path("leaderboard/", views.leaderboard_view, name="leaderboard"),
+    path("rewards/", views.rewards, name="rewards"),
     # Справки и асистент
     path("reports/", views.reports, name="reports"),
     path("assistant/", views.assistant_chat, name="assistant"),

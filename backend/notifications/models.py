@@ -13,6 +13,7 @@ class Notification(models.Model):
         CLAIM_REJECTED = "claim_rejected", "Отказана заявка"
         LEVEL_UP = "level_up", "Ново ниво"
         BADGE = "badge", "Нова значка"
+        BONUS = "bonus", "Бонус от учител"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="потребител", on_delete=models.CASCADE,
                              related_name="notifications")

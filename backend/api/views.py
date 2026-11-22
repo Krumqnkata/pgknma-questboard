@@ -13,14 +13,16 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import User
 from accounts.permissions import IsStudent, IsTeacher
 from assistant_bridge.services import AssistantError, ask, draft_mission, request_hint
-from badges.services import badge_cards
+from badges.models import Badge
+from badges.services import badge_cards, give_badge
 from economy import leaderboard
 from economy.models import Purchase
 from economy.services import (
-    active_privileges, approve_claim, buy_privilege, mark_purchase_used, reject_claim, student_stats,
-    unused_purchases,
+    active_privileges, approve_claim, bonus_left_this_week, buy_privilege, give_bonus, mark_purchase_used,
+    reject_claim, student_stats, unused_purchases,
 )
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
@@ -28,7 +30,7 @@ from notifications.services import mark_all_read, recent_for, unread_count
 from timetable import queries
 
 from .serializers import (
-    AnswerSerializer, BadgeCardSerializer, ClaimCreateSerializer, ClaimSerializer, DraftSerializer, HintSerializer,
+    AnswerSerializer, BadgeCardSerializer, BadgeGiftRequestSerializer, BonusRequestSerializer, ClaimCreateSerializer, ClaimSerializer, DraftSerializer, HintSerializer,
     IdeaSerializer, MeSerializer, MissionSerializer, NotificationSerializer, PrivilegeSerializer, PurchaseSerializer,
     QuestionSerializer, RankingRowSerializer, ReviewSerializer, StatsSerializer,
 )
@@ -198,6 +200,46 @@ class NotificationsReadView(APIView):
     }))
     def post(self, request):
         return Response({"marked": mark_all_read(request.user)})
+
+
+class BonusView(APIView):
+    """Учителят дава бонус XP без мисия (с причина и в лимитите от настройките)."""
+
+    permission_classes = [IsAuthenticated, IsTeacher]
+
+    @extend_schema(request=BonusRequestSerializer, responses=inline_serializer("BonusGiven", fields={
+        "xp": serializers.IntegerField(), "coins": serializers.IntegerField(), "bonus_left": serializers.IntegerField(),
+    }))
+    def post(self, request):
+        data = BonusRequestSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        student = get_object_or_404(User, pk=data.validated_data["student"], role=User.Role.STUDENT)
+        try:
+            coins = give_bonus(request.user, student, data.validated_data["xp"], data.validated_data["reason"])
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"xp": data.validated_data["xp"], "coins": coins, "bonus_left": bonus_left_this_week(request.user)},
+                        status=status.HTTP_201_CREATED)
+
+
+class BadgeGiftView(APIView):
+    """Учителят дава значка, която се дава ръчно (напр. „Звезда на седмицата“)."""
+
+    permission_classes = [IsAuthenticated, IsTeacher]
+
+    @extend_schema(request=BadgeGiftRequestSerializer, responses=inline_serializer("BadgeGiven", fields={
+        "badge": serializers.CharField(), "student": serializers.CharField(),
+    }))
+    def post(self, request):
+        data = BadgeGiftRequestSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        student = get_object_or_404(User, pk=data.validated_data["student"], role=User.Role.STUDENT)
+        badge = get_object_or_404(Badge, pk=data.validated_data["badge"])
+        try:
+            give_badge(request.user, student, badge, data.validated_data["note"])
+        except GameRuleError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"badge": badge.name, "student": student.nickname}, status=status.HTTP_201_CREATED)
 
 
 class PrivilegeViewSet(viewsets.ReadOnlyModelViewSet):

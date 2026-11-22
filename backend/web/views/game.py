@@ -72,7 +72,8 @@ def student_home(request):
     cards = badge_cards(student)
     # Ново ниво и нови значки се показват веднъж с голяма карта, после са прочетени.
     celebrations = list(student.notifications.filter(
-        read_at__isnull=True, kind__in=[Notification.Kind.LEVEL_UP, Notification.Kind.BADGE]).order_by("created_at"))
+        read_at__isnull=True,
+        kind__in=[Notification.Kind.LEVEL_UP, Notification.Kind.BADGE, Notification.Kind.BONUS]).order_by("created_at"))
     if celebrations:
         student.notifications.filter(pk__in=[n.pk for n in celebrations]).update(read_at=timezone.now())
     return render(request, "web/student_home.html", {

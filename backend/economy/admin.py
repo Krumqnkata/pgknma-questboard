@@ -23,6 +23,7 @@ class GameSettingsAdmin(ModelAdmin):
             "assistant_status", "assistant_enabled", "llm_provider", "llm_model", "assistant_daily_limit",
         ]}),
         ("Училище", {"fields": ["school_name", "school_logo", "contact_email"]}),
+        ("Бонус XP от учител", {"fields": ["bonus_max_xp", "bonus_weekly_xp"]}),
         ("Доказателства", {"fields": ["evidence_max_files", "evidence_max_mb"]}),
         ("Псевдоними", {"fields": ["nickname_change_days", "banned_words"]}),
         ("Защита на входа", {"fields": ["login_max_attempts", "login_lockout_minutes"]}),
@@ -86,8 +87,8 @@ class ReadOnlyLedgerAdmin(ModelAdmin):
 
 @admin.register(XPTransaction)
 class XPTransactionAdmin(ReadOnlyLedgerAdmin):
-    list_display = ["created_at", "student", "amount", "reason", "created_by"]
-    list_filter = ["created_at"]
+    list_display = ["created_at", "student", "amount", "reason", "is_bonus", "created_by"]
+    list_filter = ["is_bonus", "created_at"]
     search_fields = ["student__nickname", "student__email", "reason"]
 
 

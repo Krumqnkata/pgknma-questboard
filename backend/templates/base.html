@@ -56,6 +56,7 @@
             <a href="{% url 'review_list' %}" {% if page == "review_list" %}aria-current="page"{% endif %}>Заявки{% if pending_review_count %}<span class="count" aria-label="{{ pending_review_count }} чакат">{{ pending_review_count }}</span>{% endif %}</a>
             <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail mission_create mission_edit" %}aria-current="page"{% endif %}>Мисии</a>
             <a href="{% url 'purchase_list' %}" {% if page == "purchase_list" %}aria-current="page"{% endif %}>Привилегии</a>
+            <a href="{% url 'rewards' %}" {% if page == "rewards" %}aria-current="page"{% endif %}>Награди</a>
             <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>Класация</a>
             <a href="{% url 'reports' %}" {% if page == "reports" %}aria-current="page"{% endif %}>Справки</a>
             <a href="{% url 'assistant' %}" {% if page == "assistant" %}aria-current="page"{% endif %}>Асистент</a>

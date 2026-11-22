@@ -162,3 +162,15 @@ class BadgeCardSerializer(serializers.Serializer):
     threshold = serializers.IntegerField(source="badge.threshold")
     value = serializers.IntegerField()
     earned = serializers.BooleanField()
+
+
+class BonusRequestSerializer(serializers.Serializer):
+    student = serializers.IntegerField(help_text="Номерът на ученика.")
+    xp = serializers.IntegerField(min_value=1)
+    reason = serializers.CharField(max_length=200)
+
+
+class BadgeGiftRequestSerializer(serializers.Serializer):
+    student = serializers.IntegerField(help_text="Номерът на ученика.")
+    badge = serializers.IntegerField(help_text="Значка с правило „Дава се от учител“.")
+    note = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")

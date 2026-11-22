@@ -5,7 +5,7 @@
 викат тези функции и никога не пишат сами в таблиците с движения.
 """
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.db import transaction
 from django.db.models import Sum
@@ -131,14 +131,15 @@ def _current_week(student, rules, now):
     return CoinWeek.objects.create(student=student, week_start=start, carry_in=carry_in)
 
 
-def award_xp(student, amount, reason, created_by=None, claim=None, now=None):
+def award_xp(student, amount, reason, created_by=None, claim=None, now=None, is_bonus=False):
     """
     Начислява XP и превръща каквото може в монети по курса и седмичния лимит (Ф6).
     XP се пази винаги – дори когато лимитът е достигнат и монети не се дават.
     Връща колко монети са дадени.
     """
     rules = GameSettings.load()
-    XPTransaction.objects.create(student=student, amount=amount, reason=reason, claim=claim, created_by=created_by)
+    XPTransaction.objects.create(student=student, amount=amount, reason=reason, claim=claim, created_by=created_by,
+                                 is_bonus=is_bonus)
 
     week = _current_week(student, rules, now)
     week.xp_earned += amount
@@ -237,6 +238,56 @@ def pending_claims_for(reviewer):
     if reviewer.is_admin_role:
         return claims
     return claims.filter(mission__created_by=reviewer)
+
+
+# ---------- Бонус XP от учител ----------
+
+
+def bonus_left_this_week(teacher, now=None):
+    """Колко бонус XP може да даде още учителят тази седмица."""
+    rules = GameSettings.load()
+    since = timezone.make_aware(datetime.combine(week_start_for(now), time.min))
+    given = XPTransaction.objects.filter(created_by=teacher, is_bonus=True, created_at__gte=since).aggregate(
+        total=Sum("amount"))["total"] or 0
+    return max(0, rules.bonus_weekly_xp - given)
+
+
+def give_bonus(teacher, student, xp, reason, now=None):
+    """
+    Учителят дава бонус XP без мисия, напр. „Помощ при концерта“.
+    Причината е задължителна, а лимитите са в „Настройки на играта“. XP минава
+    през същите правила като при мисия: монети по курса и седмичния лимит,
+    ново ниво, значки и известие до ученика.
+    """
+    rules = GameSettings.load()
+    reason = (reason or "").strip()
+    if not (teacher.is_teacher or teacher.is_admin_role):
+        raise GameRuleError("Само учител може да дава бонус XP.")
+    if not (student.is_student and student.is_active):
+        raise GameRuleError("Бонус XP се дава само на ученици.")
+    if not rules.bonus_max_xp:
+        raise GameRuleError("Бонус XP е изключен от администратора.")
+    if not 1 <= xp <= rules.bonus_max_xp:
+        raise GameRuleError(f"Бонусът е от 1 до {rules.bonus_max_xp} XP.")
+    if len(reason) < 3:
+        raise GameRuleError("Напишете за какво е бонусът.")
+
+    with transaction.atomic():
+        User.objects.select_for_update().get(pk=teacher.pk)  # два бонуса наведнъж не минават лимита
+        left = bonus_left_this_week(teacher, now)
+        if xp > left:
+            raise GameRuleError(f"Тази седмица можете да дадете още {left} бонус XP (лимит {rules.bonus_weekly_xp}).")
+        old_level = level_for_xp(xp_total(student))
+        coins = award_xp(student, xp, reason=f"Бонус: {reason[:200]}", created_by=teacher, now=now, is_bonus=True)
+        new_level = level_for_xp(xp_total(student))
+        text = f"Бонус +{xp} XP от {teacher.get_full_name() or 'учител'}"
+        if coins:
+            text += f" и +{coins_text(coins)}"
+        notify(student, Notification.Kind.BONUS, f"{text}: {reason[:200]}", link=reverse("home"))
+        if new_level != old_level and new_level:
+            notify(student, Notification.Kind.LEVEL_UP, f"Мина на {str(new_level).lower()}!", link=reverse("home"))
+        award_badges(student)
+    return coins
 
 
 # ---------- Магазин ----------

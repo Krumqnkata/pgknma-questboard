@@ -64,7 +64,7 @@ def award_badges(student):
     if not student.is_student:
         return []
     owned = set(student.badges.values_list("badge_id", flat=True))
-    candidates = Badge.objects.filter(is_active=True).exclude(pk__in=owned)
+    candidates = Badge.objects.filter(is_active=True).exclude(pk__in=owned).exclude(rule=Badge.Rule.MANUAL)
     if not candidates:
         return []
 
@@ -98,5 +98,29 @@ def badge_cards(student):
     owned = set(student.badges.values_list("badge_id", flat=True))
     progress = progress_for(student)
     cards = [BadgeCard(badge, badge.pk in owned, min(progress.value_for(badge), badge.threshold))
-             for badge in Badge.objects.filter(is_active=True).select_related("guild")]
+             for badge in Badge.objects.filter(is_active=True).select_related("guild")
+             if badge.rule != Badge.Rule.MANUAL or badge.pk in owned]  # ръчните – само ако са дадени
     return sorted(cards, key=lambda card: not card.earned)
+
+
+def give_badge(teacher, student, badge, note=""):
+    """Учителят дава значка „Дава се от учител“ на ученик (напр. „Звезда на седмицата“)."""
+    from missions.services import GameRuleError
+    from notifications.models import Notification
+    from notifications.services import notify
+
+    if not (teacher.is_teacher or teacher.is_admin_role):
+        raise GameRuleError("Само учител може да дава значки.")
+    if not (student.is_student and student.is_active):
+        raise GameRuleError("Значки се дават само на ученици.")
+    if badge.rule != Badge.Rule.MANUAL or not badge.is_active:
+        raise GameRuleError("Тази значка не се дава ръчно.")
+    note = (note or "").strip()[:200]
+    with transaction.atomic():
+        award, created = StudentBadge.objects.get_or_create(
+            student=student, badge=badge, defaults={"given_by": teacher, "note": note})
+        if not created:
+            raise GameRuleError(f"{student.nickname} вече има значката „{badge.name}“.")
+        text = f"Нова значка от {teacher.get_full_name() or 'учител'}: „{badge.name}“"
+        notify(student, Notification.Kind.BADGE, text + (f" – {note}" if note else "."), link=reverse("profile"))
+    return award
