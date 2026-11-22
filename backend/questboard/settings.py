@@ -127,7 +127,8 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            # DB_SQLITE_PATH – друг файл с базата (напр. отделна демо база); по подразбиране db.sqlite3
+            "NAME": os.getenv("DB_SQLITE_PATH") or BASE_DIR / "db.sqlite3",
             # Всяка транзакция заключва базата за писане още в началото,
             # за да не се засекат две едновременни покупки или потвърждения.
             "OPTIONS": {"transaction_mode": "IMMEDIATE"},
@@ -178,7 +179,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Качени файлове (засега само логото на училището). Папката не е в GitHub.
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# DJANGO_MEDIA_ROOT – друга папка за качените файлове (заедно с DB_SQLITE_PATH за демо база)
+MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT") or BASE_DIR / "media")
 
 # В публикуваната версия файловете се компресират и получават уникални имена,
 # за да може браузърът да ги пази дълго, без да показва стара версия.

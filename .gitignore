@@ -19,3 +19,6 @@ backend/media/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Документацията и материалите за представяне се пазят извън GitHub
+/documentation/

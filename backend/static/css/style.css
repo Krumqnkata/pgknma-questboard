@@ -637,7 +637,7 @@ tr.mine td { background: var(--accent-soft); }
 }
 
 /* ---------- Файлове към доказателство ---------- */
-.evidence-files { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.evidence-files { list-style: none; margin: 0.75rem 0 1rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .evidence-thumb img {
   display: block; width: 112px; height: 112px; object-fit: cover;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--sunken);
