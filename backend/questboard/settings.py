@@ -301,6 +301,7 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {"title": "Условия и поверителност", "icon": "gavel", "link": _admin_link("web_sitepage")},
+                    {"title": "Ботове, търсили WordPress", "icon": "bug_report", "link": _admin_link("web_botknock")},
                 ],
             },
             {

@@ -12,3 +12,4 @@ from .pages import privacy, terms  # noqa: F401
 from .app import favicon, manifest, offline, service_worker  # noqa: F401
 from .evidence import evidence_file  # noqa: F401
 from .rewards import rewards  # noqa: F401
+from .not_wordpress import not_wordpress  # noqa: F401

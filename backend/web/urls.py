@@ -1,5 +1,5 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, re_path
 
 from accounts.forms import LoginForm
 
@@ -41,4 +41,8 @@ urlpatterns = [
     # Справки и асистент
     path("reports/", views.reports, name="reports"),
     path("assistant/", views.assistant_chat, name="assistant"),
+    # Шегата за ботовете, които търсят WordPress (web/views/not_wordpress.py)
+    re_path(r"^(?:wp-admin|wp-content|wp-includes|wp-json)(?:/(?P<rest>.*))?$", views.not_wordpress,
+            name="not_wordpress"),
+    re_path(r"^(?:wp-login\.php|wp-login/?|xmlrpc\.php|wp-config\.php)$", views.not_wordpress),
 ]

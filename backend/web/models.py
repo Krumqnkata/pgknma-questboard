@@ -36,3 +36,22 @@ class SitePage(models.Model):
 
     def get_absolute_url(self):
         return reverse(self.slug)  # адресите се казват също „terms“ и „privacy“
+
+
+class BotKnock(models.Model):
+    """
+    Колко пъти на ден някой (почти винаги бот) е търсил WordPress на сайта –
+    /wp-admin/, /wp-login.php и подобни (web/views/not_wordpress.py).
+    Пази се само броят за деня – без IP адреси или други данни за посетителя.
+    """
+
+    day = models.DateField("ден", unique=True)
+    hits = models.PositiveIntegerField("опити", default=0)
+
+    class Meta:
+        verbose_name = "опит на бот за WordPress"
+        verbose_name_plural = "опити на ботове за WordPress"
+        ordering = ["-day"]
+
+    def __str__(self):
+        return f"{self.day}: {self.hits}"

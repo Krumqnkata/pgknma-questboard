@@ -148,8 +148,16 @@ a:hover { text-decoration-color: var(--gold); }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* ---------- Заглавна лента ---------- */
-.site-header { background: var(--panel); color: var(--on-panel); border-bottom: 2px solid var(--stroke); }
+/* ---------- Заглавна лента ----------
+ * Долният ѝ ръб е като училищна линийка: малко деление на 10px, голямо на 50px.
+ */
+.site-header { position: relative; background: var(--panel); color: var(--on-panel); border-bottom: 2px solid var(--stroke); }
+.site-header::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 10px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, var(--stroke) 0 2px, transparent 2px 50px) top left / 100% 10px no-repeat,
+    repeating-linear-gradient(90deg, var(--stroke) 0 1px, transparent 1px 10px) top left / 100% 5px no-repeat;
+}
 .header-inner {
   max-width: 1280px;
   margin: 0 auto;
@@ -361,6 +369,7 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
  * Под нея – трудност и етикети, заглавие, описание и долен ред.
  */
 .quest-card {
+  position: relative;
   display: flex; flex-direction: column;
   border: 2px solid var(--stroke); border-radius: var(--radius);
   background: var(--surface); box-shadow: var(--hard);
@@ -395,6 +404,19 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
   font-family: var(--mono); font-size: 0.78rem; color: var(--muted);
 }
 .card-foot .badge { font-family: var(--font); }
+/* Печатът „Изпълнена“ – като от учителя, върху потвърдените мисии */
+.stamp {
+  position: absolute; right: 14px; bottom: 54px; z-index: 1; pointer-events: none;
+  padding: 0.1rem 0.55rem; transform: rotate(-9deg);
+  border: 4px double var(--ok); border-radius: var(--radius-sm); color: var(--ok);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  font-family: var(--mono); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+}
+
+/* Шегата за ботовете – „Това не е WordPress“ */
+.not-wp .lead-text { font-size: 1.15rem; max-width: 52ch; }
+.not-wp .evidence { white-space: pre; overflow-x: auto; max-width: 34rem; }
+.not-wp .actions { margin-bottom: 1.5rem; }
 
 .mission-title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1; margin: 1rem 0; }
 .mission-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
@@ -609,6 +631,22 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--in
   background: var(--panel); color: var(--on-panel);
   box-shadow: 6px 6px 0 var(--gold);
 }
+/* Лентата и баркодът – панелът е като ученическа карта */
+.id-band {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin: -1.3rem -1.3rem 0; padding: 0.4rem 1.3rem;
+  border-bottom: 2px solid var(--stroke); border-radius: 6px 6px 0 0;
+  background: var(--gold); color: #14151a;
+  font-family: var(--mono); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.id-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding-top: 0.9rem; border-top: 1px dashed #3a3b42; }
+.barcode {
+  flex: 1; max-width: 170px; height: 32px;
+  background: repeating-linear-gradient(90deg,
+    var(--on-panel) 0 2px, transparent 2px 4px, var(--on-panel) 4px 5px, transparent 5px 8px,
+    var(--on-panel) 8px 11px, transparent 11px 12px, var(--on-panel) 12px 13px, transparent 13px 17px);
+}
+.id-no { font-family: var(--mono); font-size: 0.8rem; color: var(--on-panel-muted); }
 .player-head { display: flex; align-items: center; gap: 1rem; }
 .player-avatar { flex: none; border: 2px solid var(--gold); border-radius: var(--radius-sm); line-height: 0; }
 .player-avatar .avatar { background: #22232a; color: var(--chip-color, var(--gold)); }

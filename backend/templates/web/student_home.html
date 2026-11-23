@@ -5,8 +5,9 @@
 
 {% block content %}
 <div class="home-grid">
-  {# Профилният панел – остава видим, докато се скролват мисиите вдясно #}
+  {# Профилният панел е като ученическа карта и остава видим, докато се скролват мисиите вдясно #}
   <aside class="player-card {{ user.guild|guild_class }}" aria-labelledby="player-name">
+      <div class="id-band"><span>Ученическа карта</span><span>{% if user.school_class %}{{ user.school_class }} клас{% endif %}</span></div>
       <div class="player-head">
         <span class="player-avatar">{% avatar user 72 %}</span>
         <div>
@@ -41,6 +42,7 @@
         <a class="btn" href="{% url 'mission_list' %}">Към мисиите</a>
         <a class="btn btn-ghost" href="{% url 'shop' %}">Магазин</a>
       </div>
+      <div class="id-foot"><span class="barcode" aria-hidden="true"></span><span class="id-no">№ {{ user.pk|stringformat:"05d" }}</span></div>
   </aside>
 
   <div class="home-main">

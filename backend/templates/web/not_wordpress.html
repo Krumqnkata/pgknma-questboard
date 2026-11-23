@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Това не е WordPress – Questboard{% endblock %}
+
+{% block content %}
+{# Шегата за ботовете, които търсят /wp-admin/ (web/views/not_wordpress.py). Нарочно без форма. #}
+<section class="error-page not-wp">
+  <p class="error-code">418</p>
+  <h1>Това не е WordPress.</h1>
+  <p class="lead-text">Questboard е написан на Django от двама ученици. Тук няма админ панел за хакване
+    и няма плъгини за обновяване – само мисии за изпълнение.</p>
+  <pre class="evidence">$ curl -I {{ request.path }}
+HTTP/1.1 418 I'm a teapot</pre>
+  <div class="actions">
+    <a class="btn" href="{% url 'home' %}">Към Questboard</a>
+  </div>
+  <p class="muted small">Код 418 „Аз съм чайник“ е шега от RFC 2324 – сървърът отказва да вари кафе, защото е чайник.</p>
+</section>
+{% endblock %}

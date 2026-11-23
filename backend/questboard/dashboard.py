@@ -17,6 +17,7 @@ from assistant_bridge.models import AssistantLog
 from economy.models import GameSettings, XPTransaction
 from economy.services import week_start_for
 from missions.models import Claim
+from web.models import BotKnock
 
 WEEKS_SHOWN = 8
 MONTHS = ["яну", "фев", "мар", "апр", "май", "юни", "юли", "авг", "сеп", "окт", "ное", "дек"]
@@ -70,6 +71,10 @@ def kpis(week_start):
         Kpi("XP тази седмица", number(XPTransaction.objects.filter(created_at__gte=since)
                                       .aggregate(total=Sum("amount"))["total"] or 0),
             note=f"от {short_date(week_start)}"),
+        # Ботовете, които търсят /wp-admin/ и подобни – получават „Това не е WordPress“.
+        Kpi("Ботове, търсили WordPress", number(BotKnock.objects.filter(day__gte=week_start)
+                                                .aggregate(total=Sum("hits"))["total"] or 0),
+            note="тази седмица", link=reverse("admin:web_botknock_changelist")),
     ]
 
 

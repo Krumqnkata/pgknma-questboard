@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 from unfold.admin import ModelAdmin
 
 from .legal_defaults import DEFAULTS
-from .models import SitePage
+from .models import BotKnock, SitePage
 
 
 @admin.register(SitePage)
@@ -25,4 +25,18 @@ class SitePageAdmin(ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(BotKnock)
+class BotKnockAdmin(ModelAdmin):
+    """Опитите на ботове да намерят WordPress – само за преглед, по дни."""
+
+    list_display = ["day", "hits"]
+    date_hierarchy = "day"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
