@@ -47,6 +47,49 @@ class UserRoleTests(TestCase):
         self.assertEqual(admin.role, User.Role.ADMIN)
 
 
+class AdminAddUserTests(TestCase):
+    """Ръчно създаване на акаунт от Django admin – формата има всички нужни полета."""
+
+    def setUp(self):
+        self.client.force_login(User.objects.create_superuser("a@example.com", "TaynaParola123"))
+        self.url = reverse("admin:accounts_user_add")
+        self.school_class = SchoolClass.objects.create(name="10А")
+        self.guild = Guild.objects.get(name="Explorers")
+
+    def post(self, **fields):
+        data = {"password1": "НоваПарола2026!", "password2": "НоваПарола2026!", "usable_password": "true",
+                "first_name": "", "last_name": "", "nickname": "", "school_class": "", "guild": "", "_save": "1"}
+        data.update(fields)
+        return self.client.post(self.url, data)
+
+    def test_form_shows_student_fields(self):
+        response = self.client.get(self.url)
+        for name in ("first_name", "last_name", "nickname", "school_class", "guild", "must_change_password"):
+            self.assertContains(response, f'name="{name}"')
+
+    def test_create_student(self):
+        response = self.post(email="nov@example.com", role=User.Role.STUDENT, first_name="Иван", last_name="Петров",
+                             nickname="Сокол", school_class=self.school_class.pk, guild=self.guild.pk,
+                             must_change_password="on")
+        self.assertEqual(response.status_code, 302)
+        student = User.objects.get(email="nov@example.com")
+        self.assertEqual((student.nickname, student.school_class, student.guild), ("Сокол", self.school_class, self.guild))
+        self.assertTrue(student.must_change_password)
+        self.assertTrue(student.check_password("НоваПарола2026!"))
+
+    def test_create_teacher_without_student_fields(self):
+        response = self.post(email="uchitel@example.com", role=User.Role.TEACHER, first_name="Мария")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(User.objects.get(email="uchitel@example.com").role, User.Role.TEACHER)
+
+    def test_student_without_nickname_shows_error(self):
+        response = self.post(email="bez@example.com", role=User.Role.STUDENT,
+                             school_class=self.school_class.pk, guild=self.guild.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ученикът трябва да има: псевдоним.")
+        self.assertFalse(User.objects.filter(email="bez@example.com").exists())
+
+
 class LoginTests(TestCase):
     def test_login_with_email(self):
         User.objects.create_user("t@example.com", "TaynaParola123", role=User.Role.TEACHER)

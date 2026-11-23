@@ -55,10 +55,19 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         ("Само за ученици", {"fields": ["nickname", "school_class", "guild"]}),
         ("Дати", {"fields": ["last_login", "date_joined"]}),
     ]
+    # Формата за нов потребител има всички полета наведнъж – иначе ученик не може
+    # да се създаде, защото псевдонимът, класът и гилдията са задължителни за него.
     add_fieldsets = [
-        (None, {
+        ("Вход", {
             "classes": ["wide"],
-            "fields": ["email", "role", "password1", "password2"],
+            "fields": ["email", "password1", "password2", "must_change_password"],
+        }),
+        ("Лични данни", {"classes": ["wide"], "fields": ["first_name", "last_name"]}),
+        ("Роля", {"classes": ["wide"], "fields": ["role"]}),
+        ("Само за ученици", {
+            "classes": ["wide"],
+            "description": "Задължителни, когато ролята е „Ученик“. За учител и администратор се оставят празни.",
+            "fields": ["nickname", "school_class", "guild"],
         }),
     ]
     readonly_fields = ["last_login", "date_joined"]
