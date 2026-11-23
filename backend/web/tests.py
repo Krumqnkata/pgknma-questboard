@@ -96,7 +96,7 @@ class MissionPageTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertContains(response, "Здравей, Феникс")
         self.assertContains(response, "0<small> от 5</small>")
-        self.assertContains(response, "player.ts")  # панелът с данните на ученика
+        self.assertContains(response, "Мисии за теб")  # предложени мисии на началната страница
 
     def test_teacher_home_is_review_list(self):
         self.client.force_login(self.teacher)

@@ -2,10 +2,12 @@
 Страници за играта: начало, проверка на заявки, магазин, привилегии и класация.
 Правилата са в economy/services.py – тук само се показва и се викат услугите.
 """
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
+from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -76,16 +78,13 @@ def student_home(request):
         kind__in=[Notification.Kind.LEVEL_UP, Notification.Kind.BADGE, Notification.Kind.BONUS]).order_by("created_at"))
     if celebrations:
         student.notifications.filter(pk__in=[n.pk for n in celebrations]).update(read_at=timezone.now())
+    now = timezone.now()
     return render(request, "web/student_home.html", {
         "stats": stats,
-        # Данните за панела „player.ts“ – само неща, които ученикът и без това вижда.
-        "player_fields": [
-            ("nickname", student.nickname),
-            ("guild", student.guild.name if student.guild else ""),
-            ("level", stats.level.number if stats.level else 0),
-            ("xp", stats.xp),
-            ("coins", stats.coins),
-        ],
+        "suggested": suggested_missions(student),
+        "max_xp": GameSettings.load().max_xp_per_mission,
+        "new_since": now - timedelta(days=3),
+        "soon": now + timedelta(days=3),
         "recent_claims": Claim.objects.filter(student=student).select_related("mission")
                                       .order_by("-reviewed_at", "-submitted_at")[:5],
         "recent_xp": student.xp_transactions.order_by("-created_at")[:5],
@@ -94,6 +93,21 @@ def student_home(request):
         "badges_earned": sum(card.earned for card in cards),
         "celebrations": celebrations,
     })
+
+
+def suggested_missions(student, limit=3):
+    """
+    „Мисии за теб“ на началната страница: активни мисии без заявка от ученика,
+    първо тези на неговата гилдия, после по най-близък срок.
+    """
+    return (missions_for_student()
+            .exclude(claims__student=student)
+            .annotate(
+                own_guild=Case(When(guild_id=student.guild_id, then=Value(0)), default=Value(1),
+                               output_field=IntegerField()),
+                done_count=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
+            )
+            .order_by("own_guild", "deadline")[:limit])
 
 
 @login_required

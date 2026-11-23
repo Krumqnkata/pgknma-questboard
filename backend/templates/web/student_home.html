@@ -4,46 +4,60 @@
 {% block title %}Начало – Questboard{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <div>
-    <div class="hero-player">
-      {% avatar user 72 %}
+{# Екранът на играча: аватар, ниво, лента за XP и ресурси (static/css/style.css → „екран от игра“) #}
+<section class="hud" aria-labelledby="hud-title">
+  <div class="hud-top">
+    <div class="hud-player">
+      {% avatar user 88 %}
       <div>
-        <h1 class="hero-title">Здравей, {{ user.nickname }}</h1>
-        {% if user.shown_title %}<span class="player-title">{{ user.shown_title.name }}</span>{% endif %}
+        <h1 id="hud-title">Здравей, {{ user.nickname }}</h1>
+        <p class="hud-sub">
+          {% if user.shown_title %}<span class="player-title">{{ user.shown_title.name }}</span>{% endif %}
+          {% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% endif %}
+        </p>
       </div>
     </div>
-    <p class="hero-sub">
-      {% if stats.level %}Ниво {{ stats.level.number }}{% if stats.level.title %}, {{ stats.level.title|lower }}{% endif %}{% endif %}
-      в гилдия <span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>
-      {% if stats.streak %}
-        <span class="streak" title="Поредни седмици с изпълнена мисия">{% badge_icon "flame" %} {{ stats.streak }} {% if stats.streak == 1 %}седмица{% else %}седмици{% endif %} подред</span>
-      {% endif %}
-    </p>
-    <div class="progress" role="progressbar" aria-valuenow="{{ stats.progress_percent }}" aria-valuemin="0"
-         aria-valuemax="100" aria-label="Напредък до следващото ниво"><span style="width: {{ stats.progress_percent }}%"></span></div>
-    <p class="hero-text">
-      {% if stats.next_level %}Още {{ stats.xp_to_next_level }} XP до ниво {{ stats.next_level.number }}.
-      {% else %}Стигна най-високото ниво.{% endif %}
-      Изпълнявай мисии, а учителят ще потвърди заявката ти.
-    </p>
-    <div class="actions">
-      <a class="btn" href="{% url 'mission_list' %}">Виж мисиите</a>
-      <a class="btn btn-outline" href="{% url 'shop' %}">Магазин</a>
+    <div class="level-badge" role="img" aria-label="Ниво {{ stats.level.number|default:'0' }}">
+      <span>ниво</span>
+      <strong>{{ stats.level.number|default:"0" }}</strong>
     </div>
   </div>
-  {% code_card "player.ts" "player" player_fields "Твоят профил в Questboard" user.school_class %}
+
+  <div>
+    <div class="xp-labels">
+      <strong>{% if stats.level.title %}{{ stats.level.title|capfirst }}{% else %}Начинаещ{% endif %}</strong>
+      <span>{% if stats.next_level %}Още {{ stats.xp_to_next_level }} XP до ниво {{ stats.next_level.number }}{% else %}Стигна най-високото ниво{% endif %}</span>
+    </div>
+    <div class="xp-bar" role="progressbar" aria-valuenow="{{ stats.progress_percent }}" aria-valuemin="0"
+         aria-valuemax="100" aria-label="Напредък до следващото ниво"><span style="width: {{ stats.progress_percent }}%"></span></div>
+  </div>
+
+  <ul class="resources">
+    <li class="res res-xp">{% badge_icon "star" %}<span class="res-text"><b>{{ stats.xp }}</b><span>опит (XP)</span></span></li>
+    <li class="res res-coin">{% badge_icon "coin" %}<span class="res-text"><b>{{ stats.coins }}</b><span>монети</span></span></li>
+    <li class="res res-week">{% badge_icon "bolt" %}<span class="res-text"><b>{{ stats.coins_this_week }}<small> от {{ stats.weekly_limit }}</small></b><span>монети тази седмица</span></span></li>
+    <li class="res res-streak">{% badge_icon "flame" %}<span class="res-text"><b>{{ stats.streak }}</b><span>{% if stats.streak == 1 %}седмица{% else %}седмици{% endif %} подред</span></span></li>
+  </ul>
+
+  <div class="hud-actions">
+    <a class="btn" href="{% url 'mission_list' %}">Към мисиите</a>
+    <a class="btn btn-ghost" href="{% url 'shop' %}">Магазин</a>
+  </div>
 </section>
 
-<div class="stats">
-  <div class="stat"><div class="stat-value">{{ stats.xp }}</div><div class="stat-label">опит (XP)</div></div>
-  <div class="stat"><div class="stat-value">{{ stats.level.number|default:"0" }}</div><div class="stat-label">ниво</div></div>
-  <div class="stat"><div class="stat-value">{{ stats.coins }}</div><div class="stat-label">монети</div></div>
-  <div class="stat">
-    <div class="stat-value">{{ stats.coins_this_week }}<small> от {{ stats.weekly_limit }}</small></div>
-    <div class="stat-label">монети тази седмица</div>
+<section class="section">
+  <div class="section-head">
+    <h2>Мисии за теб</h2>
+    <a href="{% url 'mission_list' %}">Всички мисии</a>
   </div>
-</div>
+  <div class="mission-grid">
+    {% for mission in suggested %}
+      {% include "web/_mission_card.html" with claim=None %}
+    {% empty %}
+      <p class="muted">Нямаш нови мисии – заявил си всички активни. Провери пак по-късно.</p>
+    {% endfor %}
+  </div>
+</section>
 
 <div class="columns section">
   <section class="panel">

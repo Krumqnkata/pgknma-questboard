@@ -1,0 +1,24 @@
+{% load questboard %}
+{# Карта на мисия за ученик. Трябват: mission (с done_count), claim (или None), max_xp, new_since, soon. #}
+{% with level=mission.xp|difficulty:max_xp %}
+<a class="mission-card tier-{{ level.slug }}" href="{% url 'mission_detail' mission.pk %}">
+  <div class="mission-meta">
+    <span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span>
+    <span class="reward">{% badge_icon "star" %}{{ mission.xp }} XP</span>
+  </div>
+  <div class="mission-tags">
+    <span class="tier" title="Трудност според XP">
+      <span class="pips" aria-hidden="true">{% for _ in "123"|make_list %}<i{% if forloop.counter <= level.pips %} class="on"{% endif %}></i>{% endfor %}</span>
+      {{ level.name }}
+    </span>
+    {% if mission.created_at >= new_since and not claim %}<span class="tag tag-new">Нова</span>{% endif %}
+    {% if mission.deadline <= soon %}<span class="tag tag-soon">{{ mission.deadline|time_left }}</span>{% endif %}
+  </div>
+  <h3>{{ mission.title }}</h3>
+  <p class="muted small">{{ mission.description|truncatewords:18 }}</p>
+  <div class="mission-foot">
+    <span>{% if mission.done_count %}изпълнили я {{ mission.done_count }}{% else %}бъди първият{% endif %}</span>
+    {% if claim %}{% include "web/_claim_status.html" %}{% else %}<span>до {{ mission.deadline|date:"j F"|lower }}</span>{% endif %}
+  </div>
+</a>
+{% endwith %}

@@ -1,6 +1,11 @@
 /*
  * Questboard – стилове на страниците за ученици и учители.
  *
+ * Идеята на дизайна е „екран от игра“: тъмна лента горе като меню на игра,
+ * злато за наградите (XP и монети), цвят на гилдията за ученика и
+ * „натискаеми“ бутони и карти с ръб отдолу, които хлътват при натискане.
+ * Каквото може да се натисне, има ръб; останалото е плоско.
+ *
  * Цветовете са променливи (--paper, --ink, ...). Светлата тема е по подразбиране,
  * тъмната се включва с атрибута data-theme="dark" на <html> (бутонът горе вдясно)
  * или сама, ако устройството е в тъмен режим и потребителят не е избрал друго.
@@ -29,73 +34,98 @@
 
 /* ---------- Цветове ---------- */
 :root {
-  --paper: #f7f7f5;      /* фон на страницата */
+  --paper: #eef0f8;      /* фон на страницата – хладен, леко син */
   --surface: #ffffff;    /* панели, таблици, полета */
-  --sunken: #f0f0ec;     /* вдлъбнати места: код, доказателства */
-  --ink: #16181d;        /* основен текст */
-  --muted: #5f6670;      /* второстепенен текст */
-  --line: #e3e3df;       /* рамки */
-  --accent: #c8102e;     /* червен акцент: активни връзки, числа */
-  --accent-soft: #fbe9ec;
-  --ok: #1f7a46;
-  --warn: #9a6700;
-  --bad: #c8102e;
+  --sunken: #e7eaf5;     /* вдлъбнати места: код, доказателства */
+  --ink: #191b33;        /* основен текст */
+  --muted: #565d78;      /* второстепенен текст */
+  --line: #d6daeb;       /* рамки */
+  --edge: #c4c9df;       /* ръбът под натискаемите неща */
+  --accent: #d62839;     /* акцент: бутони, активни връзки (при ученик – цветът на гилдията) */
+  --accent-soft: #fde8ea;
+  --accent-bright: #ff6b78; /* акцентът върху тъмната лента */
+  --on-accent: #fff;     /* текст върху акцентния цвят */
+  --ok: #1a7f4b;
+  --warn: #9a6200;
+  --bad: #d62839;
 
-  /* Цветове на гилдиите */
-  --builders: #c27c0e;
-  --guardians: #2563b8;
-  --explorers: #1f8a54;
-  --citizens: #7a4bc4;
+  /* Награди: злато за XP и монети */
+  --gold: #f4b400;
+  --gold-light: #ffd65c;
+  --gold-ink: #7a5200;   /* текст в златно на светъл фон */
+  --gold-soft: #fff3cc;
+
+  /* Тъмната лента като меню на игра – еднаква и в двете теми */
+  --hud: #1d1a3f;
+  --hud-2: #2b2665;
+  --hud-line: #3d3880;
+  --hud-text: #f4f3ff;
+  --hud-muted: #bcb8e8;
+
+  /* Цветове на гилдиите (точките в етикетите) */
+  --builders: #e0890f;
+  --guardians: #2f6fe0;
+  --explorers: #1f9a5a;
+  --citizens: #8a55e0;
 
   /* Цветове в панела с код */
-  --code-key: #c8102e;
+  --code-key: #d62839;
   --code-string: #1d4fa8;
-  --code-number: #1f7a46;
-  --code-comment: #8b9098;
+  --code-number: #1a7f4b;
+  --code-comment: #8b90a8;
 
-  --radius: 4px;
-  --on-accent: #fff;  /* текст върху акцентния цвят */
+  --radius: 12px;
+  --radius-lg: 18px;
   --font: "Sofia Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Cascadia Mono", ui-monospace, Consolas, monospace;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --paper: #121316;
-  --surface: #1a1c20;
-  --sunken: #15171a;
-  --ink: #eceef1;
-  --muted: #9aa1aa;
-  --line: #2b2e34;
-  --accent: #ff4d5e;
-  --accent-soft: #3a1a1f;
-  --ok: #4ecb84;
-  --warn: #e3b341;
+  --paper: #121128;
+  --surface: #1c1a3a;
+  --sunken: #17152f;
+  --ink: #eeeefb;
+  --muted: #a7a9c8;
+  --line: #2f2c58;
+  --edge: #0a0918;
+  --accent: #ff5a69;
+  --accent-soft: #3b1a24;
+  --on-accent: #16122e;
+  --ok: #4fd18a;
+  --warn: #f0b94a;
   --bad: #ff6b78;
-  --builders: #f0a53a;
-  --guardians: #6aa5ff;
-  --explorers: #4ecb84;
-  --citizens: #b48cff;
+  --gold: #ffc83d;
+  --gold-ink: #ffc83d;
+  --gold-soft: #3a2f0a;
+  --hud: #231f52;
+  --hud-2: #332c7a;
+  --hud-line: #4a4396;
+  --builders: #ffb347;
+  --guardians: #79b0ff;
+  --explorers: #5be39a;
+  --citizens: #c3a0ff;
   --code-key: #ff6b78;
   --code-string: #8ab4ff;
-  --code-number: #4ecb84;
-  --code-comment: #6c727c;
+  --code-number: #4fd18a;
+  --code-comment: #6c7090;
   color-scheme: dark;
 }
 
 /* ---------- Цвят по гилдия ----------
  * Когато влезе ученик, <html> получава клас accent-<гилдия> и акцентът на сайта
  * става в цвета на гилдията му. Цветовете са проверени за контраст: текстът
- * върху тях и те върху фона са поне 4.5:1.
+ * върху тях и те върху фона са поне 4.5:1. --accent-bright е ярката версия
+ * за тъмната лента.
  */
-:root.accent-builders { --accent: #a65400; --accent-soft: #fbefe3; }
-:root.accent-guardians { --accent: #1d5bbf; --accent-soft: #e8effb; }
-:root.accent-explorers { --accent: #137544; --accent-soft: #e3f3ea; }
-:root.accent-citizens { --accent: #6b3fb5; --accent-soft: #efe9fa; }
-:root[data-theme="dark"].accent-builders { --accent: var(--builders); --accent-soft: #3a2a14; --on-accent: #121316; }
-:root[data-theme="dark"].accent-guardians { --accent: var(--guardians); --accent-soft: #172840; --on-accent: #121316; }
-:root[data-theme="dark"].accent-explorers { --accent: var(--explorers); --accent-soft: #133224; --on-accent: #121316; }
-:root[data-theme="dark"].accent-citizens { --accent: var(--citizens); --accent-soft: #2a2140; --on-accent: #121316; }
+:root.accent-builders { --accent: #a65400; --accent-soft: #fbefe3; --accent-bright: #ffb347; }
+:root.accent-guardians { --accent: #1d5bbf; --accent-soft: #e8effb; --accent-bright: #79b0ff; }
+:root.accent-explorers { --accent: #137544; --accent-soft: #e3f3ea; --accent-bright: #5be39a; }
+:root.accent-citizens { --accent: #6b3fb5; --accent-soft: #efe9fa; --accent-bright: #c3a0ff; }
+:root[data-theme="dark"].accent-builders { --accent: var(--builders); --accent-soft: #3a2a14; }
+:root[data-theme="dark"].accent-guardians { --accent: var(--guardians); --accent-soft: #172840; }
+:root[data-theme="dark"].accent-explorers { --accent: var(--explorers); --accent-soft: #133224; }
+:root[data-theme="dark"].accent-citizens { --accent: var(--citizens); --accent-soft: #2a2140; }
 
 /* ---------- Основа ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -116,14 +146,14 @@ body {
 
 h1, h2, h3 { line-height: 1.15; margin: 0; letter-spacing: -0.02em; }
 h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 800; }
-h2 { font-size: 1.25rem; font-weight: 700; }
-h3 { font-size: 1.05rem; font-weight: 600; }
+h2 { font-size: 1.35rem; font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 700; }
 p { margin: 0 0 1rem; }
 
 a { color: inherit; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
 a:hover { color: var(--accent); }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 .muted { color: var(--muted); }
 .small { font-size: 0.875rem; }
@@ -138,19 +168,19 @@ a:hover { color: var(--accent); }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* ---------- Заглавна лента ---------- */
+/* ---------- Заглавна лента (като меню на игра) ---------- */
 .site-header {
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--hud);
+  color: var(--hud-text);
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--hud) 70%, #000);
 }
 .header-inner {
-  max-width: 1120px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0.75rem 1.25rem;
+  padding: 0.7rem 1.25rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -158,39 +188,46 @@ a:hover { color: var(--accent); }
 .brand { text-decoration: none; display: flex; align-items: center; gap: 0.65rem; line-height: 1.2; }
 .brand-text { display: flex; flex-direction: column; }
 .brand-logo { width: 36px; height: 36px; object-fit: contain; flex: none; }
-.brand strong { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
-.brand span { color: var(--muted); font-size: 0.78rem; }
+.brand strong { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; }
+.brand span { color: var(--hud-muted); font-size: 0.78rem; }
 .brand:hover { color: inherit; }
 
-.nav { display: flex; gap: 1.4rem; margin: 0 0 0 auto; flex-wrap: wrap; }
+.nav { display: flex; gap: 0.2rem; margin: 0 0 0 auto; flex-wrap: wrap; }
 .nav a {
   text-decoration: none;
-  color: var(--muted);
-  font-weight: 500;
-  font-size: 0.95rem;
-  padding: 0.25rem 0;
-  border-bottom: 2px solid transparent;
+  color: var(--hud-muted);
+  font-weight: 700;
+  font-size: 0.93rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
 }
-.nav a:hover { color: var(--ink); }
-.nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.nav a:hover { color: var(--hud-text); background: color-mix(in srgb, var(--hud-text) 10%, transparent); }
+.nav a[aria-current="page"] { color: #16122e; background: var(--accent-bright); }
 .nav .count {
-  display: inline-block; min-width: 1.35em; padding: 0 0.35em; margin-left: 0.15em;
-  border-radius: 999px; background: var(--accent); color: var(--on-accent);
-  font-size: 0.72rem; font-weight: 700; text-align: center; line-height: 1.5;
+  display: inline-block; min-width: 1.35em; padding: 0 0.35em; margin-left: 0.25em;
+  border-radius: 999px; background: var(--gold); color: #2a1d00;
+  font-size: 0.72rem; font-weight: 800; text-align: center; line-height: 1.5;
 }
 
 .header-tools { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
-.user-link { text-decoration: none; font-size: 0.9rem; font-weight: 600; text-align: right; line-height: 1.2; }
-.user-text > span { display: block; color: var(--muted); font-weight: 400; font-size: 0.75rem; }
+.user-link { text-decoration: none; font-size: 0.9rem; font-weight: 700; text-align: right; line-height: 1.2; }
+.site-header .user-link:hover { color: var(--hud-text); }
+.user-text > span { display: block; color: var(--hud-muted); font-weight: 400; font-size: 0.75rem; }
 
 .icon-button {
   display: inline-grid; place-items: center;
-  width: 2.25rem; height: 2.25rem;
-  border: 1px solid var(--line); border-radius: var(--radius);
+  width: 2.4rem; height: 2.4rem;
+  border: 2px solid var(--line); border-radius: var(--radius);
   background: var(--surface); color: var(--ink); cursor: pointer;
 }
 .icon-button:hover { border-color: var(--ink); }
-.icon-button svg { width: 1.1rem; height: 1.1rem; }
+/* Иконните бутони не са „натискаеми“ като големите – без ръб отдолу */
+button.icon-button, button.icon-button:hover, button.icon-button:active { padding: 0; box-shadow: none; top: 0; filter: none; }
+.site-header .link-button { color: var(--hud-muted); font-weight: 700; }
+.site-header .link-button:hover { color: var(--hud-text); }
+.site-header .icon-button { background: transparent; border-color: var(--hud-line); color: var(--hud-text); }
+.site-header .icon-button:hover { border-color: var(--hud-text); color: var(--hud-text); }
+.icon-button svg { width: 1.15rem; height: 1.15rem; }
 /* В светлата тема се вижда луната (премини към тъмна), в тъмната – слънцето. */
 .theme-toggle .icon-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
@@ -198,44 +235,59 @@ a:hover { color: var(--accent); }
 
 @media (max-width: 860px) {
   .header-inner { flex-wrap: wrap; gap: 0.6rem 1rem; }
-  .nav { order: 3; width: 100%; margin: 0; gap: 0.3rem 1.1rem; }
+  .nav { order: 3; width: 100%; margin: 0; gap: 0.3rem; }
   .header-tools { margin-left: auto; }
 }
 
 /* ---------- Съдържание ---------- */
-.page { width: 100%; max-width: 1120px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; flex: 1; }
+.page { width: 100%; max-width: 1120px; margin: 0 auto; padding: 2.25rem 1.25rem 4rem; flex: 1; }
 .page-narrow { max-width: 760px; }
 
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap; margin-bottom: 2rem; }
 .page-head p { margin: 0.4rem 0 0; color: var(--muted); max-width: 60ch; }
 
-.section { margin-top: 3rem; }
+.section { margin-top: 2.75rem; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.section-head a { font-weight: 700; color: var(--accent); text-decoration: none; }
+.section-head a:hover { text-decoration: underline; }
 
-/* ---------- Бутони ---------- */
+/* ---------- Бутони: натискаеми, с ръб отдолу ---------- */
 .btn, button {
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-  font: inherit; font-weight: 600; font-size: 0.95rem;
-  padding: 0.7rem 1.25rem;
-  border: 1px solid var(--ink); border-radius: var(--radius);
-  background: var(--ink); color: var(--paper);
+  --ledge: color-mix(in srgb, var(--accent) 65%, #000);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font: inherit; font-weight: 800; font-size: 0.98rem;
+  padding: 0.7rem 1.3rem;
+  border: 0; border-radius: var(--radius);
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: 0 4px 0 var(--ledge);
   text-decoration: none; cursor: pointer;
+  position: relative; top: 0;
+  transition: top 0.06s, box-shadow 0.06s, filter 0.12s;
 }
-.btn:hover, button:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.btn-outline, button.btn-outline { background: transparent; color: var(--ink); border-color: var(--line); }
-.btn-outline:hover, button.btn-outline:hover { background: transparent; color: var(--ink); border-color: var(--ink); }
-.btn-danger, button.btn-danger { background: transparent; color: var(--bad); border-color: currentColor; }
-.btn-danger:hover, button.btn-danger:hover { background: var(--bad); border-color: var(--bad); color: #fff; }
-.btn-small, button.btn-small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
-button:disabled, button:disabled:hover {
-  background: var(--sunken); color: var(--muted); border-color: var(--line); cursor: not-allowed;
+.btn:hover, button:hover { color: var(--on-accent); filter: brightness(1.08); }
+.btn:active, button:active { top: 3px; box-shadow: 0 1px 0 var(--ledge); }
+.btn-outline, button.btn-outline {
+  --ledge: var(--edge);
+  background: var(--surface); color: var(--ink); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--line);
+}
+.btn-outline:hover, button.btn-outline:hover { color: var(--ink); filter: none; box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--ink); }
+.btn-outline:active, button.btn-outline:active { box-shadow: 0 1px 0 var(--ledge), inset 0 0 0 2px var(--ink); }
+.btn-danger, button.btn-danger {
+  --ledge: var(--edge);
+  background: var(--surface); color: var(--bad); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px currentColor;
+}
+.btn-danger:hover, button.btn-danger:hover { background: var(--bad); color: #fff; filter: none; box-shadow: 0 4px 0 color-mix(in srgb, var(--bad) 60%, #000); }
+.btn-small, button.btn-small { padding: 0.4rem 0.85rem; font-size: 0.85rem; box-shadow: 0 3px 0 var(--ledge); }
+button:disabled, button:disabled:hover, button:disabled:active {
+  background: var(--sunken); color: var(--muted); box-shadow: inset 0 0 0 2px var(--line);
+  cursor: not-allowed; filter: none; top: 0;
 }
 .link-button { all: unset; cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .link-button:hover { color: var(--accent); }
 .btn-block, button.btn-block { width: 100%; }
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.5rem; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; margin-top: 1.5rem; }
 
-/* ---------- Начална част (hero) ---------- */
+/* ---------- Начална част (hero) на представянето ---------- */
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
@@ -250,17 +302,17 @@ button:disabled, button:disabled:hover {
   line-height: 0.95;
   margin-bottom: 1.25rem;
 }
-.school-mark { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem; color: var(--muted); font-weight: 600; }
+.school-mark { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem; color: var(--muted); font-weight: 700; }
 .school-mark img { width: 56px; height: 56px; object-fit: contain; }
-.hero-sub { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 1rem; }
+.hero-sub { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 1rem; }
 .hero-text { color: var(--muted); font-size: 1.08rem; max-width: 46ch; }
 @media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 2rem; } }
 
-/* ---------- Панел като редактор на код (отличителният елемент) ---------- */
-.code-card { margin: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+/* ---------- Панел като редактор на код (на представянето) ---------- */
+.code-card { margin: 0; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
 .code-card-head {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.6rem 1rem; border-bottom: 1px solid var(--line);
+  padding: 0.6rem 1rem; border-bottom: 2px solid var(--line);
   font-family: var(--mono); font-size: 0.78rem; color: var(--muted);
 }
 .code-card pre { margin: 0; padding: 1.1rem 0; overflow-x: auto; font-family: var(--mono); font-size: 0.86rem; line-height: 1.9; }
@@ -275,21 +327,18 @@ button:disabled, button:disabled:hover {
 .tok-num { color: var(--code-number); }
 .tok-com { color: var(--code-comment); }
 
-/* ---------- Лента с етикети (гилдии, умения) ---------- */
-.chip-row {
-  display: flex; flex-wrap: wrap; gap: 0.6rem;
-  padding: 1.1rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-}
+/* ---------- Етикети (гилдии) ---------- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.6rem; padding: 0.25rem 0; }
 .chip {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 0.3rem 0.85rem;
+  border: 2px solid var(--line); border-radius: 999px;
   background: var(--surface); color: var(--ink);
-  font-size: 0.88rem; font-weight: 500; text-decoration: none;
+  font-size: 0.88rem; font-weight: 700; text-decoration: none;
 }
 a.chip:hover { border-color: var(--ink); color: var(--ink); }
 .chip[aria-current="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
-.chip::before { content: ""; width: 0.45rem; height: 0.45rem; background: var(--chip-color, var(--accent)); flex: none; }
+.chip::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--chip-color, var(--accent)); flex: none; }
 .chip.plain::before { display: none; }
 
 /* Гилдиите – по името (slugify): builders, guardians, explorers, citizens */
@@ -298,56 +347,66 @@ a.chip:hover { border-color: var(--ink); color: var(--ink); }
 .guild-explorers { --chip-color: var(--explorers); }
 .guild-citizens { --chip-color: var(--citizens); }
 
-/* ---------- Числа (статистика) ---------- */
+/* ---------- Числа (статистика на представянето) ---------- */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--surface);
+  gap: 1rem;
 }
-.stat { padding: 1.4rem 1.5rem; border-left: 1px solid var(--line); }
-.stat:first-child { border-left: 0; }
+.stat { padding: 1.3rem 1.4rem; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
 .stat-value { font-size: 2.3rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; line-height: 1.1; }
-.stat-value small { font-size: 1rem; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.stat-value small { font-size: 1rem; font-weight: 700; color: var(--muted); letter-spacing: 0; }
 .stat-label { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
-@media (max-width: 760px) {
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stat:nth-child(3) { border-left: 0; }
-  .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
-}
+@media (max-width: 760px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-.progress { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 0.5rem 0; max-width: 28rem; }
-.progress span { display: block; height: 100%; background: var(--accent); }
+.progress { height: 10px; background: var(--sunken); border-radius: 999px; overflow: hidden; margin: 0.5rem 0; max-width: 28rem; }
+.progress span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
 
 /* ---------- Панели ---------- */
-.panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1.5rem; }
+.panel { border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: 1.5rem; }
 .panel + .panel { margin-top: 1.25rem; }
 .panel > h2:first-child, .panel > h3:first-child { margin-bottom: 1rem; }
-.panel-accent { border-left: 3px solid var(--accent); }
+.panel-accent { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
 
 .columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .columns .panel + .panel { margin-top: 0; }
 @media (max-width: 760px) { .columns { grid-template-columns: 1fr; } }
 
-.list-row { padding: 0.75rem 0; border-bottom: 1px solid var(--line); display: flex; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; }
+.list-row { padding: 0.75rem 0; border-bottom: 2px solid var(--sunken); display: flex; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; }
 .list-row:last-child { border-bottom: 0; padding-bottom: 0; }
 .list-row:first-of-type { padding-top: 0; }
 .list-row p { margin: 0; width: 100%; }
-.plus { color: var(--ok); font-weight: 700; white-space: nowrap; }
-.minus { color: var(--bad); font-weight: 700; white-space: nowrap; }
+.plus { color: var(--ok); font-weight: 800; white-space: nowrap; }
+.minus { color: var(--bad); font-weight: 800; white-space: nowrap; }
 
-/* ---------- Мисии ---------- */
-.mission-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+/* ---------- Мисиите като карти от игра ----------
+ * Трудността е като рядкост на предмет: бронз, сребро, злато.
+ */
+.mission-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
 .mission-card {
+  --tier: var(--line);
+  position: relative; top: 0;
   display: flex; flex-direction: column; gap: 0.6rem;
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
-  padding: 1.25rem; text-decoration: none; color: var(--ink);
+  border: 2px solid var(--line); border-top: 6px solid var(--tier); border-radius: var(--radius-lg);
+  background: var(--surface); box-shadow: 0 5px 0 var(--edge);
+  padding: 1.1rem 1.25rem 1.25rem; text-decoration: none; color: var(--ink);
+  transition: top 0.08s, box-shadow 0.08s, border-color 0.12s;
 }
-.mission-card:hover { border-color: var(--ink); color: var(--ink); }
-.mission-card h3 { font-size: 1.1rem; }
+.mission-card:hover { color: var(--ink); border-color: var(--ink); border-top-color: var(--tier); }
+.mission-card:active { top: 3px; box-shadow: 0 2px 0 var(--edge); }
+.mission-card.tier-easy { --tier: #c47a3a; }
+.mission-card.tier-medium { --tier: #9aa6b8; }
+.mission-card.tier-hard { --tier: var(--gold); }
+.mission-card h3 { font-size: 1.15rem; }
 .mission-meta { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .mission-card .mission-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.88rem; }
-.xp { font-weight: 800; color: var(--accent); white-space: nowrap; }
+.xp { font-weight: 800; color: var(--gold-ink); white-space: nowrap; }
+.reward {
+  display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;
+  padding: 0.2rem 0.7rem 0.2rem 0.5rem; border-radius: 999px;
+  background: var(--gold-soft); color: var(--gold-ink); font-weight: 800; font-size: 0.92rem;
+}
+.reward svg { width: 1.05rem; height: 1.05rem; fill: var(--gold); stroke: var(--gold-ink); }
 
 .mission-title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1; margin: 1rem 0; }
 .mission-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
@@ -356,67 +415,66 @@ a.chip:hover { border-color: var(--ink); color: var(--ink); }
 
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.25rem; margin: 0; }
 .facts dt { color: var(--muted); }
-.facts dd { margin: 0; font-weight: 500; }
+.facts dd { margin: 0; font-weight: 600; }
 
-.evidence { font-family: var(--mono); font-size: 0.86rem; background: var(--sunken); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.75rem 1rem; }
-.hint { border-left: 3px solid var(--accent); padding: 0.1rem 0 0.1rem 1rem; margin-bottom: 1rem; }
+.evidence { font-family: var(--mono); font-size: 0.86rem; background: var(--sunken); border-radius: var(--radius); padding: 0.75rem 1rem; }
+.hint { border-left: 4px solid var(--accent); padding: 0.1rem 0 0.1rem 1rem; margin-bottom: 1rem; }
 .hint p { margin: 0.2rem 0; }
 
 /* ---------- Етикети за състояние ---------- */
 .badge {
   display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.15rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius);
-  font-size: 0.8rem; font-weight: 600; color: var(--muted); white-space: nowrap; background: var(--surface);
+  padding: 0.12rem 0.6rem; border: 2px solid var(--line); border-radius: 999px;
+  font-size: 0.8rem; font-weight: 700; color: var(--muted); white-space: nowrap; background: var(--surface);
 }
 .status-pending { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
 .status-approved { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
 .status-rejected { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
 
 /* ---------- Таблици ---------- */
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.table-wrap { overflow-x: auto; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
 .panel .table-wrap { border: 0; }
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th, td { padding: 0.8rem 1rem; border-bottom: 2px solid var(--sunken); text-align: left; vertical-align: top; }
 tbody tr:last-child td { border-bottom: 0; }
-th { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+th { color: var(--muted); font-weight: 700; font-size: 0.85rem; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .rank { font-weight: 800; color: var(--muted); width: 3rem; }
-tr.top-1 .rank { color: var(--accent); }
 tr.me td { background: var(--accent-soft); }
-tr.me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+tr.me td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 .review-row td { background: var(--sunken); }
 
 /* ---------- Форми ---------- */
-label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.35rem; }
+label { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.35rem; }
 input, textarea, select {
   width: 100%;
-  padding: 0.65rem 0.8rem;
-  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 0.65rem 0.85rem;
+  border: 2px solid var(--line); border-radius: var(--radius);
   background: var(--surface); color: var(--ink);
   font: inherit; font-size: 0.95rem;
 }
-input:focus, textarea:focus, select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 12%, transparent); }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
 textarea { resize: vertical; }
-input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); margin: 0; }
+input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); margin: 0; }
 
 .field { margin-bottom: 1.1rem; }
 .field-checkbox { display: flex; align-items: center; gap: 0.6rem; }
-.field-checkbox label { margin: 0; font-weight: 500; }
+.field-checkbox label { margin: 0; font-weight: 600; }
 .help { display: block; color: var(--muted); font-size: 0.83rem; margin-top: 0.3rem; }
 .error { display: block; color: var(--bad); font-size: 0.83rem; margin-top: 0.3rem; }
 .has-error input, .has-error textarea, .has-error select { border-color: var(--bad); }
 
 .inline-form { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; }
 .inline-form .field { margin: 0; flex: 1 1 180px; }
-.review-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.review-form { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
 .review-form input { flex: 1 1 240px; width: auto; }
 
 /* ---------- Съобщения ---------- */
 .messages { display: grid; gap: 0.5rem; margin-bottom: 1.5rem; }
 .message {
   margin: 0; padding: 0.8rem 1rem;
-  border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: var(--radius);
-  background: var(--surface);
+  border: 2px solid var(--line); border-left: 6px solid var(--muted); border-radius: var(--radius);
+  background: var(--surface); font-weight: 600;
 }
 .message-success { border-left-color: var(--ok); }
 .message-error { border-left-color: var(--bad); }
@@ -427,62 +485,72 @@ input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--acce
 @media (max-width: 860px) { .auth { grid-template-columns: 1fr; gap: 2rem; } }
 
 /* ---------- Стъпки „Как работи“ (истинска последователност) ---------- */
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.step { padding: 1.5rem; border-left: 1px solid var(--line); }
-.step:first-child { border-left: 0; }
-.step-n { font-weight: 800; color: var(--accent); font-size: 1.1rem; }
-.step h3 { margin: 0.4rem 0 0.5rem; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.step { padding: 1.5rem; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+.step-n {
+  display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%;
+  font-weight: 800; background: var(--accent); color: var(--on-accent); font-size: 1.05rem;
+}
+.step h3 { margin: 0.75rem 0 0.5rem; }
 .step p { margin: 0; color: var(--muted); }
-@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } .step { border-left: 0; border-top: 1px solid var(--line); } .step:first-child { border-top: 0; } }
+@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
 
-/* ---------- Чат с асистента (като прозорец на редактор) ---------- */
+/* ---------- Чат с асистента ---------- */
 .chat { display: flex; flex-direction: column; }
 .chat-log { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.25rem; min-height: 18rem; max-height: 60vh; overflow-y: auto; }
-.bubble { max-width: 85%; padding: 0.7rem 1rem; border-radius: var(--radius); white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--line); }
-.bubble.user { align-self: flex-end; background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.bubble.bot { align-self: flex-start; background: var(--sunken); }
+.bubble { max-width: 85%; padding: 0.75rem 1rem; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; border: 2px solid var(--line); }
+.bubble.user { align-self: flex-end; background: var(--hud); color: var(--hud-text); border-color: var(--hud); border-bottom-right-radius: 4px; }
+.bubble.bot { align-self: flex-start; background: var(--sunken); border-color: var(--sunken); border-bottom-left-radius: 4px; }
 .bubble.waiting { color: var(--muted); }
 .bubble.error { border-color: var(--bad); color: var(--bad); background: transparent; }
 .chat-examples { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1.25rem 1rem; }
-.chat-examples button { background: var(--surface); color: var(--ink); border-color: var(--line); font-weight: 500; font-size: 0.85rem; padding: 0.4rem 0.75rem; }
-.chat-examples button:hover { border-color: var(--ink); background: var(--surface); color: var(--ink); }
-.chat-form { display: flex; gap: 0.5rem; padding: 1rem 1.25rem; border-top: 1px solid var(--line); }
+.chat-examples button {
+  --ledge: var(--edge);
+  background: var(--surface); color: var(--ink); box-shadow: 0 3px 0 var(--ledge), inset 0 0 0 2px var(--line);
+  font-weight: 600; font-size: 0.85rem; padding: 0.4rem 0.8rem;
+}
+.chat-examples button:hover { color: var(--ink); filter: none; box-shadow: 0 3px 0 var(--ledge), inset 0 0 0 2px var(--ink); }
+.chat-form { display: flex; gap: 0.6rem; padding: 1rem 1.25rem; border-top: 2px solid var(--sunken); }
 .chat-form input { flex: 1; }
 
-/* ---------- Звънче и известия (Ф15) ---------- */
+/* ---------- Звънче и известия ---------- */
 .bell { position: relative; text-decoration: none; }
-.bell.active { border-color: var(--ink); }
+.site-header .bell.active { border-color: var(--hud-text); }
 .bell-count {
   position: absolute; top: -0.45rem; right: -0.45rem;
-  min-width: 1.15rem; height: 1.15rem; padding: 0 0.3rem;
-  border-radius: 999px; background: var(--accent); color: var(--on-accent);
-  font-size: 0.68rem; font-weight: 700; line-height: 1.15rem; text-align: center;
+  min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem;
+  border-radius: 999px; background: var(--gold); color: #2a1d00;
+  font-size: 0.7rem; font-weight: 800; line-height: 1.2rem; text-align: center;
 }
 .notification { align-items: center; }
-.notification.unread { box-shadow: inset 3px 0 0 var(--accent); padding-left: 0.85rem; }
-.notification-kind { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.notification.unread { box-shadow: inset 4px 0 0 var(--accent); padding-left: 0.85rem; }
+.notification-kind { font-size: 0.8rem; font-weight: 800; color: var(--muted); }
 .notification-kind.kind-claim_approved, .notification-kind.kind-level_up, .notification-kind.kind-badge, .notification-kind.kind-bonus { color: var(--ok); }
 .notification-kind.kind-claim_rejected, .notification-kind.kind-undone { color: var(--bad); }
-.new-label { font-size: 0.7rem; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 0 0.45rem; }
+.new-label { font-size: 0.72rem; font-weight: 800; color: var(--accent); border: 2px solid currentColor; border-radius: 999px; padding: 0 0.45rem; }
 .notification time { margin-left: auto; }
 
-/* ---------- Значки (Ф16) ---------- */
+/* ---------- Значки ---------- */
 .badge-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; }
 .badge-card {
   display: flex; gap: 0.9rem; align-items: flex-start;
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1rem;
+  border: 2px dashed var(--line); border-radius: var(--radius-lg); background: transparent; padding: 1rem;
 }
+.badge-card.earned { border-style: solid; background: var(--surface); box-shadow: 0 4px 0 var(--edge); }
 .badge-icon {
-  flex: none; display: grid; place-items: center; width: 2.75rem; height: 2.75rem;
-  border-radius: 50%; border: 1px dashed var(--line); color: var(--muted);
+  flex: none; display: grid; place-items: center; width: 3rem; height: 3rem;
+  border-radius: 50%; background: var(--sunken); color: var(--muted);
 }
-.badge-icon svg { width: 1.35rem; height: 1.35rem; }
-.badge-card.earned .badge-icon { border: 0; background: var(--accent-soft); color: var(--accent); }
+.badge-icon svg { width: 1.45rem; height: 1.45rem; }
+.badge-card.earned .badge-icon {
+  background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 70%);
+  color: #3b2500; box-shadow: 0 3px 0 color-mix(in srgb, var(--gold) 60%, #000);
+}
 .badge-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
 .badge-card:not(.earned) .badge-body strong { color: var(--muted); }
-.badge-state { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+.badge-state { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
 .badge-card.earned .badge-state { color: var(--ok); }
-.progress-thin { height: 4px; margin: 0.4rem 0 0.1rem; }
+.progress-thin { height: 6px; margin: 0.4rem 0 0.1rem; }
 
 /* ---------- Условия и поверителност ---------- */
 .legal-text { padding: 1.75rem 2rem; }
@@ -521,70 +589,153 @@ input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--acce
 .who-large strong { font-size: 1.15rem; }
 .player-title {
   display: inline-block; width: fit-content; margin-top: 0.1rem;
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent);
+  font-size: 0.85rem; font-weight: 800; color: var(--accent);
 }
-.hero-player { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
-.hero-player .hero-title { margin: 0; }
 .streak {
   display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.4rem; padding: 0.15rem 0.6rem;
-  border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 0.85rem; font-weight: 700;
+  border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 0.85rem; font-weight: 800;
   vertical-align: middle;
 }
 .streak svg { width: 1rem; height: 1rem; }
 
-/* ---------- Мисиите като в игра ---------- */
-.mission-card { --tier: var(--line); border-top: 3px solid var(--tier); }
-.mission-card.tier-easy { --tier: #b07a4a; }
-.mission-card.tier-medium { --tier: #8d99a8; }
-.mission-card.tier-hard { --tier: #d4a017; }
-.mission-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; font-size: 0.78rem; }
-.tier { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.pips { display: inline-flex; gap: 2px; }
-.pips i { width: 7px; height: 7px; transform: rotate(45deg); border: 1.5px solid var(--tier); }
-.pips i.on { background: var(--tier); }
-.tag { font-weight: 700; border-radius: 999px; padding: 0.05rem 0.5rem; }
-.tag-new { background: var(--accent); color: var(--on-accent); }
-.tag-soon { color: var(--bad); border: 1px solid currentColor; }
+/* ---------- Началната страница на ученика: екран от игра ----------
+ * Тъмен панел в цвета на гилдията: аватар, знак с нивото, лента за XP
+ * и „ресурсите“ на играча. Лентата се пълни веднъж при отваряне.
+ */
+.hud {
+  position: relative; overflow: hidden;
+  display: grid; gap: 1.6rem;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  border-radius: 28px;
+  color: var(--hud-text);
+  background:
+    radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--accent-bright) 30%, transparent), transparent 58%),
+    linear-gradient(160deg, var(--hud-2), var(--hud));
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--hud) 65%, #000);
+}
+.hud-top { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; }
+.hud-player { display: flex; align-items: center; gap: 1.1rem; min-width: 0; }
+.hud-player .avatar { background: color-mix(in srgb, var(--accent-bright) 22%, var(--hud)); color: var(--accent-bright); }
+.hud h1 { font-size: clamp(1.9rem, 5vw, 3.1rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1; overflow-wrap: anywhere; }
+.hud-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 0.6rem 0 0; }
+.hud .player-title { color: var(--accent-bright); margin: 0; font-size: 0.95rem; }
+.hud .chip { background: color-mix(in srgb, var(--hud-text) 8%, transparent); border-color: var(--hud-line); color: var(--hud-text); }
 
-/* ---------- Класация ---------- */
-.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
-.segmented a { padding: 0.35rem 0.95rem; border-radius: 999px; text-decoration: none; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
-.segmented a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+/* Знакът с нивото – златен шестоъгълник */
+.level-badge {
+  flex: none; display: grid; place-items: center; align-content: center;
+  width: 96px; height: 108px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold) 55%, #e09200);
+  color: #3b2500; text-align: center;
+}
+.level-badge span { font-size: 0.8rem; font-weight: 800; line-height: 1; }
+.level-badge strong { font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
+
+.xp-labels { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.5rem; color: var(--hud-muted); font-size: 0.95rem; }
+.xp-labels strong { color: var(--hud-text); font-size: 1.05rem; }
+.xp-bar {
+  position: relative; height: 20px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, #000 30%, var(--hud)); box-shadow: inset 0 0 0 2px var(--hud-line);
+}
+.xp-bar span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent);
+  animation: xp-fill 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both;
+}
+/* Деления на лентата – като в игра */
+.xp-bar::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), color-mix(in srgb, var(--hud) 70%, transparent) calc(10% - 2px) 10%);
+}
+@keyframes xp-fill { from { width: 0; } }
+
+.resources { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+.res {
+  display: flex; align-items: center; gap: 0.75rem; min-width: 0;
+  padding: 0.8rem 1rem; border-radius: 16px;
+  background: color-mix(in srgb, var(--hud-text) 7%, transparent); box-shadow: inset 0 0 0 2px var(--hud-line);
+}
+.res svg { flex: none; width: 1.9rem; height: 1.9rem; }
+.res-xp svg, .res-coin svg { fill: var(--gold); stroke: #7a5200; }
+.res-week svg { stroke: var(--accent-bright); }
+.res-streak svg { fill: #ff8a3d; stroke: #b84a00; }
+.res-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.res-text b { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; color: var(--hud-text); }
+.res-text b small { font-size: 0.9rem; font-weight: 700; color: var(--hud-muted); }
+.res-text span { font-size: 0.82rem; color: var(--hud-muted); }
+
+.hud-actions { display: flex; flex-wrap: wrap; gap: 0.85rem; }
+.hud .btn { --ledge: color-mix(in srgb, var(--accent-bright) 55%, #000); background: var(--accent-bright); color: #16122e; }
+.hud .btn:hover { color: #16122e; }
+.hud .btn-ghost {
+  --ledge: color-mix(in srgb, var(--hud) 55%, #000);
+  background: transparent; color: var(--hud-text); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--hud-line);
+}
+.hud .btn-ghost:hover { color: var(--hud-text); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--hud-text); filter: none; }
+
+@media (max-width: 760px) {
+  .resources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hud-top { align-items: flex-start; }
+  .level-badge { width: 72px; height: 82px; }
+  .level-badge strong { font-size: 1.9rem; }
+  .hud-player .avatar { --avatar-size: 56px !important; }
+}
+
+/* ---------- Мисиите: етикети ---------- */
+.mission-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; font-size: 0.8rem; }
+.tier { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 800; color: var(--muted); }
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 8px; height: 8px; transform: rotate(45deg); border: 2px solid var(--tier); }
+.pips i.on { background: var(--tier); }
+.tag { font-weight: 800; border-radius: 999px; padding: 0.05rem 0.55rem; }
+.tag-new { background: var(--accent); color: var(--on-accent); }
+.tag-soon { color: var(--bad); box-shadow: inset 0 0 0 2px currentColor; }
+
+/* ---------- Класация: медали за първите трима ---------- */
+.segmented { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.segmented a { padding: 0.35rem 0.95rem; border-radius: 999px; text-decoration: none; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
+.segmented a[aria-current="page"] { background: var(--accent); color: var(--on-accent); }
 .ranking td { vertical-align: middle; }
 .rank { white-space: nowrap; }
-.move { display: inline-block; margin-left: 0.25rem; font-size: 0.72rem; font-weight: 700; }
+.move { display: inline-block; margin-left: 0.25rem; font-size: 0.72rem; font-weight: 800; }
 .move.up { color: var(--ok); }
 .move.down { color: var(--bad); }
-tr.top-2 .rank, tr.top-3 .rank { color: var(--ink); }
-tr.top-1 .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #d4a017; }
+tr.top-1 .rank { color: var(--gold-ink); }
+tr.top-2 .rank { color: #6b7689; }
+tr.top-3 .rank { color: #9a5a2a; }
+:root[data-theme="dark"] tr.top-2 .rank { color: #c3cad6; }
+:root[data-theme="dark"] tr.top-3 .rank { color: #e0a070; }
+tr.top-1 .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--gold); }
 tr.gap td { text-align: center; color: var(--muted); padding: 0.2rem; }
 tr.mine td { background: var(--accent-soft); }
 
 /* ---------- Профил и магазин ---------- */
 .look { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
 .look-choices { display: grid; gap: 0.75rem; margin-top: 1.25rem; }
-.section-title { font-size: 1.15rem; margin: 0 0 1rem; }
+.section-title { font-size: 1.2rem; margin: 0 0 1rem; }
 .cosmetic-preview { padding: 0.75rem; border-radius: var(--radius); background: var(--sunken); }
 
 /* ---------- Празнуване на ново ниво или значка ---------- */
 .celebrate {
   width: min(26rem, calc(100vw - 2rem)); padding: 2rem 1.75rem 1.5rem; overflow: hidden;
-  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
-  text-align: center; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  border: 0; border-radius: 24px; background: var(--surface); color: var(--ink);
+  text-align: center; box-shadow: 0 8px 0 var(--edge), 0 30px 80px rgba(0, 0, 0, 0.35);
   animation: celebrate-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
-.celebrate::backdrop { background: rgba(10, 12, 16, 0.55); }
-.celebrate h2 { font-size: 1.9rem; margin: 0.2rem 0 1rem; }
-.celebrate-kicker { margin: 0; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.8rem; }
+.celebrate::backdrop { background: rgba(10, 8, 30, 0.6); }
+.celebrate h2 { font-size: 2rem; margin: 0.2rem 0 1rem; }
+.celebrate-kicker { margin: 0; color: var(--accent); font-weight: 800; font-size: 0.95rem; }
 .celebrate-list { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: 0.6rem; text-align: left; }
 .celebrate-list li { display: flex; gap: 0.75rem; align-items: center; }
-.celebrate-list .badge-icon { border: 0; background: var(--accent-soft); color: var(--accent); }
+.celebrate-list .badge-icon { background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 70%); color: #3b2500; }
 .confetti { position: absolute; inset: 0; pointer-events: none; }
 .confetti i {
   position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
   background: var(--accent); animation: confetti-fall 2.4s ease-in 0.15s forwards;
 }
-.confetti i:nth-child(3n) { background: #d4a017; }
+.confetti i:nth-child(3n) { background: var(--gold); }
 .confetti i:nth-child(3n+1) { background: var(--guardians); }
 .confetti i:nth-child(4n) { width: 6px; height: 6px; border-radius: 50%; }
 .confetti i:nth-child(1) { left: 6%; animation-delay: 0.1s; }
@@ -620,43 +771,45 @@ tr.mine td { background: var(--accent-soft); }
 @media (max-width: 700px) {
   .has-tabbar .nav { display: none; }
   .has-tabbar .user-text { display: none; }
-  .has-tabbar .site-footer { padding-bottom: 4.5rem; }
+  .has-tabbar .brand-text span { display: none; }
+  .has-tabbar .header-inner { flex-wrap: nowrap; gap: 0.5rem; }
+  .has-tabbar .header-tools { gap: 0.5rem; }
+  .has-tabbar .site-footer { padding-bottom: 5rem; }
   .tabbar {
     display: grid; grid-template-columns: repeat(5, 1fr);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    background: var(--surface); border-top: 1px solid var(--line);
-    padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
+    background: var(--hud); box-shadow: 0 -4px 0 color-mix(in srgb, var(--hud) 70%, #000);
+    padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom));
   }
   .tabbar a {
     display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
-    padding: 0.3rem 0; text-decoration: none; color: var(--muted); font-size: 0.68rem; font-weight: 600;
+    margin: 0 0.15rem; padding: 0.3rem 0; border-radius: 12px;
+    text-decoration: none; color: var(--hud-muted); font-size: 0.68rem; font-weight: 700;
   }
   .tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .tabbar a[aria-current="page"] { color: var(--accent); }
-  .hero-player .avatar { --avatar-size: 56px !important; }
+  .tabbar a[aria-current="page"] { color: #16122e; background: var(--accent-bright); }
 }
 
 /* ---------- Файлове към доказателство ---------- */
 .evidence-files { list-style: none; margin: 0.75rem 0 1rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .evidence-thumb img {
   display: block; width: 112px; height: 112px; object-fit: cover;
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--sunken);
+  border: 2px solid var(--line); border-radius: var(--radius); background: var(--sunken);
 }
 .evidence-thumb:hover img { border-color: var(--ink); }
 .evidence-doc {
   display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; max-width: 260px;
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); text-decoration: none; color: var(--ink);
+  border: 2px solid var(--line); border-radius: var(--radius); background: var(--surface); text-decoration: none; color: var(--ink);
 }
 .evidence-doc:hover { border-color: var(--ink); }
 .evidence-doc svg { flex: none; width: 24px; height: 24px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linejoin: round; }
-.evidence-doc span { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; font-size: 0.88rem; font-weight: 600; }
+.evidence-doc span { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; font-size: 0.88rem; font-weight: 700; }
 .evidence-doc small { color: var(--muted); font-weight: 400; }
-.field > .label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+.field > .label { display: block; font-weight: 700; margin-bottom: 0.35rem; }
 .file-picker { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; cursor: pointer; }
 /* Истинското поле е невидимо, но остава достъпно от клавиатура и екранни четци */
 .file-picker input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.file-picker input[type="file"]:focus-visible + .btn { outline: 2px solid var(--accent); outline-offset: 2px; }
-.file-picker:hover .btn { border-color: var(--ink); }
+.file-picker input[type="file"]:focus-visible + .btn { outline: 3px solid var(--accent); outline-offset: 2px; }
 .file-names { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
 
 /* ---------- Отмяна на награда ---------- */
@@ -665,12 +818,12 @@ tr.mine td { background: var(--accent-soft); }
 .undo summary:hover { color: var(--bad); }
 .undo-form { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
 .undo-form input { flex: 1 1 12rem; padding: 0.35rem 0.6rem; font-size: 0.85rem; }
-.struck { text-decoration: line-through; color: var(--muted); font-weight: 700; }
+.struck { text-decoration: line-through; color: var(--muted); font-weight: 800; }
 
 /* ---------- Страници за грешки ---------- */
 .error-page { padding: 4rem 0; max-width: 40rem; }
 .error-code { font-size: clamp(5rem, 16vw, 9rem); font-weight: 800; letter-spacing: -0.06em; line-height: 0.9; color: var(--accent); }
 
 /* ---------- Долна лента ---------- */
-.site-footer { border-top: 1px solid var(--line); }
+.site-footer { border-top: 2px solid var(--line); }
 .footer-inner { max-width: 1120px; margin: 0 auto; padding: 1.25rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: var(--muted); font-size: 0.85rem; }

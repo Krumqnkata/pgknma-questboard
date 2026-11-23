@@ -43,7 +43,7 @@ def _value_tokens(value):
 def code_card(filename, variable, fields, comment="", aside=""):
     """
     Панел като редактор на код с истински данни, напр.:
-        {% code_card "player.ts" "player" player_fields "Твоят профил" %}
+        {% code_card "quest.ts" "quest" mission_fields "Най-новата активна мисия" %}
     fields е списък от двойки (име, стойност). Текстът се екранира от шаблона.
     """
     lines = []
@@ -64,6 +64,7 @@ BADGE_ICONS = {
     "shield": '<path d="m12 3 8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
     "bolt": '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
     "bag": '<path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/>',
+    "coin": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/>',
     "flame": '<path d="M12 22c4 0 7-2.7 7-6.8 0-3.6-2.4-6-4.3-8.2-.4 2-1.6 3.4-3.2 3.9.6-3.1-.6-6.5-3.5-8.9 '
              '.3 3.6-1.6 5.7-3 7.8A8 8 0 0 0 5 15.2C5 19.3 8 22 12 22z"/>',
 }
