@@ -1,10 +1,10 @@
 /*
  * Questboard – стилове на страниците за ученици и учители.
  *
- * Идеята на дизайна е „екран от игра“: тъмна лента горе като меню на игра,
- * злато за наградите (XP и монети), цвят на гилдията за ученика и
- * „натискаеми“ бутони и карти с ръб отдолу, които хлътват при натискане.
- * Каквото може да се натисне, има ръб; останалото е плоско.
+ * Идеята на дизайна е „колекционерски карти“: ученикът е холографска карта,
+ * мисиите са карти с рамка според рядкостта (бронз, сребро, злато), а
+ * значките са колекция. Златото е за наградите (XP и монети), цветът на
+ * гилдията – за ученика. Бутоните са „натискаеми“ – с ръб отдолу.
  *
  * Цветовете са променливи (--paper, --ink, ...). Светлата тема е по подразбиране,
  * тъмната се включва с атрибута data-theme="dark" на <html> (бутонът горе вдясно)
@@ -34,13 +34,14 @@
 
 /* ---------- Цветове ---------- */
 :root {
-  --paper: #eef0f8;      /* фон на страницата – хладен, леко син */
-  --surface: #ffffff;    /* панели, таблици, полета */
-  --sunken: #e7eaf5;     /* вдлъбнати места: код, доказателства */
-  --ink: #191b33;        /* основен текст */
-  --muted: #565d78;      /* второстепенен текст */
-  --line: #d6daeb;       /* рамки */
-  --edge: #c4c9df;       /* ръбът под натискаемите неща */
+  --paper: #efedf8;      /* фон на страницата – светъл, леко лилав */
+  --surface: #ffffff;    /* карти, панели, таблици, полета */
+  --sunken: #e8e5f5;     /* вдлъбнати места: код, доказателства */
+  --ink: #1a1530;        /* основен текст */
+  --muted: #5b5580;      /* второстепенен текст */
+  --line: #dcd8f0;       /* рамки */
+  --edge: #c9c4e6;       /* ръбът под натискаемите неща */
+  --lift: 0 10px 24px rgba(14, 12, 29, 0.14); /* сянка под картите */
   --accent: #d62839;     /* акцент: бутони, активни връзки (при ученик – цветът на гилдията) */
   --accent-soft: #fde8ea;
   --accent-bright: #ff6b78; /* акцентът върху тъмната лента */
@@ -55,12 +56,18 @@
   --gold-ink: #7a5200;   /* текст в златно на светъл фон */
   --gold-soft: #fff3cc;
 
-  /* Тъмната лента като меню на игра – еднаква и в двете теми */
-  --hud: #1d1a3f;
-  --hud-2: #2b2665;
-  --hud-line: #3d3880;
-  --hud-text: #f4f3ff;
-  --hud-muted: #bcb8e8;
+  /* Тъмната лента горе и картата на играча – еднакви и в двете теми */
+  --hud: #0e0c1d;
+  --hud-2: #2a1f63;
+  --hud-line: #2a2550;
+  --hud-text: #f3f0ff;
+  --hud-muted: #a9a3d6;
+
+  /* Рамки на картите според рядкостта */
+  --frame-bronze: linear-gradient(160deg, #e7a877, #a35f28);
+  --frame-silver: linear-gradient(160deg, #eef1f6, #8995a8);
+  --frame-gold: linear-gradient(160deg, #ffe07a, #f4a100 60%, #c97800);
+  --frame-holo: conic-gradient(from 210deg, #ff6bd6, #ffd36b, #6bffb8, #6bc8ff, #b46bff, #ff6bd6);
 
   /* Цветове на гилдиите (точките в етикетите) */
   --builders: #e0890f;
@@ -82,13 +89,14 @@
 }
 
 :root[data-theme="dark"] {
-  --paper: #121128;
-  --surface: #1c1a3a;
-  --sunken: #17152f;
-  --ink: #eeeefb;
-  --muted: #a7a9c8;
-  --line: #2f2c58;
-  --edge: #0a0918;
+  --paper: #0e0c1d;
+  --surface: #1b1738;
+  --sunken: #151230;
+  --ink: #f3f0ff;
+  --muted: #a9a3d6;
+  --line: #2a2550;
+  --edge: #07060f;
+  --lift: 0 12px 28px rgba(0, 0, 0, 0.45);
   --accent: #ff5a69;
   --accent-soft: #3b1a24;
   --on-accent: #16122e;
@@ -98,9 +106,7 @@
   --gold: #ffc83d;
   --gold-ink: #ffc83d;
   --gold-soft: #3a2f0a;
-  --hud: #231f52;
-  --hud-2: #332c7a;
-  --hud-line: #4a4396;
+  --hud: #0a0916;
   --builders: #ffb347;
   --guardians: #79b0ff;
   --explorers: #5be39a;
@@ -175,7 +181,7 @@ a:hover { color: var(--accent); }
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 4px 0 color-mix(in srgb, var(--hud) 70%, #000);
+  border-bottom: 1px solid var(--hud-line);
 }
 .header-inner {
   max-width: 1280px;
@@ -379,27 +385,67 @@ a.chip:hover { border-color: var(--ink); color: var(--ink); }
 .plus { color: var(--ok); font-weight: 800; white-space: nowrap; }
 .minus { color: var(--bad); font-weight: 800; white-space: nowrap; }
 
-/* ---------- Мисиите като карти от игра ----------
- * Трудността е като рядкост на предмет: бронз, сребро, злато.
- */
-.mission-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
+/* ---------- Карти (магазин) ---------- */
+.mission-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.4rem; }
 .mission-card {
-  --tier: var(--line);
-  position: relative; top: 0;
   display: flex; flex-direction: column; gap: 0.6rem;
-  border: 2px solid var(--line); border-top: 6px solid var(--tier); border-radius: var(--radius-lg);
-  background: var(--surface); box-shadow: 0 5px 0 var(--edge);
-  padding: 1.1rem 1.25rem 1.25rem; text-decoration: none; color: var(--ink);
-  transition: top 0.08s, box-shadow 0.08s, border-color 0.12s;
+  border: 3px solid transparent; border-radius: 20px;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--frame-silver) border-box;
+  box-shadow: var(--lift);
+  padding: 1.1rem 1.2rem 1.2rem; color: var(--ink);
 }
-.mission-card:hover { color: var(--ink); border-color: var(--ink); border-top-color: var(--tier); }
-.mission-card:active { top: 3px; box-shadow: 0 2px 0 var(--edge); }
-.mission-card.tier-easy { --tier: #c47a3a; }
-.mission-card.tier-medium { --tier: #9aa6b8; }
-.mission-card.tier-hard { --tier: var(--gold); }
 .mission-card h3 { font-size: 1.15rem; }
 .mission-meta { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .mission-card .mission-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.88rem; }
+
+/* ---------- Мисиите като колекционерски карти ----------
+ * Рамката е рядкостта на мисията (по XP): бронз, сребро, злато.
+ * Горе е „картинката“ в цвета на гилдията, в ъгъла – златна монета с наградата.
+ * Картата леко се накланя след мишката (static/js/cards.js).
+ */
+.quest-card {
+  --frame: var(--frame-silver);
+  --rx: 0deg; --ry: 0deg;
+  position: relative;
+  display: flex; flex-direction: column;
+  min-height: 330px; padding: 10px;
+  border: 4px solid transparent; border-radius: 22px;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--frame) border-box;
+  box-shadow: var(--lift);
+  color: var(--ink); text-decoration: none;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.18s ease-out, box-shadow 0.18s;
+}
+.quest-card:hover { color: var(--ink); box-shadow: 0 18px 38px rgba(14, 12, 29, 0.32); }
+.quest-card.tier-easy { --frame: var(--frame-bronze); --tier: #c47a3a; }
+.quest-card.tier-medium { --frame: var(--frame-silver); --tier: #8995a8; }
+.quest-card.tier-hard { --frame: var(--frame-gold); --tier: #e09a00; }
+.card-art {
+  position: relative; height: 112px; border-radius: 14px;
+  display: grid; place-items: center; color: rgba(255, 255, 255, 0.92);
+  background:
+    radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--chip-color, var(--accent)) 45%, #0e0c1d), var(--chip-color, var(--accent)));
+}
+.card-art svg { width: 54px; height: 54px; }
+.card-art .chip { position: absolute; top: 8px; right: 8px; background: rgba(14, 12, 29, 0.55); border: 0; color: #fff; font-size: 0.8rem; padding: 0.15rem 0.65rem; }
+.card-cost {
+  position: absolute; top: -10px; left: -10px; z-index: 2;
+  width: 58px; height: 58px; border-radius: 50%;
+  display: grid; place-items: center; align-content: center; text-align: center;
+  background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 70%);
+  color: #2a1d00; font-weight: 800; font-size: 1.2rem; line-height: 0.95;
+  box-shadow: 0 3px 0 #b37400, 0 0 0 4px var(--surface);
+}
+.card-cost small { font-size: 0.62rem; font-weight: 800; }
+.card-body { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.8rem 0.3rem 0.5rem; }
+.card-body h3 { font-size: 1.18rem; line-height: 1.15; }
+.card-body p { margin: 0; }
+.card-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0.3rem 0.1rem; border-top: 2px solid var(--sunken);
+  font-size: 0.85rem; color: var(--muted);
+}
 .xp { font-weight: 800; color: var(--gold-ink); white-space: nowrap; }
 .reward {
   display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;
@@ -532,11 +578,16 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--ac
 
 /* ---------- Значки ---------- */
 .badge-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; }
+/* Колекцията: спечелената значка е карта със златна рамка, неспечелената – празно място */
 .badge-card {
   display: flex; gap: 0.9rem; align-items: flex-start;
   border: 2px dashed var(--line); border-radius: var(--radius-lg); background: transparent; padding: 1rem;
 }
-.badge-card.earned { border-style: solid; background: var(--surface); box-shadow: 0 4px 0 var(--edge); }
+.badge-card.earned {
+  border: 3px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--frame-gold) border-box;
+  box-shadow: var(--lift);
+}
 .badge-icon {
   flex: none; display: grid; place-items: center; width: 3rem; height: 3rem;
   border-radius: 50%; background: var(--sunken); color: var(--muted);
@@ -598,90 +649,89 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--ac
 }
 .streak svg { width: 1rem; height: 1rem; }
 
-/* ---------- Началната страница на ученика: екран от игра ----------
- * Тъмен панел в цвета на гилдията: аватар, знак с нивото, лента за XP
- * и „ресурсите“ на играча. Лентата се пълни веднъж при отваряне.
+/* ---------- Началната страница на ученика ----------
+ * Вляво е картата на играча – холографска, отблясъкът и наклонът следват
+ * мишката (static/js/cards.js). Вдясно – мисиите, значките и движенията.
  */
-.hud {
+.home-grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+.home-grid > .player-card { position: sticky; top: 5.5rem; }
+.home-main > .section:first-child { margin-top: 0; }
+@media (max-width: 960px) {
+  .home-grid { grid-template-columns: minmax(0, 1fr); }
+  .home-grid > .player-card { position: static; max-width: 420px; width: 100%; margin: 0 auto; }
+}
+
+.player-card {
+  --mx: 50%; --my: 30%; --rx: 0deg; --ry: 0deg;
+  padding: 6px; border-radius: 26px;
+  background: var(--frame-holo);
+  box-shadow: 0 24px 48px rgba(14, 12, 29, 0.35);
+  transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.2s ease-out;
+}
+.player-inner {
   position: relative; overflow: hidden;
-  display: grid; gap: 1.6rem;
-  padding: clamp(1.25rem, 3vw, 2.25rem);
-  border-radius: 28px;
+  display: grid; gap: 1rem;
+  padding: 1.4rem 1.3rem 1.3rem; border-radius: 21px;
+  background: linear-gradient(165deg, var(--hud-2), #151033 62%, var(--hud));
   color: var(--hud-text);
+}
+/* Холографският отблясък */
+.player-inner::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
   background:
-    radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--accent-bright) 30%, transparent), transparent 58%),
-    linear-gradient(160deg, var(--hud-2), var(--hud));
-  box-shadow: 0 6px 0 color-mix(in srgb, var(--hud) 65%, #000);
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.24), transparent 42%),
+    linear-gradient(115deg, transparent 32%, rgba(255, 107, 214, 0.14) 44%, rgba(107, 200, 255, 0.14) 52%, transparent 64%);
 }
-.hud-top { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; }
-.hud-player { display: flex; align-items: center; gap: 1.1rem; min-width: 0; }
-.hud-player .avatar { background: color-mix(in srgb, var(--accent-bright) 22%, var(--hud)); color: var(--accent-bright); }
-.hud h1 { font-size: clamp(1.9rem, 5vw, 3.1rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1; overflow-wrap: anywhere; }
-.hud-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 0.6rem 0 0; }
-.hud .player-title { color: var(--accent-bright); margin: 0; font-size: 0.95rem; }
-.hud .chip { background: color-mix(in srgb, var(--hud-text) 8%, transparent); border-color: var(--hud-line); color: var(--hud-text); }
+.player-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.player-card h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; overflow-wrap: anywhere; }
+.player-hello { margin: 0 0 0.15rem; color: var(--hud-muted); font-weight: 700; }
+.player-card .player-title { color: var(--accent-bright); margin-top: 0.3rem; font-size: 0.95rem; }
 
-/* Знакът с нивото – златен шестоъгълник */
-.level-badge {
+/* Нивото – златен скъпоценен камък */
+.level-gem {
   flex: none; display: grid; place-items: center; align-content: center;
-  width: 96px; height: 108px;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  background: linear-gradient(180deg, var(--gold-light), var(--gold) 55%, #e09200);
-  color: #3b2500; text-align: center;
+  width: 66px; height: 66px; text-align: center; color: #2a1d00;
+  clip-path: polygon(50% 0, 100% 36%, 82% 100%, 18% 100%, 0 36%);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold) 60%, #d98a00);
 }
-.level-badge span { font-size: 0.8rem; font-weight: 800; line-height: 1; }
-.level-badge strong { font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
+.level-gem span { font-size: 0.62rem; font-weight: 800; line-height: 1; margin-top: 8px; }
+.level-gem strong { font-size: 1.7rem; font-weight: 800; line-height: 1; }
 
-.xp-labels { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.5rem; color: var(--hud-muted); font-size: 0.95rem; }
-.xp-labels strong { color: var(--hud-text); font-size: 1.05rem; }
-.xp-bar {
-  position: relative; height: 20px; border-radius: 999px; overflow: hidden;
-  background: color-mix(in srgb, #000 30%, var(--hud)); box-shadow: inset 0 0 0 2px var(--hud-line);
+.player-art {
+  position: relative; display: grid; place-items: center; height: 190px; border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent-bright) 75%, #fff), color-mix(in srgb, var(--accent-bright) 35%, #1b1440) 72%);
 }
+.player-art .avatar { background: transparent; color: #fff; }
+.player-art .chip { position: absolute; left: 10px; bottom: 10px; background: rgba(14, 12, 29, 0.6); border: 0; color: #fff; }
+
+.player-stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.player-stats li { padding: 0.55rem 0.3rem; border-radius: 12px; text-align: center; background: rgba(255, 255, 255, 0.07); }
+.player-stats b { display: block; font-size: 1.45rem; font-weight: 800; line-height: 1.1; color: var(--hud-text); }
+.player-stats span { font-size: 0.78rem; color: var(--hud-muted); }
+.player-week { margin: 0; font-size: 0.9rem; color: var(--hud-muted); }
+.player-week b { color: var(--hud-text); }
+.player-week b small { font-size: inherit; font-weight: 600; color: var(--hud-muted); }
+
+.xp-labels { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.4rem; color: var(--hud-muted); font-size: 0.88rem; }
+.xp-labels strong { color: var(--hud-text); font-size: 0.98rem; }
+.xp-bar { height: 12px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
 .xp-bar span {
   display: block; height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light));
-  box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent);
-  animation: xp-fill 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both;
-}
-/* Деления на лентата – като в игра */
-.xp-bar::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), color-mix(in srgb, var(--hud) 70%, transparent) calc(10% - 2px) 10%);
+  background: linear-gradient(90deg, var(--gold-light), #ff6bd6);
+  animation: xp-fill 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
 }
 @keyframes xp-fill { from { width: 0; } }
 
-.resources { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
-.res {
-  display: flex; align-items: center; gap: 0.75rem; min-width: 0;
-  padding: 0.8rem 1rem; border-radius: 16px;
-  background: color-mix(in srgb, var(--hud-text) 7%, transparent); box-shadow: inset 0 0 0 2px var(--hud-line);
-}
-.res svg { flex: none; width: 1.9rem; height: 1.9rem; }
-.res-xp svg, .res-coin svg { fill: var(--gold); stroke: #7a5200; }
-.res-week svg { stroke: var(--accent-bright); }
-.res-streak svg { fill: #ff8a3d; stroke: #b84a00; }
-.res-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.res-text b { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; color: var(--hud-text); }
-.res-text b small { font-size: 0.9rem; font-weight: 700; color: var(--hud-muted); }
-.res-text span { font-size: 0.82rem; color: var(--hud-muted); }
-
-.hud-actions { display: flex; flex-wrap: wrap; gap: 0.85rem; }
-.hud .btn { --ledge: color-mix(in srgb, var(--accent-bright) 55%, #000); background: var(--accent-bright); color: #16122e; }
-.hud .btn:hover { color: #16122e; }
-.hud .btn-ghost {
-  --ledge: color-mix(in srgb, var(--hud) 55%, #000);
+.player-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.player-card .btn { --ledge: color-mix(in srgb, var(--accent-bright) 55%, #000); background: var(--accent-bright); color: #16122e; }
+.player-card .btn:hover { color: #16122e; }
+.player-card .btn-ghost {
+  --ledge: #07060f;
   background: transparent; color: var(--hud-text); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--hud-line);
 }
-.hud .btn-ghost:hover { color: var(--hud-text); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--hud-text); filter: none; }
-
-@media (max-width: 760px) {
-  .resources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hud-top { align-items: flex-start; }
-  .level-badge { width: 72px; height: 82px; }
-  .level-badge strong { font-size: 1.9rem; }
-  .hud-player .avatar { --avatar-size: 56px !important; }
-}
+.player-card .btn-ghost:hover { color: var(--hud-text); box-shadow: 0 4px 0 var(--ledge), inset 0 0 0 2px var(--hud-text); filter: none; }
 
 /* ---------- Мисиите: етикети ---------- */
 .mission-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; font-size: 0.8rem; }

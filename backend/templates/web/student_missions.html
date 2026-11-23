@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% load questboard %}
+{% load questboard static %}
+
+{% block scripts %}<script src="{% static 'js/cards.js' %}" defer></script>{% endblock %}
 
 {% block title %}Мисии – Questboard{% endblock %}
 

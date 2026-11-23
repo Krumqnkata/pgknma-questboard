@@ -94,7 +94,8 @@ class MissionPageTests(TestCase):
     def test_student_home_shows_stats(self):
         self.client.force_login(self.student)
         response = self.client.get(reverse("home"))
-        self.assertContains(response, "Здравей, Феникс")
+        self.assertContains(response, "Здравей,")
+        self.assertContains(response, '<h1 id="player-name">Феникс</h1>', html=True)
         self.assertContains(response, "0<small> от 5</small>")
         self.assertContains(response, "Мисии за теб")  # предложени мисии на началната страница
 

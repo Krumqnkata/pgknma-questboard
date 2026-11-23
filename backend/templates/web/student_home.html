@@ -4,100 +4,105 @@
 {% block title %}Начало – Questboard{% endblock %}
 
 {% block content %}
-{# Екранът на играча: аватар, ниво, лента за XP и ресурси (static/css/style.css → „екран от игра“) #}
-<section class="hud" aria-labelledby="hud-title">
-  <div class="hud-top">
-    <div class="hud-player">
-      {% avatar user 88 %}
-      <div>
-        <h1 id="hud-title">Здравей, {{ user.nickname }}</h1>
-        <p class="hud-sub">
+<div class="home-grid">
+  {# Картата на играча – холографска; отблясъкът следва мишката (static/js/cards.js) #}
+  <aside class="player-card" data-holo aria-labelledby="player-name">
+    <div class="player-inner">
+      <div class="player-head">
+        <div>
+          <p class="player-hello">Здравей,</p>
+          <h1 id="player-name">{{ user.nickname }}</h1>
           {% if user.shown_title %}<span class="player-title">{{ user.shown_title.name }}</span>{% endif %}
-          {% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% endif %}
-        </p>
+        </div>
+        <div class="level-gem" role="img" aria-label="Ниво {{ stats.level.number|default:'0' }}">
+          <span>ниво</span><strong>{{ stats.level.number|default:"0" }}</strong>
+        </div>
+      </div>
+
+      <div class="player-art">
+        {% avatar user 132 %}
+        {% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% endif %}
+      </div>
+
+      <ul class="player-stats">
+        <li><b>{{ stats.xp }}</b><span>опит (XP)</span></li>
+        <li><b>{{ stats.coins }}</b><span>монети</span></li>
+        <li><b>{{ stats.streak }}</b><span>{% if stats.streak == 1 %}седмица{% else %}седмици{% endif %} подред</span></li>
+      </ul>
+      <p class="player-week">Монети тази седмица: <b>{{ stats.coins_this_week }}<small> от {{ stats.weekly_limit }}</small></b></p>
+
+      <div>
+        <div class="xp-labels">
+          <strong>{% if stats.level.title %}{{ stats.level.title|capfirst }}{% else %}Начинаещ{% endif %}</strong>
+          <span>{% if stats.next_level %}още {{ stats.xp_to_next_level }} XP до ниво {{ stats.next_level.number }}{% else %}най-високото ниво{% endif %}</span>
+        </div>
+        <div class="xp-bar" role="progressbar" aria-valuenow="{{ stats.progress_percent }}" aria-valuemin="0"
+             aria-valuemax="100" aria-label="Напредък до следващото ниво"><span style="width: {{ stats.progress_percent }}%"></span></div>
+      </div>
+
+      <div class="player-actions">
+        <a class="btn" href="{% url 'mission_list' %}">Към мисиите</a>
+        <a class="btn btn-ghost" href="{% url 'shop' %}">Магазин</a>
       </div>
     </div>
-    <div class="level-badge" role="img" aria-label="Ниво {{ stats.level.number|default:'0' }}">
-      <span>ниво</span>
-      <strong>{{ stats.level.number|default:"0" }}</strong>
+  </aside>
+
+  <div class="home-main">
+    <section class="section">
+      <div class="section-head">
+        <h2>Мисии за теб</h2>
+        <a href="{% url 'mission_list' %}">Всички мисии</a>
+      </div>
+      <div class="mission-grid">
+        {% for mission in suggested %}
+          {% include "web/_mission_card.html" with claim=None %}
+        {% empty %}
+          <p class="muted">Нямаш нови мисии – заявил си всички активни. Провери пак по-късно.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% if badge_cards %}
+    <section class="section">
+      <div class="section-head">
+        <h2>Значки</h2>
+        <span class="muted">{{ badges_earned }} от {{ badge_cards|length }}</span>
+      </div>
+      {% include "web/_badges.html" %}
+    </section>
+    {% endif %}
+
+    <div class="columns section">
+      <section class="panel">
+        <h2>Моите заявки</h2>
+        {% for claim in recent_claims %}
+          <div class="list-row">
+            <a href="{% url 'mission_detail' claim.mission.pk %}">{{ claim.mission.title }}</a>
+            {% include "web/_claim_status.html" %}
+            {% if claim.review_comment %}<p class="muted small">Учителят: „{{ claim.review_comment }}“</p>{% endif %}
+          </div>
+        {% empty %}
+          <p class="muted">Още нямаш заявки. Избери мисия и я изпълни.</p>
+          <a class="btn btn-outline btn-small" href="{% url 'mission_list' %}">Към мисиите</a>
+        {% endfor %}
+      </section>
+
+      <section class="panel">
+        <h2>Последни движения</h2>
+        {% for entry in recent_xp %}
+          <div class="list-row"><span class="plus">+{{ entry.amount }} XP</span><span>{{ entry.reason }}</span></div>
+        {% endfor %}
+        {% for entry in recent_coins %}
+          <div class="list-row">
+            <span class="{% if entry.amount > 0 %}plus{% else %}minus{% endif %}">{% if entry.amount > 0 %}+{% endif %}{{ entry.amount|coins }}</span>
+            <span>{{ entry.reason }}</span>
+          </div>
+        {% endfor %}
+        {% if not recent_xp and not recent_coins %}<p class="muted">Тук ще видиш опита и монетите, които печелиш и харчиш.</p>{% endif %}
+      </section>
     </div>
   </div>
-
-  <div>
-    <div class="xp-labels">
-      <strong>{% if stats.level.title %}{{ stats.level.title|capfirst }}{% else %}Начинаещ{% endif %}</strong>
-      <span>{% if stats.next_level %}Още {{ stats.xp_to_next_level }} XP до ниво {{ stats.next_level.number }}{% else %}Стигна най-високото ниво{% endif %}</span>
-    </div>
-    <div class="xp-bar" role="progressbar" aria-valuenow="{{ stats.progress_percent }}" aria-valuemin="0"
-         aria-valuemax="100" aria-label="Напредък до следващото ниво"><span style="width: {{ stats.progress_percent }}%"></span></div>
-  </div>
-
-  <ul class="resources">
-    <li class="res res-xp">{% badge_icon "star" %}<span class="res-text"><b>{{ stats.xp }}</b><span>опит (XP)</span></span></li>
-    <li class="res res-coin">{% badge_icon "coin" %}<span class="res-text"><b>{{ stats.coins }}</b><span>монети</span></span></li>
-    <li class="res res-week">{% badge_icon "bolt" %}<span class="res-text"><b>{{ stats.coins_this_week }}<small> от {{ stats.weekly_limit }}</small></b><span>монети тази седмица</span></span></li>
-    <li class="res res-streak">{% badge_icon "flame" %}<span class="res-text"><b>{{ stats.streak }}</b><span>{% if stats.streak == 1 %}седмица{% else %}седмици{% endif %} подред</span></span></li>
-  </ul>
-
-  <div class="hud-actions">
-    <a class="btn" href="{% url 'mission_list' %}">Към мисиите</a>
-    <a class="btn btn-ghost" href="{% url 'shop' %}">Магазин</a>
-  </div>
-</section>
-
-<section class="section">
-  <div class="section-head">
-    <h2>Мисии за теб</h2>
-    <a href="{% url 'mission_list' %}">Всички мисии</a>
-  </div>
-  <div class="mission-grid">
-    {% for mission in suggested %}
-      {% include "web/_mission_card.html" with claim=None %}
-    {% empty %}
-      <p class="muted">Нямаш нови мисии – заявил си всички активни. Провери пак по-късно.</p>
-    {% endfor %}
-  </div>
-</section>
-
-<div class="columns section">
-  <section class="panel">
-    <h2>Моите заявки</h2>
-    {% for claim in recent_claims %}
-      <div class="list-row">
-        <a href="{% url 'mission_detail' claim.mission.pk %}">{{ claim.mission.title }}</a>
-        {% include "web/_claim_status.html" %}
-        {% if claim.review_comment %}<p class="muted small">Учителят: „{{ claim.review_comment }}“</p>{% endif %}
-      </div>
-    {% empty %}
-      <p class="muted">Още нямаш заявки. Избери мисия и я изпълни.</p>
-      <a class="btn btn-outline btn-small" href="{% url 'mission_list' %}">Към мисиите</a>
-    {% endfor %}
-  </section>
-
-  <section class="panel">
-    <h2>Последни движения</h2>
-    {% for entry in recent_xp %}
-      <div class="list-row"><span class="plus">+{{ entry.amount }} XP</span><span>{{ entry.reason }}</span></div>
-    {% endfor %}
-    {% for entry in recent_coins %}
-      <div class="list-row">
-        <span class="{% if entry.amount > 0 %}plus{% else %}minus{% endif %}">{% if entry.amount > 0 %}+{% endif %}{{ entry.amount|coins }}</span>
-        <span>{{ entry.reason }}</span>
-      </div>
-    {% endfor %}
-    {% if not recent_xp and not recent_coins %}<p class="muted">Тук ще видиш опита и монетите, които печелиш и харчиш.</p>{% endif %}
-  </section>
 </div>
-
-{% if badge_cards %}
-<section class="section">
-  <div class="section-head">
-    <h2>Значки</h2>
-    <span class="muted">{{ badges_earned }} от {{ badge_cards|length }}</span>
-  </div>
-  {% include "web/_badges.html" %}
-</section>
-{% endif %}
 
 {% if celebrations %}
   {% include "web/_celebrate.html" %}
@@ -105,5 +110,6 @@
 {% endblock %}
 
 {% block scripts %}
+  <script src="{% static 'js/cards.js' %}" defer></script>
   {% if celebrations %}<script src="{% static 'js/celebrate.js' %}" defer></script>{% endif %}
 {% endblock %}

@@ -15,14 +15,12 @@
   <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
 
   {# Темата се избира още преди страницата да се покаже, за да няма премигване. #}
+  {# По подразбиране е тъмна – картите изпъкват на тъмен фон; изборът с бутона се помни. #}
   <script>
     (function () {
       var theme;
       try { theme = localStorage.getItem("qb-theme"); } catch (e) {}
-      if (!theme) {
-        theme = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      }
-      document.documentElement.dataset.theme = theme;
+      document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
     })();
   </script>
 
