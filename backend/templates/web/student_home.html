@@ -5,22 +5,19 @@
 
 {% block content %}
 <div class="home-grid">
-  {# Картата на играча – холографска; отблясъкът следва мишката (static/js/cards.js) #}
-  <aside class="player-card" data-holo aria-labelledby="player-name">
-    <div class="player-inner">
+  {# Профилният панел – остава видим, докато се скролват мисиите вдясно #}
+  <aside class="player-card {{ user.guild|guild_class }}" aria-labelledby="player-name">
       <div class="player-head">
+        <span class="player-avatar">{% avatar user 72 %}</span>
         <div>
           <p class="player-hello">Здравей,</p>
           <h1 id="player-name">{{ user.nickname }}</h1>
           {% if user.shown_title %}<span class="player-title">{{ user.shown_title.name }}</span>{% endif %}
         </div>
-        <div class="level-gem" role="img" aria-label="Ниво {{ stats.level.number|default:'0' }}">
-          <span>ниво</span><strong>{{ stats.level.number|default:"0" }}</strong>
-        </div>
       </div>
 
-      <div class="player-art">
-        {% avatar user 132 %}
+      <div class="player-meta">
+        <span class="level-badge">Ниво {{ stats.level.number|default:"0" }}</span>
         {% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% endif %}
       </div>
 
@@ -44,7 +41,6 @@
         <a class="btn" href="{% url 'mission_list' %}">Към мисиите</a>
         <a class="btn btn-ghost" href="{% url 'shop' %}">Магазин</a>
       </div>
-    </div>
   </aside>
 
   <div class="home-main">
@@ -110,6 +106,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{% static 'js/cards.js' %}" defer></script>
   {% if celebrations %}<script src="{% static 'js/celebrate.js' %}" defer></script>{% endif %}
 {% endblock %}

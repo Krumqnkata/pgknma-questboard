@@ -1,12 +1,14 @@
 {% load questboard %}
-{# Мисията като колекционерска карта. Трябват: mission (с done_count), claim (или None), max_xp, new_since, soon. #}
-{# Рамката е рядкостта по XP (бронз, сребро, злато), картинката е в цвета на гилдията. #}
-{% with level=mission.xp|difficulty:max_xp %}
-<a class="quest-card tier-{{ level.slug }} {{ mission.guild|guild_class }}" href="{% url 'mission_detail' mission.pk %}" data-tilt>
-  <span class="card-cost" aria-label="Награда: {{ mission.xp }} XP">{{ mission.xp }}<small>XP</small></span>
-  <div class="card-art">
-    {% if level.slug == "hard" %}{% badge_icon "crown" %}{% elif level.slug == "medium" %}{% badge_icon "star" %}{% else %}{% badge_icon "flag" %}{% endif %}
-    <span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span>
+{# Карта на мисия. Трябват: mission (с done_count), claim (или None), max_xp, new_since, soon. #}
+{# Горна лента: икона и име на гилдията с номера на мисията („BUILDERS // #01“) и XP наградата. #}
+{% with level=mission.xp|difficulty:max_xp slug=mission.guild|guild_slug %}
+<a class="quest-card tier-{{ level.slug }} {{ mission.guild|guild_class }}" href="{% url 'mission_detail' mission.pk %}">
+  <div class="card-bar">
+    <span class="card-id">
+      {% if slug == "builders" %}{% badge_icon "wrench" %}{% elif slug == "explorers" %}{% badge_icon "compass" %}{% elif slug == "guardians" %}{% badge_icon "shield" %}{% else %}{% badge_icon "users" %}{% endif %}
+      {{ mission.guild }} // #{{ mission.pk|stringformat:"02d" }}
+    </span>
+    <span class="card-xp">+{{ mission.xp }} XP</span>
   </div>
   <div class="card-body">
     <div class="mission-tags">
@@ -18,7 +20,7 @@
       {% if mission.deadline <= soon %}<span class="tag tag-soon">{{ mission.deadline|time_left }}</span>{% endif %}
     </div>
     <h3>{{ mission.title }}</h3>
-    <p class="muted small">{{ mission.description|truncatewords:14 }}</p>
+    <p class="muted small">{{ mission.description|truncatewords:16 }}</p>
   </div>
   <div class="card-foot">
     <span>{% if mission.done_count %}изпълнили я {{ mission.done_count }}{% else %}бъди първият{% endif %}</span>

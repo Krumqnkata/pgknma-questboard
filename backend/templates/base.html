@@ -9,18 +9,18 @@
 
   {# Може да се инсталира на телефона като приложение (web/views/app.py) #}
   <link rel="manifest" href="{% url 'manifest' %}">
-  <meta name="theme-color" content="#1d1a3f">
+  <meta name="theme-color" content="#14151a">
   <link rel="icon" href="{% static 'icons/favicon.ico' %}" sizes="32x32">
   <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
   <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
 
   {# Темата се избира още преди страницата да се покаже, за да няма премигване. #}
-  {# По подразбиране е тъмна – картите изпъкват на тъмен фон; изборът с бутона се помни. #}
+  {# По подразбиране е светла (кремавият фон с мрежа); изборът с бутона се помни. #}
   <script>
     (function () {
       var theme;
       try { theme = localStorage.getItem("qb-theme"); } catch (e) {}
-      document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+      document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
     })();
   </script>
 
