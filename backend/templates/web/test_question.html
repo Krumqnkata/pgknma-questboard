@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Въпрос {{ number }} – Questboard{% endblock %}
+
+{% block content %}
+<section class="panel test-panel" data-test data-left="{{ seconds_left }}" data-limit="{{ limit }}" data-left-url="{% url 'test_left' attempt.pk %}">
+  <div class="test-top">
+    <span>{{ attempt.test.title }}</span>
+    <span>Въпрос {{ number }} от {{ attempt.total }}</span>
+    <span class="test-time" data-time aria-hidden="true">{{ limit }} s</span>
+  </div>
+  <div class="test-bar" aria-hidden="true"><span data-bar></span></div>
+  <h1 class="test-text">{{ question.text }}</h1>
+  <form method="post" data-test-form>
+    {% csrf_token %}
+    <input type="hidden" name="question" value="{{ question.pk }}">
+    {% if question.kind == "choice" %}
+      <div class="test-options">
+        {% for number, option in options %}
+          <button type="submit" name="answer" value="{{ number }}" class="test-option">{{ option }}</button>
+        {% endfor %}
+      </div>
+    {% elif question.kind == "order" %}
+      <p class="muted">Натискай стъпките в правилния ред.</p>
+      <input type="hidden" name="answer" data-order-value>
+      <div class="test-options" data-order>
+        {% for number, option in options %}
+          <button type="button" data-number="{{ number }}" class="test-option"><span class="order-no" aria-hidden="true"></span>{{ option }}</button>
+        {% endfor %}
+      </div>
+      <div class="actions"><button type="submit" data-order-send disabled>Готово</button>
+        <button type="button" class="btn-outline" data-order-reset>Отначало</button></div>
+    {% else %}
+      <label for="answer" class="sr-only">Отговор</label>
+      <input id="answer" name="answer" class="test-input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="300" autofocus>
+      <div class="actions"><button type="submit">Отговори</button></div>
+    {% endif %}
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/test.js' %}" defer></script>{% endblock %}

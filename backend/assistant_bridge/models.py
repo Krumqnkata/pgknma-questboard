@@ -14,6 +14,7 @@ class AssistantLog(models.Model):
         HINT = "hint", "подсказка"
         MISSION_DRAFT = "mission_draft", "чернова на мисия"
         QUERY = "query", "справка"
+        QUIZ_DRAFT = "quiz_draft", "чернова на въпроси"
         DIAGNOSE = "diagnose", "проверка на системата"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="потребител", on_delete=models.PROTECT,

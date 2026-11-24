@@ -71,6 +71,11 @@ class GameSettings(models.Model):
         "най-много XP за една мисия", default=100, validators=[MinValueValidator(1)],
     )
 
+    max_xp_per_homework = models.PositiveIntegerField(
+        "най-много XP за една домашна", default=20, validators=[MinValueValidator(1)],
+        help_text="XP е за предадена и приета домашна. Не е оценка и не влияе на оценките.",
+    )
+
     # --- Асистент (раздел 3.2) ---
     assistant_enabled = models.BooleanField(
         "асистентът е включен", default=True,

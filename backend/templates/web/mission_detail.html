@@ -64,7 +64,7 @@
   <aside>
     <section class="panel">
       <dl class="facts">
-        <dt>Гилдия</dt><dd><span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span></dd>
+        {% if mission.is_homework %}<dt>Домашна по</dt><dd>{{ mission.subject }}</dd><dt>Класове</dt><dd>{{ mission.school_classes.all|join:", " }}</dd>{% else %}<dt>Гилдия</dt><dd><span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span></dd>{% endif %}
         <dt>Опит</dt><dd class="xp">{{ mission.xp }} XP{% if mission.is_group %} на човек{% endif %}</dd>
         {% if mission.is_group %}<dt>Отбор</dt><dd>от {{ mission.team_min }} до {{ mission.team_max }} ученици</dd>{% endif %}
         {% if mission.reward_badge %}<dt>Значка</dt><dd>{{ mission.reward_badge.name }}</dd>{% endif %}

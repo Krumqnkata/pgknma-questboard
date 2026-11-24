@@ -47,10 +47,11 @@ def progress_for(student):
 
     approved = Claim.objects.filter(student=student, status=Claim.Status.APPROVED)
     by_guild = dict(approved.values_list("mission__guild").annotate(n=Count("id")).values_list("mission__guild", "n"))
+    homework = by_guild.pop(None, 0)  # домашните са без гилдия
     xp = xp_total(student)
     level = level_for_xp(xp)
     return Progress(
-        missions=sum(by_guild.values()),
+        missions=sum(by_guild.values()) + homework,
         by_guild=by_guild,
         xp=xp,
         level=level.number if level else 0,

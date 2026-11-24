@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Тестове – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Тестове на гилдиите</h1>
+    <p>Тестът се решава пред учител: пуснете го и кажете кода на учениците в стаята.</p>
+  </div>
+  <a class="btn" href="{% url 'test_create' %}">Нов тест</a>
+</div>
+
+{% if tests %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Тест</th><th>Гилдия</th><th>Въпроси</th><th>Правила</th><th>Пусни</th></tr></thead>
+    <tbody>
+      {% for test in tests %}
+        <tr>
+          <td>{% if test.created_by_id == user.pk %}<a href="{% url 'test_edit' test.pk %}"><strong>{{ test.title }}</strong></a>{% else %}<strong>{{ test.title }}</strong><br><span class="muted small">от {{ test.created_by.get_full_name|default:test.created_by.email }}</span>{% endif %}
+            <br><span class="tag">{{ test.get_kind_display }}</span>{% if not test.is_active %} <span class="badge">спрян</span>{% endif %}</td>
+          <td><span class="chip {{ test.guild|guild_class }}">{{ test.guild }}</span></td>
+          <td>{{ test.ready }}{% if test.drafts %} <span class="badge status-pending">{{ test.drafts }} чернови</span>{% endif %}</td>
+          <td class="small">{{ test.questions_count }} по {{ test.seconds }} s, {{ test.pass_percent }}%{% if test.xp %}, {{ test.xp }} XP{% endif %}</td>
+          <td>
+            <form method="post" action="{% url 'session_open' test.pk %}" class="open-form">
+              {% csrf_token %}
+              <label class="sr-only" for="minutes-{{ test.pk }}">Минути</label>
+              <input id="minutes-{{ test.pk }}" type="number" name="minutes" value="15" min="5" max="90">
+              <span class="small muted">мин</span>
+              <button type="submit" class="btn-small" {% if not test.is_active or test.ready < 3 %}disabled{% endif %}>Пусни</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<section class="panel"><h2>Още няма тестове</h2><p class="muted mb-0">Създайте входен тест за гилдия. Асистентът може да предложи въпроси.</p></section>
+{% endif %}
+
+{% if sessions %}
+<section class="section">
+  <h2>Моите последни сесии</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Тест</th><th>Пуснат</th><th class="num">Опити</th><th>Състояние</th></tr></thead>
+    <tbody>{% for session in sessions %}
+      <tr><td><a href="{% url 'test_session' session.pk %}">{{ session.test.title }}</a> <span class="muted small">{{ session.test.guild }}</span></td>
+        <td>{{ session.opened_at|date:"j F, H:i"|lower }}</td><td class="num">{{ session.attempts_count }}</td>
+        <td>{% if session.is_open %}<span class="badge status-approved">пуснат, код {{ session.code }}</span>{% else %}<span class="badge">приключил</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

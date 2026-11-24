@@ -800,7 +800,7 @@ tr.mine td { background: var(--accent-soft); }
   .has-tabbar .header-tools { gap: 0.5rem; }
   .has-tabbar .site-footer { padding-bottom: 5rem; }
   .tabbar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(5, 1fr);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     background: var(--panel); border-top: 2px solid var(--stroke);
     padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom));
@@ -914,3 +914,53 @@ tr.mine td { background: var(--accent-soft); }
   .cookie-note { left: 10px; right: 10px; bottom: calc(144px + env(safe-area-inset-bottom)); max-width: none; }
 }
 @media print { .assistant-fab, .assistant-popup, .cookie-note { display: none; } }
+
+/* ---------- Класация: подиум ---------- */
+.top-switch { margin-bottom: 1.25rem; }
+.podium { list-style: none; margin: 0 0 1.75rem; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; align-items: end; max-width: 46rem; }
+.podium li { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; text-align: center; min-width: 0; }
+.podium strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.podium .place-1 { order: 2; } .podium .place-2 { order: 1; } .podium .place-3 { order: 3; }
+.podium-xp { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; }
+.podium-step { display: grid; place-items: center; width: 100%; margin-top: 0.4rem; border: 2px solid var(--stroke); border-radius: var(--radius) var(--radius) 0 0; box-shadow: var(--hard); color: #14151a; font-family: var(--mono); font-size: 1.8rem; font-weight: 700; }
+.place-1 .podium-step { height: 104px; background: linear-gradient(115deg, var(--goldcard-2), var(--goldcard)); }
+.place-2 .podium-step { height: 76px; background: linear-gradient(115deg, var(--silver-2), var(--silver)); }
+.place-3 .podium-step { height: 56px; background: linear-gradient(115deg, var(--bronze-2), var(--bronze)); }
+
+/* ---------- Домашни ---------- */
+.tag-homework { background: var(--accent-soft); }
+.quest-card.is-homework .card-bar { background: repeating-linear-gradient(0deg, var(--surface) 0 10px, color-mix(in srgb, var(--helpers) 22%, var(--surface)) 10px 11px); color: var(--ink); }
+
+/* ---------- Гилдии и тестове ---------- */
+.narrow { max-width: 44rem; }
+.guild-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+.guild-card { padding: 1.1rem 1.2rem; border: 2px solid var(--stroke); border-top: 10px solid var(--chip-color); border-radius: var(--radius); background: var(--surface); box-shadow: var(--hard); }
+.guild-card.is-mine { box-shadow: 6px 6px 0 var(--chip-color); }
+.guild-card header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+.guild-card header h2 { margin: 0; font-size: 1.25rem; }
+.guild-card header svg { width: 30px; height: 30px; color: var(--chip-color); flex: none; }
+.guild-test { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.7rem; padding: 0.6rem 0.75rem; border: 2px dashed var(--line); border-radius: var(--radius-sm); }
+.test-code input { font-family: var(--mono); font-size: 1.2rem; letter-spacing: 0.2em; }
+.test-panel { max-width: 52rem; margin: 0 auto; }
+.test-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; font-family: var(--mono); font-size: 0.85rem; font-weight: 700; }
+.test-time { font-size: 1.1rem; }
+.test-bar { height: 12px; margin: 0.6rem 0 1.5rem; border: 2px solid var(--stroke); border-radius: var(--radius-sm); background: var(--sunken); overflow: hidden; }
+.test-bar span { display: block; height: 100%; width: 100%; background: var(--gold); }
+.test-panel.is-last .test-bar span { background: var(--coral); }
+.test-panel.is-last .test-time { color: var(--bad); }
+.test-text { font-size: clamp(1.3rem, 3.5vw, 1.9rem); line-height: 1.25; margin-bottom: 1.25rem; white-space: pre-line; overflow-wrap: anywhere; }
+.test-options { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.25rem; }
+.test-option { display: flex; align-items: center; gap: 0.6rem; min-height: 56px; padding: 0.7rem 1rem; background: var(--surface); color: var(--ink); font-family: var(--font); font-size: 1rem; font-weight: 600; text-align: left; white-space: normal; }
+.test-option:hover, .test-option.is-picked { background: var(--accent-soft); color: var(--ink); }
+.order-no { flex: none; display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border: 2px solid var(--stroke); border-radius: var(--radius-sm); font-family: var(--mono); }
+.test-input { font-family: var(--mono); font-size: 1.15rem; margin-bottom: 1rem; }
+.test-result { max-width: 34rem; margin: 2rem auto; text-align: center; }
+.test-score, .session-code { font-family: var(--mono); font-size: clamp(3rem, 12vw, 5.5rem); font-weight: 700; line-height: 1.1; margin: 0.5rem 0; }
+.test-result.is-passed .test-score { color: var(--ok); }
+.session-panel { text-align: center; }
+.session-code { letter-spacing: 0.12em; }
+.open-form { display: flex; align-items: center; gap: 0.4rem; }
+.open-form input { width: 4.5rem; padding: 0.3rem 0.5rem; }
+.question-row { padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+.question-row.is-draft { background: var(--accent-soft); padding-inline: 0.8rem; border-radius: var(--radius-sm); }
+.question-row p { margin: 0 0 0.4rem; }

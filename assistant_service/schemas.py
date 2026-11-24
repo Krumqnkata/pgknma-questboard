@@ -138,6 +138,26 @@ class DiagnoseRequest(ModelChoice):
     problems: list[ProblemInfo] = Field(min_length=1, max_length=50)
 
 
+# ---------- Въпроси за тест ----------
+
+class QuizDraftRequest(ModelChoice):
+    topic: str = Field(min_length=3, max_length=300)
+    guild: str = Field(max_length=50)
+    guild_description: str = Field(default="", max_length=300)
+    count: int = Field(ge=1, le=10)
+    seconds: int = Field(ge=5, le=600)
+
+
+class QuizQuestion(BaseModel):
+    text: str = Field(min_length=5, max_length=600)
+    options: list[str] = Field(min_length=4, max_length=4)
+    correct: int = Field(ge=0, le=3)
+
+
+class QuizDraftResponse(Answered):
+    questions: list[QuizQuestion]
+
+
 # ---------- Проверка от администрацията ----------
 
 class CheckRequest(ModelChoice):

@@ -141,6 +141,14 @@ def bell(day):
              "end": s["end_time"].strftime("%H:%M")} for s in slots]
 
 
+def check_period(day, period):
+    """Има ли такъв час през деня. Без това „15 час“ би показал всички кабинети като свободни."""
+    periods = [slot["period"] for slot in bell(day)]
+    if periods and period not in periods:
+        raise QueryError(f"В {DAY_NAMES[day]} няма {period} час. Часовете са от {min(periods)} до {max(periods)}.")
+    return period
+
+
 def _lesson(lesson):
     return {
         "day": DAY_NAMES[lesson.day], "period": lesson.period,
@@ -162,7 +170,7 @@ def _slot(day, period, now):
         period = current["period"] if current["day"] == day else None
         if period is None:
             raise QueryError("В момента няма учебен час. Посочете кой час ви интересува.")
-    return day, parse_period(period)
+    return day, check_period(day, parse_period(period))
 
 
 # ---------- Ф17: учители ----------
@@ -198,6 +206,7 @@ def substitutes(teacher, day=None, period=None, now=None):
     return {
         "teacher": name, "day": DAY_NAMES[day], "period": period,
         "lesson": _lesson(lesson) if lesson else None,
+        "note": "" if lesson else "Учителят няма час тогава и не е нужно заместване.",
         "same_subject": same_subject,
         "other_free": [t for t in free if t not in same_subject],
     }
@@ -211,7 +220,7 @@ def class_schedule(class_name, day=None, period=None, now=None):
     day = parse_day(day, now)
     filters = {"school_class__name": name, "day": day}
     if period not in (None, ""):
-        filters["period"] = parse_period(period)
+        filters["period"] = check_period(day, parse_period(period))
     return {"class": name, "day": DAY_NAMES[day], "period": filters.get("period"),
             "lessons": [_lesson(x) for x in _lessons(**filters)]}
 

@@ -73,7 +73,7 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
         if user.is_teacher:
             return missions_reviewed_by(user) if self.action in ("list", "retrieve") else missions_for_teacher(user)
         if user.is_student:
-            return missions_for_student()
+            return missions_for_student(user)
         return Mission.objects.select_related("guild")  # администратор
 
     def get_permissions(self):

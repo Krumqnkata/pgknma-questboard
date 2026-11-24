@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>{% if is_new %}Нова мисия{% else %}Редакция{% endif %}</h1>
+    <h1>{% if is_new %}{% if is_homework %}Нова домашна{% else %}Нова мисия{% endif %}{% else %}Редакция{% endif %}</h1>
     <p>{% if is_new %}Учениците ще я видят веднага след публикуване.{% else %}{{ mission.title }}{% endif %}</p>
   </div>
 </div>
@@ -23,7 +23,7 @@
     </form>
   </section>
 
-  {% if is_new %}
+  {% if is_new and not is_homework %}
     <aside>
       <section class="panel panel-accent">
         <h3>Чернова с асистента</h3>

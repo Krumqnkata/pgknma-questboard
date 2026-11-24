@@ -142,7 +142,7 @@ class User(AbstractUser):
         return self.role == self.Role.ADMIN
 
     def clean(self):
-        """Ученикът трябва да има псевдоним, клас и гилдия (Ф2)."""
+        """Ученикът трябва да има псевдоним и клас (Ф2). Гилдията може да се избере и после, с входен тест."""
         super().clean()
         if self.nickname == "":
             self.nickname = None  # празният псевдоним се пази като „няма“
@@ -152,8 +152,6 @@ class User(AbstractUser):
                 missing.append("псевдоним")
             if not self.school_class_id:
                 missing.append("клас")
-            if not self.guild_id:
-                missing.append("гилдия")
             if missing:
                 raise ValidationError("Ученикът трябва да има: " + ", ".join(missing) + ".")
 

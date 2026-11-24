@@ -23,6 +23,7 @@ urlpatterns = [
     # Мисии
     path("missions/", views.mission_list, name="mission_list"),
     path("missions/new/", views.mission_create, name="mission_create"),
+    path("homework/new/", views.homework_create, name="homework_create"),
     path("missions/<int:pk>/", views.mission_detail, name="mission_detail"),
     path("missions/<int:pk>/edit/", views.mission_edit, name="mission_edit"),
     path("missions/<int:pk>/hint/", views.mission_hint, name="mission_hint"),
@@ -41,6 +42,16 @@ urlpatterns = [
     # Класация
     path("leaderboard/", views.leaderboard_view, name="leaderboard"),
     path("rewards/", views.rewards, name="rewards"),
+    # Гилдии и тестове
+    path("guilds/", views.guild_list, name="guild_list"),
+    path("tests/start/", views.test_start, name="test_start"),
+    path("tests/attempt/<int:pk>/", views.test_attempt, name="test_attempt"),
+    path("tests/attempt/<int:pk>/left/", views.test_left, name="test_left"),
+    path("tests/", views.test_list, name="test_list"),
+    path("tests/new/", views.test_create, name="test_create"),
+    path("tests/<int:pk>/", views.test_edit, name="test_edit"),
+    path("tests/<int:pk>/open/", views.session_open, name="session_open"),
+    path("tests/sessions/<int:pk>/", views.test_session, name="test_session"),
     # Справки и асистент
     path("reports/", views.reports, name="reports"),
     path("assistant/", views.assistant_chat, name="assistant"),

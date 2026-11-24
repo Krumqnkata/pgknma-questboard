@@ -15,9 +15,18 @@ from .models import Claim, EvidenceFile, Mission, MissionFile
 EVIDENCE_MAX_LENGTH = 2000
 
 
-def missions_for_student():
-    """Мисиите, които ученикът вижда: активни и с неизтекъл срок."""
-    return Mission.objects.filter(is_active=True, deadline__gte=timezone.now()).select_related("guild")
+def visible_to(student):
+    """Мисиите за всички и домашните за класа на ученика (без ученик – само мисиите)."""
+    if student is None:
+        return Q(kind=Mission.Kind.MISSION)
+    return Q(kind=Mission.Kind.MISSION) | Q(
+        pk__in=Mission.school_classes.through.objects.filter(schoolclass_id=student.school_class_id).values("mission_id"))
+
+
+def missions_for_student(student=None):
+    """Каквото ученикът вижда: активни, с неизтекъл срок, а от домашните – само за неговия клас."""
+    return Mission.objects.filter(visible_to(student), is_active=True,
+                                  deadline__gte=timezone.now()).select_related("guild")
 
 
 def missions_for_teacher(teacher):
@@ -62,6 +71,9 @@ def _find_teammates(student, mission, nicknames):
     missing = [name for name in nicknames if name not in found]
     if missing:
         raise GameRuleError("Няма ученик с псевдоним: " + ", ".join(missing) + ".")
+    strangers = [user.nickname for user in found.values() if not mission.is_visible_to(user)]
+    if strangers:
+        raise GameRuleError("Домашната не е за класа на: " + ", ".join(strangers) + ".")
     return [found[name] for name in nicknames]
 
 
@@ -143,6 +155,9 @@ def submit_claim(student, mission, evidence, files=(), teammates=()):
 
     if not student.is_student:
         raise GameRuleError("Само ученици могат да заявяват изпълнение на мисия.")
+
+    if not mission.is_visible_to(student):
+        raise GameRuleError("Тази домашна не е за твоя клас.")
 
     evidence = (evidence or "").strip()
     if len(evidence) > EVIDENCE_MAX_LENGTH:

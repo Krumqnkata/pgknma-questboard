@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Код {{ session.code }} – Questboard{% endblock %}
+
+{% block content %}
+<a class="muted small" href="{% url 'test_list' %}">Всички тестове</a>
+<section class="panel session-panel">
+  <p class="muted">{{ session.test.title }}, {{ session.test.guild }}</p>
+  {% if session.is_open %}
+    <p>Код за учениците</p>
+    <p class="session-code">{{ session.code }}</p>
+    <p class="muted">Може да се започне до {{ session.expires_at|date:"H:i" }}. Страницата се обновява сама.</p>
+    <form method="post">{% csrf_token %}<button type="submit" name="action" value="close" class="btn-outline btn-small">Спри теста</button></form>
+  {% else %}
+    <p class="session-code">приключил</p>
+  {% endif %}
+</section>
+
+<section class="section">
+  <h2>Ученици ({{ attempts|length }})</h2>
+  {% if attempts %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Ученик</th><th>Клас</th><th class="num">Въпрос</th><th class="num">Верни</th><th class="num">Излизал</th><th>Състояние</th></tr></thead>
+    <tbody>{% for attempt in attempts %}
+      <tr>
+        <td>{{ attempt.student.get_full_name|default:attempt.student.nickname }}<br><span class="muted small">{{ attempt.student.nickname }}</span></td>
+        <td>{{ attempt.student.school_class }}</td>
+        <td class="num">{{ attempt.position }} от {{ attempt.total }}</td>
+        <td class="num">{{ attempt.correct }}{% if attempt.finished_at %} ({{ attempt.percent }}%){% endif %}</td>
+        <td class="num">{% if attempt.left_page %}<strong>{{ attempt.left_page }}</strong>{% else %}0{% endif %}</td>
+        <td><span class="badge {% if attempt.status == 'passed' %}status-approved{% elif attempt.status == 'failed' %}status-rejected{% endif %}">{{ attempt.get_status_display }}</span>
+          {% if attempt.status != "void" %}
+          <details class="undo"><summary>Анулирай</summary>
+            <form method="post" class="undo-form">{% csrf_token %}
+              <input type="hidden" name="action" value="void"><input type="hidden" name="attempt" value="{{ attempt.pk }}">
+              <input type="text" name="why" required minlength="3" maxlength="200" placeholder="Защо? Ученикът ще го види" aria-label="Защо анулирате">
+              <button type="submit" class="btn-danger btn-small">Анулирай</button></form></details>
+          {% else %}<br><span class="muted small">{{ attempt.void_reason }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">Още никой не е започнал.</p>{% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}{% if session.is_open %}
+<script>
+  // Обновява резултатите, но не и докато учителят пише причина.
+  setInterval(function () { if (!document.querySelector("details[open]")) location.reload(); }, 10000);
+</script>
+{% endif %}{% endblock %}

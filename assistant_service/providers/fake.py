@@ -13,6 +13,9 @@ class FakeProvider(LLMProvider):
         return "Започни, като прочетеш внимателно критерия и си направиш кратък план на стъпките."
 
     def json(self, system, user, schema):
+        if "questions" in schema["properties"]:
+            return {"questions": [{"text": f"Примерен въпрос {i}?", "options": ["А", "Б", "В", "Г"], "correct": 1}
+                                  for i in range(3)] + [{"text": "Лош въпрос?", "options": ["А", "А", "Б", "В"], "correct": 0}]}
         guild = schema["properties"]["guild"]["enum"][0]
         return {
             "title": "Помощ в училищната библиотека",

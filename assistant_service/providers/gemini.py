@@ -1,11 +1,22 @@
 """Google Gemini през официалната библиотека google-genai."""
+import importlib
 import json
 
-import httpx
 from google import genai
 from google.genai import errors, types
 
 from .base import TIMEOUT_SECONDS, LLMProvider, ProviderError, ToolCall, connection_error, status_error, timeout_error
+
+# По-новите версии на google-genai ползват httpx2 вместо httpx. Хващаме грешките и на двете –
+# иначе при прекъсната връзка потребителят би видял „грешка 500“ вместо ясно съобщение.
+HTTP_LIBRARIES = []
+for _name in ("httpx", "httpx2"):
+    try:
+        HTTP_LIBRARIES.append(importlib.import_module(_name))
+    except ImportError:
+        pass
+TIMEOUTS = tuple(library.TimeoutException for library in HTTP_LIBRARIES)
+HTTP_ERRORS = tuple(library.HTTPError for library in HTTP_LIBRARIES)
 
 
 class GeminiProvider(LLMProvider):
@@ -21,9 +32,9 @@ class GeminiProvider(LLMProvider):
             return self.client.models.generate_content(model=self.model, contents=user, config=config)
         except errors.APIError as error:
             raise status_error("Gemini", self.model, error.code, error.message)
-        except httpx.TimeoutException:
+        except TIMEOUTS:
             raise timeout_error(self.model)
-        except (httpx.HTTPError, OSError):
+        except (*HTTP_ERRORS, OSError):
             raise connection_error("Gemini")
 
     def text(self, system, user):

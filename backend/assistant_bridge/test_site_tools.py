@@ -193,3 +193,23 @@ class ForgivingArgumentsTests(TestCase):
         with patch("assistant_bridge.client.call", return_value={"tool": None, "answer": "Здравей"}) as call:
             ask(self.teacher, "Коя година е?")
         self.assertIn(str(timezone.localdate().year), call.call_args.args[1]["context"]["now"])
+
+    def test_period_that_does_not_exist(self):
+        for report, arguments in (("free_rooms", {}), ("substitutes", {"teacher": "Маринова"}),
+                                  ("class_schedule", {"class_name": "11Б"})):
+            with self.assertRaisesMessage(QueryError, "няма 15 час"):
+                run_tool(self.teacher, report, {"day": "сряда", "period": "15", **arguments})
+
+    def test_substitutes_say_when_the_teacher_is_free(self):
+        busy = run_tool(self.teacher, "teacher_schedule", {"teacher": "Маринова", "day": "понеделник"}).data["lessons"]
+        periods = {lesson["period"] for lesson in busy}
+        free = next(n for n in range(1, 7) if n not in periods)
+        data = run_tool(self.teacher, "substitutes", {"teacher": "Маринова", "day": "понеделник", "period": str(free)}).data
+        self.assertIn("не е нужно", data["note"])
+        data = run_tool(self.teacher, "substitutes",
+                        {"teacher": "Маринова", "day": "понеделник", "period": str(min(periods))}).data
+        self.assertEqual(data["note"], "")
+
+    def test_unknown_teacher(self):
+        with self.assertRaisesMessage(QueryError, "Няма учител „Батман“"):
+            run_tool(self.teacher, "teacher_schedule", {"teacher": "Батман", "day": "цялата седмица"})

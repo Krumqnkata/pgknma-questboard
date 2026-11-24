@@ -1,0 +1,139 @@
+/*
+ * Вторият комплект за интерфейса: „Геймърски“ (тъмен екран като в игра).
+ * Включва се с data-kit="gamer" на <html> (бутонът е в горната лента и в профила).
+ *
+ * Променят се само цветовете, рамките и фонът – страниците са същите. Всяка гилдия
+ * има свой цвят, форма на картите и шарка на фона. Без картинки и без JavaScript.
+ */
+
+:root[data-kit="gamer"] {
+  --g: #35e0ff;              /* цветът на гилдията; без гилдия – синьо-зелен */
+  --paper: #080b16;
+  --dots: #ffffff0d;
+  --surface: #121830;
+  --sunken: #0c1124;
+  --ink: #eef2ff;
+  --muted: #a9b6d9;
+  --line: #263154;
+  --stroke: color-mix(in srgb, var(--g) 55%, #2b3760);
+  --shadow: color-mix(in srgb, var(--g) 22%, #05070f);
+  --panel: #05070f;
+  --on-panel: #eef2ff;
+  --on-panel-muted: #a9b6d9;
+  --accent: var(--g);
+  --on-accent: #05070f;
+  --accent-soft: color-mix(in srgb, var(--g) 16%, #121830);
+  --gold: #ffd23f;
+  --coral: #ff6b81;
+  --ok: #4ade9c;
+  --warn: #ffd23f;
+  --bad: #ff8593;
+  --helpers: #5aa2ff;
+  --artists: #ff6fb5;
+  --techies: #ff9f43;
+  --explorers: #2ee6a6;
+  --athletes: #ff6b6b;
+  --organizers: #b58cff;
+  --code-key: #ff8593;
+  --code-string: #8ab4ff;
+  --code-number: #4ade9c;
+  --code-comment: #8391b8;
+  --radius: 4px 16px 4px 16px;
+  --radius-sm: 3px;
+  --hard: 0 0 0 1px #00000060, 0 0 18px -6px var(--g);
+  --pattern: none;
+  --pattern-size: auto;
+  color-scheme: dark;
+}
+
+/* ---------- Гилдиите: цвят, форма и шарка ---------- */
+:root[data-kit="gamer"].accent-helpers {
+  --g: #5aa2ff; --radius: 14px;
+  --pattern: radial-gradient(circle at 50% 50%, transparent 46%, #5aa2ff14 47% 52%, transparent 53%);
+  --pattern-size: 64px 64px;
+}
+:root[data-kit="gamer"].accent-artists {
+  --g: #ff6fb5; --radius: 26px 10px 26px 10px;
+  --pattern: radial-gradient(circle at 20% 30%, #ff6fb51c 0 22%, transparent 23%), radial-gradient(circle at 75% 70%, #8b5cf61c 0 16%, transparent 17%);
+  --pattern-size: 240px 240px;
+}
+:root[data-kit="gamer"].accent-techies {
+  --g: #ff9f43; --radius: 2px;
+  --pattern: linear-gradient(#ff9f4310 1px, transparent 1px), linear-gradient(90deg, #ff9f4310 1px, transparent 1px);
+  --pattern-size: 32px 32px;
+}
+:root[data-kit="gamer"].accent-explorers {
+  --g: #2ee6a6; --radius: 4px 16px 4px 16px;
+  --pattern: repeating-radial-gradient(circle at 80% 10%, transparent 0 38px, #2ee6a612 39px 40px);
+}
+:root[data-kit="gamer"].accent-athletes {
+  --g: #ff6b6b; --radius: 2px 18px 2px 18px;
+  --pattern: repeating-linear-gradient(115deg, transparent 0 46px, #ff6b6b10 46px 60px);
+}
+:root[data-kit="gamer"].accent-organizers {
+  --g: #b58cff; --radius: 10px;
+  --pattern: radial-gradient(#b58cff24 2px, transparent 3px), linear-gradient(45deg, transparent 48%, #b58cff0c 49% 51%, transparent 52%);
+  --pattern-size: 48px 48px;
+}
+
+/* ---------- Фон и заглавия ---------- */
+:root[data-kit="gamer"] body {
+  background-color: var(--paper);
+  background-image: radial-gradient(90vw 60vh at 85% -10%, color-mix(in srgb, var(--g) 16%, transparent), transparent 70%), var(--pattern);
+  background-size: auto, var(--pattern-size);
+  background-attachment: fixed;
+}
+:root[data-kit="gamer"] h1 { text-shadow: 0 0 22px color-mix(in srgb, var(--g) 55%, transparent); }
+:root[data-kit="gamer"] :is(.section-head, .panel) > h2::before { content: "▸ "; color: var(--g); }
+
+/* ---------- Горна и долна лента ---------- */
+:root[data-kit="gamer"] .site-header { border-bottom: 2px solid var(--g); box-shadow: 0 0 24px -6px var(--g); }
+:root[data-kit="gamer"] .site-header::after { display: none; }
+:root[data-kit="gamer"] .brand strong { color: var(--g); }
+:root[data-kit="gamer"] :is(.nav, .tabbar) a[aria-current="page"] { background: var(--g); border-color: var(--g); color: #05070f; }
+:root[data-kit="gamer"] .tabbar { border-top-color: var(--g); }
+:root[data-kit="gamer"] .site-footer { background: var(--panel); border-top-color: var(--line); }
+
+/* ---------- Бутони ---------- */
+:root[data-kit="gamer"] :is(.btn, button:not(.icon-button, .link-button, .test-option, .chat-examples button)) { border-color: color-mix(in srgb, var(--gold) 70%, #fff); box-shadow: 0 0 16px -6px var(--gold); }
+:root[data-kit="gamer"] :is(.btn-outline, button.btn-outline, .chat-examples button, .test-option) { border-color: var(--stroke); box-shadow: none; }
+:root[data-kit="gamer"] :is(.btn, button):active { transform: scale(0.98); }
+:root[data-kit="gamer"] :is(button:disabled, button:disabled:hover) { border-color: var(--line); box-shadow: none; }
+
+/* ---------- Карти и панели ---------- */
+:root[data-kit="gamer"] .quest-card:hover { transform: translateY(-4px); box-shadow: 0 0 26px -4px var(--chip-color, var(--g)); }
+:root[data-kit="gamer"] .quest-card.tier-hard { box-shadow: 0 0 24px -6px var(--gold); }
+:root[data-kit="gamer"] .quest-card { border-color: color-mix(in srgb, var(--chip-color, var(--g)) 60%, #2b3760); }
+:root[data-kit="gamer"] .quest-card.is-homework .card-bar { background: repeating-linear-gradient(0deg, #16204a 0 10px, #2a3a78 10px 11px); color: var(--ink); }
+:root[data-kit="gamer"] .card-foot { border-top-style: dashed; }
+:root[data-kit="gamer"] .guild-card { border-top-width: 3px; border-color: color-mix(in srgb, var(--chip-color) 60%, #2b3760); box-shadow: 0 0 20px -10px var(--chip-color); }
+:root[data-kit="gamer"] .guild-card.is-mine { box-shadow: 0 0 34px -6px var(--chip-color); }
+:root[data-kit="gamer"] :is(.panel-accent, .auth .panel) { box-shadow: 0 0 26px -6px var(--g); }
+
+/* ---------- Картата на играча ---------- */
+:root[data-kit="gamer"] .player-card { border-color: var(--g); box-shadow: 0 0 34px -8px var(--g); background: linear-gradient(160deg, color-mix(in srgb, var(--g) 14%, #05070f), #05070f 60%); }
+:root[data-kit="gamer"] .id-band { background: var(--g); }
+:root[data-kit="gamer"] :is(.player-avatar, .level-badge) { border-color: var(--g); }
+:root[data-kit="gamer"] .level-badge { background: var(--g); }
+:root[data-kit="gamer"] .barcode { display: none; }
+:root[data-kit="gamer"] .xp-bar span { background: linear-gradient(90deg, var(--g), var(--gold)); box-shadow: 0 0 14px var(--g); }
+:root[data-kit="gamer"] .stamp { border-style: solid; box-shadow: 0 0 14px -4px var(--ok); }
+
+/* ---------- Полета, чат, тест ---------- */
+:root[data-kit="gamer"] :is(input, textarea, select):focus { box-shadow: 0 0 0 2px var(--g); }
+:root[data-kit="gamer"] .bubble.user { background: color-mix(in srgb, var(--g) 26%, #05070f); box-shadow: none; }
+:root[data-kit="gamer"] :is(.assistant-popup, .cookie-note) { box-shadow: 0 0 34px -6px var(--g); }
+:root[data-kit="gamer"] .test-bar span { background: linear-gradient(90deg, var(--g), var(--gold)); }
+:root[data-kit="gamer"] .tag-reward { background: #2a2205; }
+:root[data-kit="gamer"] .theme-toggle { display: none; } /* този комплект е само тъмен */
+
+/* ---------- Изборът на комплект ---------- */
+.kit-switch { display: inline-flex; gap: 0.4rem; align-items: center; }
+.kit-switch button { padding: 0.15rem 0.5rem; font-size: 0.78rem; background: transparent; color: inherit; border: 1.5px solid currentColor; box-shadow: none; }
+.kit-switch button:hover { background: transparent; color: inherit; text-decoration: underline; }
+.kit-switch button[aria-pressed="true"] { background: var(--gold); color: #14151a; border-color: var(--gold); }
+.kit-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.kit-choice button { flex-direction: column; align-items: stretch; gap: 0.6rem; padding: 0.8rem; background: var(--surface); color: var(--ink); text-align: left; }
+.kit-choice button[aria-pressed="true"] { outline: 3px solid var(--gold); outline-offset: 2px; }
+.kit-preview { display: block; height: 70px; border: 2px solid #14151a; border-radius: 6px; background: #f5f2eb linear-gradient(#14151a, #14151a) top / 100% 16px no-repeat; }
+.kit-preview.is-gamer { border-color: #35e0ff; border-radius: 2px 14px 2px 14px; background: #080b16 radial-gradient(circle at 80% 0, #35e0ff66, transparent 60%); box-shadow: 0 0 14px -2px #35e0ff; }

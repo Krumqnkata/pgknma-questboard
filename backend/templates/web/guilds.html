@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Гилдии – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Гилдии</h1>
+    <p>Гилдията е според интересите ти. Влиза се с входен тест, а членовете ѝ решават и месечен тест за XP.</p>
+  </div>
+</div>
+
+<section class="panel panel-accent test-code">
+  {% if running %}
+    <h2>Имаш започнат тест</h2>
+    <p>„{{ running.test.title }}“. Времето тече и докато те няма.</p>
+    <a class="btn" href="{% url 'test_attempt' running.pk %}">Продължи теста</a>
+  {% else %}
+    <h2>Тест пред учител</h2>
+    <p class="muted">Учителят пуска теста и казва кода. След като започнеш, въпросите идват един по един с таймер и връщане назад няма.</p>
+    <form method="post" action="{% url 'test_start' %}" class="inline-form">
+      {% csrf_token %}
+      <div class="field">
+        <label for="code">Код от учителя</label>
+        <input id="code" name="code" inputmode="numeric" autocomplete="off" maxlength="7" placeholder="000000" required>
+      </div>
+      <button type="submit">Започни теста</button>
+    </form>
+  {% endif %}
+</section>
+
+<div class="guild-grid section">
+  {% for guild, tests in guild_rows %}
+    <section class="guild-card guild-{{ guild.code }}{% if guild == user.guild %} is-mine{% endif %}">
+      <header>{% guild_icon guild %}<h2>{{ guild }}</h2>{% if guild == user.guild %}<span class="tag">твоята</span>{% endif %}</header>
+      <p class="muted small">{{ guild.description }}</p>
+      <p class="small"><strong>{{ guild.member_count }}</strong> ученици</p>
+      {% for test, problem in tests %}
+        <div class="guild-test">
+          <strong>{{ test.title }}</strong>
+          <span class="muted small">{{ test.get_kind_display }}, {{ test.questions_count }} въпроса по {{ test.seconds }} s, минава се с {{ test.pass_percent }}%{% if test.xp %}, +{{ test.xp }} XP{% endif %}</span>
+          {% if problem %}<span class="small">{{ problem }}</span>{% else %}<span class="small plus">Можеш да го решиш.</span>{% endif %}
+        </div>
+      {% empty %}
+        <p class="muted small">Още няма тест за тази гилдия.</p>
+      {% endfor %}
+    </section>
+  {% endfor %}
+</div>
+
+{% if attempts %}
+<section class="section">
+  <h2>Моите опити</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Тест</th><th>Кога</th><th class="num">Резултат</th><th>Състояние</th></tr></thead>
+      <tbody>
+        {% for attempt in attempts %}
+          <tr><td>{{ attempt.test.title }}<br><span class="muted small">{{ attempt.test.guild }}</span></td>
+            <td>{{ attempt.started_at|date:"j F, H:i"|lower }}</td>
+            <td class="num">{{ attempt.correct }} от {{ attempt.total }} ({{ attempt.percent }}%)</td>
+            <td><span class="badge {% if attempt.status == 'passed' %}status-approved{% elif attempt.status == 'failed' %}status-rejected{% endif %}">{{ attempt.get_status_display }}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -220,7 +220,8 @@ def _approve_one(claim, reviewer, comment, now):
     student = claim.student
     old_level = level_for_xp(xp_total(student))
     xp = claim.mission.xp
-    coins = award_xp(student, xp, reason=f"Мисия „{claim.mission.title}“",
+    what = "Домашна" if claim.mission.is_homework else "Мисия"
+    coins = award_xp(student, xp, reason=f"{what} „{claim.mission.title}“",
                      created_by=reviewer, claim=claim, now=now)
     new_level = level_for_xp(xp_total(student))
     new_level = new_level if new_level != old_level else None

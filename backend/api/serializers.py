@@ -22,16 +22,17 @@ class MeSerializer(serializers.ModelSerializer):
 
 
 class MissionSerializer(serializers.ModelSerializer):
-    guild_name = serializers.CharField(source="guild.name", read_only=True)
+    guild_name = serializers.CharField(source="guild.name", read_only=True, default=None)
     created_by = serializers.StringRelatedField()
 
     class Meta:
         model = Mission
-        fields = ["id", "title", "description", "criteria", "guild", "guild_name", "xp", "deadline",
+        fields = ["id", "kind", "subject", "title", "description", "criteria", "guild", "guild_name", "xp", "deadline",
                   "hints_allowed", "is_active", "is_group", "team_min", "team_max", "reward_badge", "reward_item",
                   "created_by", "created_at"]
         # Наградите и заместниците се избират от страницата на мисията.
-        read_only_fields = ["reward_badge", "reward_item", "created_by", "created_at"]
+        # Домашните се задават от сайта, където се избират и класовете.
+        read_only_fields = ["kind", "subject", "reward_badge", "reward_item", "created_by", "created_at"]
 
     def validate(self, attrs):
         """Пуска същите правила като формите – Mission.clean()."""

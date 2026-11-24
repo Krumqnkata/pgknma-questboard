@@ -15,7 +15,7 @@ from badges.services import badge_cards
 from economy import leaderboard
 from economy.models import GameSettings, Level, Privilege
 from economy.services import active_privileges, is_unlocked, student_stats, unused_purchases
-from missions.models import Claim
+from missions.models import Claim, Mission
 from missions.services import claims_to_decide, missions_for_student, missions_reviewed_by
 
 MAX_MISSIONS = 12
@@ -60,12 +60,14 @@ def _mission_links(missions):
 
 def open_missions(user, arguments):
     """Активните мисии, които ученикът още не е заявил; първо тези на гилдията му."""
-    missions = missions_for_student().select_related("reward_badge", "reward_item").exclude(claims__student=user)
+    missions = missions_for_student(user).select_related("reward_badge", "reward_item").exclude(claims__student=user)
     kind = str(arguments.get("kind") or "").strip().lower()
     if kind.startswith("отбор"):
         missions = missions.filter(is_group=True)
     elif kind.startswith("индив"):
         missions = missions.filter(is_group=False)
+    elif kind.startswith("домаш"):
+        missions = missions.filter(kind=Mission.Kind.HOMEWORK)
     guild = str(arguments.get("guild") or "").strip()
     guild = "" if guild.lower() in ("всички", "няма", "празно") else guild
     in_guild = missions.filter(guild__name=guild) if guild else missions
@@ -73,14 +75,15 @@ def open_missions(user, arguments):
     note = f"в гилдия „{guild}“ няма такива; това са мисиите от другите гилдии" if guild and not in_guild else None
     missions = missions if note else in_guild
     total = missions.count()
-    missions = sorted(missions, key=lambda m: (m.guild_id != user.guild_id, m.deadline))[:MAX_MISSIONS]
+    missions = sorted(missions, key=lambda m: (not m.is_homework and m.guild_id != user.guild_id, m.deadline))[:MAX_MISSIONS]
     max_xp = GameSettings.load().max_xp_per_mission
     return ToolResult(
         data={
             "own_guild": user.guild.name if user.guild else None,
             "total": total, "note": note,
             "missions": [{
-                "title": m.title, "guild": m.guild.name, "xp": m.xp, "card": _tier(m.xp, max_xp),
+                "title": m.title, "guild": None if m.is_homework else m.guild.name,
+                "homework_subject": m.subject if m.is_homework else None, "xp": m.xp, "card": _tier(m.xp, max_xp),
                 "deadline": _date(m.deadline), "description": m.description[:200],
                 "team": f"от {m.team_min} до {m.team_max} ученици" if m.is_group else "индивидуална",
                 "special_reward": ", ".join(item.name for item in (m.reward_badge, m.reward_item) if item) or None,
@@ -165,6 +168,10 @@ def game_rules(user, arguments):
                               "Excel, PowerPoint",
             "teams": "при отборна мисия капитанът подава заявката и изписва псевдонимите на съотборниците; "
                      "всеки получава пълната награда",
+            "guilds": "в гилдия се влиза с входен тест пред учител, с код от него; минава се с поне 80 процента, ако учителят "
+                      "не е задал друго; месечният тест е само за членовете и дава XP",
+            "homework": f"домашните са за определени класове и дават до {rules.max_xp_per_homework} XP за предадена и приета "
+                        "работа; не са оценка",
             "levels": [{"level": level.number, "title": level.title, "from_xp": level.min_xp}
                        for level in Level.objects.order_by("min_xp")],
             "streak": "серията брои поредните седмици с поне една потвърдена мисия",
@@ -185,7 +192,7 @@ def my_missions(user, arguments):
     ).order_by("-is_active", "deadline")[:MAX_MISSIONS])
     return ToolResult(
         data={"missions": [{
-            "title": m.title, "guild": m.guild.name, "xp": m.xp, "deadline": _date(m.deadline),
+            "title": m.title, "guild": m.source, "xp": m.xp, "deadline": _date(m.deadline),
             "accepts_claims": m.is_open(), "waiting": m.pending, "approved": m.approved,
             "role": "автор" if m.created_by_id == user.pk else "заместник",
         } for m in missions]},

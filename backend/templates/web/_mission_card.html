@@ -3,17 +3,18 @@
 {# Горна лента: икона и име на гилдията с номера на мисията („ТЕХНИЧАРИ #01“) и XP наградата. #}
 {# Картата е бронзова, сребърна или златна според трудността (XP спрямо най-многото позволено). #}
 {% with level=mission.xp|difficulty:max_xp %}
-<a class="quest-card tier-{{ level.slug }} {{ mission.guild|guild_class }}" href="{% url 'mission_detail' mission.pk %}">
+<a class="quest-card tier-{{ level.slug }}{% if mission.is_homework %} is-homework{% endif %} {{ mission.guild|guild_class }}" href="{% url 'mission_detail' mission.pk %}">
   <div class="card-bar">
     <span class="card-id">
-      {% guild_icon mission.guild %}
-      {{ mission.guild }} #{{ mission.pk|stringformat:"02d" }}
+      {% if mission.is_homework %}{% badge_icon "book" %}{% else %}{% guild_icon mission.guild %}{% endif %}
+      {{ mission.source }} #{{ mission.pk|stringformat:"02d" }}
     </span>
     <span class="card-xp">+{{ mission.xp }} XP</span>
   </div>
   {% if claim.status == "approved" %}<span class="stamp" aria-hidden="true">Изпълнена</span>{% endif %}
   <div class="card-body">
     <div class="mission-tags">
+      {% if mission.is_homework %}<span class="tag tag-homework">Домашна</span>{% endif %}
       <span class="tier" title="{{ level.name }} мисия – {{ level.card }}">
         <span class="pips" aria-hidden="true">{% for _ in "123"|make_list %}<i{% if forloop.counter <= level.pips %} class="on"{% endif %}></i>{% endfor %}</span>
         {{ level.rarity }} · {{ level.name|lower }}

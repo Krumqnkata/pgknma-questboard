@@ -9,6 +9,7 @@
 Стартиране (от тази папка):  python -m uvicorn main:app --port 8001
 Документация на адресите:    http://127.0.0.1:8001/docs
 """
+import logging
 import secrets
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, status
@@ -18,8 +19,10 @@ import logic
 from providers import NAMES, ProviderError
 from schemas import (
     AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DiagnoseRequest, DraftRequest, DraftResponse,
-    HintRequest, HintResponse, PlanRequest, PlanResponse,
+    HintRequest, HintResponse, PlanRequest, PlanResponse, QuizDraftRequest, QuizDraftResponse,
 )
+
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI(
     title="Questboard – асистент",
@@ -47,6 +50,10 @@ def run(function, request):
         return function(request)
     except ProviderError as error:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(error))
+    except Exception:
+        # Нещо непредвидено: потребителят вижда ясно съобщение, а подробностите остават в журнала.
+        logger.exception("Неочаквана грешка в асистента")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Асистентът не можа да отговори. Опитайте отново.")
 
 
 @router.get("/health")
@@ -92,6 +99,12 @@ def query_plan(request: PlanRequest):
 def query_answer(request: AnswerRequest):
     """Втора стъпка: моделът оформя отговора само от данните, които Django е върнал."""
     return run(logic.answer_query, request)
+
+
+@router.post("/quiz-draft", response_model=QuizDraftResponse)
+def quiz_draft(request: QuizDraftRequest):
+    """Предложени въпроси за тест на гилдия. Учителят ги преглежда и одобрява."""
+    return run(logic.make_quiz, request)
 
 
 @router.post("/diagnose", response_model=AnswerResponse)

@@ -18,15 +18,18 @@
   {# По подразбиране е светла (кремавият фон с мрежа); изборът с бутона се помни. #}
   <script>
     (function () {
-      var theme;
-      try { theme = localStorage.getItem("qb-theme"); } catch (e) {}
+      var theme, kit;
+      try { theme = localStorage.getItem("qb-theme"); kit = localStorage.getItem("qb-kit"); } catch (e) {}
       document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+      if (kit === "gamer") document.documentElement.dataset.kit = "gamer";
     })();
   </script>
 
   {# Шрифтовете са на нашия сървър (без заявки към Google), с българските форми на буквите. #}
   <link rel="preload" href="{% static 'fonts/SofiaSans-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {# Вторият комплект за интерфейса („Геймърски“) – важи само при data-kit="gamer". #}
+  <link rel="stylesheet" href="{% static 'css/gamer.css' %}">
 </head>
 <body class="{% if user.is_student %}has-tabbar{% endif %}{% if assistant_enabled and user.is_authenticated %} has-assistant{% endif %}">
   <a class="sr-only" href="#content">Към съдържанието</a>
@@ -47,11 +50,13 @@
           {% if user.is_student %}
             <a href="{% url 'home' %}" {% if page == "home" %}aria-current="page"{% endif %}>Начало</a>
             <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail" %}aria-current="page"{% endif %}>Мисии</a>
+            <a href="{% url 'guild_list' %}" {% if page == "guild_list" %}aria-current="page"{% endif %}>Гилдии</a>
             <a href="{% url 'shop' %}" {% if page == "shop" %}aria-current="page"{% endif %}>Магазин</a>
             <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>Класация</a>
           {% elif user.is_teacher %}
             <a href="{% url 'review_list' %}" {% if page == "review_list" %}aria-current="page"{% endif %}>Заявки{% if pending_review_count %}<span class="count" aria-label="{{ pending_review_count }} чакат">{{ pending_review_count }}</span>{% endif %}</a>
-            <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail mission_create mission_edit" %}aria-current="page"{% endif %}>Мисии</a>
+            <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail mission_create mission_edit homework_create" %}aria-current="page"{% endif %}>Мисии</a>
+            <a href="{% url 'test_list' %}" {% if page in "test_list test_create test_edit test_session" %}aria-current="page"{% endif %}>Тестове</a>
             <a href="{% url 'purchase_list' %}" {% if page == "purchase_list" %}aria-current="page"{% endif %}>Привилегии</a>
             <a href="{% url 'rewards' %}" {% if page == "rewards" %}aria-current="page"{% endif %}>Награди</a>
             <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>Класация</a>
@@ -109,6 +114,10 @@
         <a href="{% url 'terms' %}">Условия за ползване</a>
         <a href="{% url 'privacy' %}">Поверителност</a>
         <span>Отворен код под лиценз GPL-3.0</span>
+        <span class="kit-switch" role="group" aria-label="Вид на интерфейса">
+          <button type="button" data-kit-set="school" aria-pressed="true">Училищен</button>
+          <button type="button" data-kit-set="gamer" aria-pressed="false">Геймърски</button>
+        </span>
       </nav>
     </div>
   </footer>
@@ -121,6 +130,8 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg><span>Начало</span></a>
       <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail" %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span>Мисии</span></a>
+      <a href="{% url 'guild_list' %}" {% if page == "guild_list" %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg><span>Гилдии</span></a>
       <a href="{% url 'shop' %}" {% if page == "shop" %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Магазин</span></a>
       <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>
@@ -131,7 +142,7 @@
 
   {# Асистентът: бутон долу вдясно на всяка страница. Без JavaScript отваря страницата „Асистент“. #}
   {% if assistant_enabled and user.is_authenticated and not user.is_admin_role and not user.must_change_password %}
-    {% if request.resolver_match.url_name != "assistant" %}
+    {% if request.resolver_match.url_name not in "assistant test_attempt" %}
       <a class="assistant-fab" href="{% url 'assistant' %}" data-assistant-open aria-controls="assistant-popup" aria-expanded="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Асистент</span></a>
       <section class="assistant-popup chat" id="assistant-popup" role="dialog" aria-label="Асистент" hidden

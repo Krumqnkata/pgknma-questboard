@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "assistant_bridge",
     "notifications",
     "badges",
+    "quizzes",
     "api",
     "web",
 ]
@@ -286,6 +287,7 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {"title": "Мисии", "icon": "flag", "link": _admin_link("missions_mission")},
+                    {"title": "Тестове на гилдиите", "icon": "quiz", "link": _admin_link("quizzes_guildtest")},
                     {"title": "Заявки", "icon": "task_alt", "link": _admin_link("missions_claim"),
                      "badge": "questboard.admin_config.pending_claims_badge"},
                 ],
@@ -327,6 +329,7 @@ UNFOLD = {
                     {"title": "Седмични сметки", "icon": "date_range", "link": _admin_link("economy_coinweek")},
                     {"title": "Покупки", "icon": "shopping_bag", "link": _admin_link("economy_purchase")},
                     {"title": "Получени значки", "icon": "military_tech", "link": _admin_link("badges_studentbadge")},
+                    {"title": "Опити за тестове", "icon": "timer", "link": _admin_link("quizzes_attempt")},
                     {"title": "Известия", "icon": "notifications", "link": _admin_link("notifications_notification")},
                     {"title": "Ползване на асистента", "icon": "smart_toy",
                      "link": _admin_link("assistant_bridge_assistantlog")},

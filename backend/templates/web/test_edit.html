@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ test.title }} – Questboard{% endblock %}
+
+{% block content %}
+<a class="muted small" href="{% url 'test_list' %}">Всички тестове</a>
+<div class="page-head"><div><h1>{{ test.title }}</h1><p>{{ test.get_kind_display }} тест на {{ test.guild }}.</p></div></div>
+
+<div class="mission-layout">
+  <div>
+    <section class="panel">
+      <h2>Въпроси ({{ questions|length }})</h2>
+      {% for question in questions %}
+        <div class="question-row{% if not question.is_approved %} is-draft{% endif %}">
+          <p><strong>{{ question.text }}</strong> <span class="muted small">{{ question.get_kind_display }}, {{ question.time_limit }} s</span>
+            {% if not question.is_approved %}<span class="badge status-pending">чернова</span>{% endif %}</p>
+          <p class="pre small">{{ question.answers }}</p>
+          <form method="post" class="actions">
+            {% csrf_token %}
+            <input type="hidden" name="question" value="{{ question.pk }}">
+            {% if not question.is_approved %}<button type="submit" name="action" value="approve" class="btn-small">Одобри</button>{% endif %}
+            <button type="submit" name="action" value="delete" class="btn-danger btn-small">Изтрий</button>
+          </form>
+        </div>
+      {% empty %}
+        <p class="muted">Още няма въпроси. Трябват поне 3 одобрени, за да се пусне тестът.</p>
+      {% endfor %}
+    </section>
+    <section class="panel">
+      <h2>Нов въпрос</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="question">
+        {% include "web/_form_fields.html" with form=question_form %}
+        <button type="submit">Добави</button>
+      </form>
+    </section>
+  </div>
+  <aside>
+    <section class="panel panel-accent">
+      <h3>Въпроси от асистента</h3>
+      <p class="muted small">Предложените въпроси са чернови. Проверете отговорите и одобрете само верните.</p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="draft">
+        {% include "web/_form_fields.html" with form=draft_form %}
+        <button type="submit" class="btn-outline btn-block">Предложи</button>
+      </form>
+    </section>
+    <section class="panel">
+      <h3>Настройки</h3>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="test">
+        {% include "web/_form_fields.html" with form=form %}
+        <button type="submit" class="btn-outline">Запази</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

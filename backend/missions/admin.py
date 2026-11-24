@@ -34,9 +34,9 @@ class MissionFileInline(EvidenceFileInline):
 
 @admin.register(Mission)
 class MissionAdmin(ModelAdmin):
-    list_display = ["title", "guild", "xp", "deadline", "is_active", "is_group", "hints_allowed", "created_by"]
-    list_filter = ["guild", "is_active", "is_group", "hints_allowed"]
-    filter_horizontal = ["reviewers"]
+    list_display = ["title", "kind", "guild", "subject", "xp", "deadline", "is_active", "is_group", "hints_allowed", "created_by"]
+    list_filter = ["kind", "guild", "is_active", "is_group", "hints_allowed"]
+    filter_horizontal = ["reviewers", "school_classes"]
     inlines = [MissionFileInline]
     search_fields = ["title", "description"]
     date_hierarchy = "deadline"

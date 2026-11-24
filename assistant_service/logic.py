@@ -17,7 +17,8 @@ import prompts
 from providers import ProviderError, ToolCall, get_provider
 from schemas import (
     AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DiagnoseRequest, DraftRequest, DraftResponse,
-    HintRequest, HintResponse, MissionDraft, PlanRequest, PlanResponse,
+    HintRequest, HintResponse, MissionDraft, PlanRequest, PlanResponse, QuizDraftRequest, QuizDraftResponse,
+    QuizQuestion,
 )
 
 
@@ -178,3 +179,44 @@ def explain_problems(request: DiagnoseRequest) -> AnswerResponse:
 
     answer, used = answer_with(request, ask)
     return AnswerResponse(answer=answer, provider=used)
+
+
+# ---------- Въпроси за тест ----------
+
+QUIZ_SCHEMA = {
+    "type": "object",
+    "properties": {"questions": {"type": "array", "items": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "options": {"type": "array", "items": {"type": "string"}},
+            "correct": {"type": "integer"},
+        },
+        "required": ["text", "options", "correct"],
+        "additionalProperties": False,
+    }}},
+    "required": ["questions"],
+    "additionalProperties": False,
+}
+
+
+def make_quiz(request: QuizDraftRequest) -> QuizDraftResponse:
+    system = prompts.QUIZ.format(count=request.count, guild=request.guild, about=request.guild_description or "няма",
+                                 seconds=request.seconds)
+
+    def ask(provider):
+        raw = provider.json(system, request.topic, QUIZ_SCHEMA)
+        good = []
+        for item in raw.get("questions", []):
+            try:
+                question = QuizQuestion.model_validate(item)
+            except ValidationError:
+                continue
+            if len({option.strip().casefold() for option in question.options}) == 4:  # еднакви отговори не се приемат
+                good.append(question)
+        if not good:
+            raise ProviderError("моделът не предложи годни въпроси")
+        return good[:request.count]
+
+    questions, used = answer_with(request, ask)
+    return QuizDraftResponse(questions=questions, provider=used)

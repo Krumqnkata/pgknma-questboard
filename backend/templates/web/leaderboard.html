@@ -10,9 +10,9 @@
     <p>Учениците се показват само с псевдоними.</p>
   </div>
   <nav class="segmented" aria-label="Период">
-    <a href="?period=week{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
+    <a href="?period=week&top={{ top }}{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
        {% if period == "week" %}aria-current="page"{% endif %}>Тази седмица</a>
-    <a href="?period=all{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
+    <a href="?period=all&top={{ top }}{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
        {% if period == "all" %}aria-current="page"{% endif %}>Общо</a>
   </nav>
 </div>
@@ -61,6 +61,7 @@
     <h2>Ученици{% if period == "week" %} <span class="muted small">· XP от началото на седмицата</span>{% endif %}</h2>
     <form method="get" class="inline-form" aria-label="Филтър">
       <input type="hidden" name="period" value="{{ period }}">
+      <input type="hidden" name="top" value="{{ top }}">
       <div class="field">
         <label for="filter-guild" class="sr-only">Гилдия</label>
         <select name="guild" id="filter-guild">
@@ -83,6 +84,27 @@
     </form>
   </div>
 
+  <nav class="segmented top-switch" aria-label="Колко ученици да се виждат">
+    <a href="?period={{ period }}&top=10{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
+       {% if top == 10 %}aria-current="page"{% endif %}>Топ 10</a>
+    <a href="?period={{ period }}&top=100{% if selected_guild %}&guild={{ selected_guild }}{% endif %}{% if selected_class %}&class={{ selected_class }}{% endif %}"
+       {% if top == 100 %}aria-current="page"{% endif %}>Топ 100</a>
+  </nav>
+
+  {% if podium|length == 3 %}
+  <ol class="podium" aria-label="Първите трима">
+    {% for row in podium %}
+      <li class="place-{{ forloop.counter }} {% if row.code %}guild-{{ row.code }}{% endif %}">
+        {% avatar row.user 64 %}
+        <strong>{{ row.name }}</strong>
+        {% if row.user.shown_title %}<span class="player-title">{{ row.user.shown_title.name }}</span>{% endif %}
+        <span class="podium-xp">{{ row.xp }} XP</span>
+        <span class="podium-step" aria-hidden="true">{{ forloop.counter }}</span>
+      </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
   <div class="table-wrap">
     <table class="ranking">
       <thead><tr><th>#</th><th>Псевдоним</th><th>Гилдия</th><th class="num">Ниво</th><th class="num">XP</th></tr></thead>
@@ -99,6 +121,7 @@
       </tbody>
     </table>
   </div>
+  <p class="muted small">Показани са {{ student_rows|length }} от {{ total_students }} ученици.</p>
   {% if period == "all" %}<p class="muted small">Стрелките показват с колко места се е качил или паднал всеки от началото на седмицата.</p>{% endif %}
 </section>
 {% endblock %}

@@ -17,7 +17,9 @@ def can_see(user, claim):
 
 
 def can_see_mission(user, mission):
-    if user.is_admin_role or user.is_teacher or mission.is_active:
+    if user.is_admin_role or user.is_teacher:
+        return True
+    if mission.is_active and mission.is_visible_to(user):
         return True
     return Claim.objects.filter(mission=mission, student=user).exists()
 

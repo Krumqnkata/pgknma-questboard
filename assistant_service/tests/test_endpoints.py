@@ -48,6 +48,37 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual((draft["team_min"], draft["team_max"], draft["badge"]), (2, 10, "Екипен дух"))
         self.assertEqual(self.post("/mission-draft", body).json()["badge"], "")
 
+    def test_quiz_draft_keeps_only_valid_questions(self):
+        body = {**FAKE, "topic": "Основи на Python", "guild": "Техничари", "count": 10, "seconds": 12}
+        questions = self.post("/quiz-draft", body).json()["questions"]
+        self.assertEqual(len(questions), 3)  # този с еднакви отговори отпада
+        with patch("providers.fake.FakeProvider.json", return_value={"questions": [{"text": "x"}]}):
+            self.assertEqual(self.post("/quiz-draft", body).status_code, 502)
+
+    def test_unexpected_error_is_a_clear_message(self):
+        with patch("providers.fake.FakeProvider.choose_tool", side_effect=RuntimeError("прекъсната връзка")), \
+                self.assertLogs("uvicorn.error", "ERROR"):
+            response = self.post("/query/plan", {**FAKE, "question": "Здравей", "tools": TOOLS})
+        self.assertEqual(response.status_code, 502)
+        self.assertNotIn("прекъсната", response.json()["detail"])
+
+    def test_gemini_timeouts_of_both_http_libraries_are_caught(self):
+        import importlib
+
+        from providers import gemini
+
+        for name in ("httpx", "httpx2"):
+            try:
+                library = importlib.import_module(name)
+            except ImportError:
+                continue
+            provider = gemini.GeminiProvider("ключ", "модел")
+            for error, text in ((library.ConnectTimeout("x"), "не отговори"), (library.ConnectError("x"), "Няма връзка")):
+                with patch.object(provider, "client") as client_mock:
+                    client_mock.models.generate_content.side_effect = error
+                    with self.assertRaisesRegex(ProviderError, text):
+                        provider.text("с", "в")
+
     def test_date_and_role_reach_the_model(self):
         seen = []
         with patch("providers.fake.FakeProvider.choose_tool", side_effect=lambda s, u, t: seen.append(s) or "Добре."):

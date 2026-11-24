@@ -19,10 +19,22 @@ TEAM_LIMIT = 10  # най-многото ученици в отбор
 
 
 class Mission(models.Model):
+    class Kind(models.TextChoices):
+        MISSION = "mission", "Мисия"
+        HOMEWORK = "homework", "Домашна"
+
+    kind = models.CharField("вид", max_length=10, choices=Kind.choices, default=Kind.MISSION)
     title = models.CharField("заглавие", max_length=200)
     description = models.TextField("описание")
     criteria = models.TextField("критерий за изпълнение")
-    guild = models.ForeignKey(Guild, verbose_name="гилдия", on_delete=models.PROTECT, related_name="missions")
+    guild = models.ForeignKey(Guild, verbose_name="гилдия", on_delete=models.PROTECT, related_name="missions",
+                              null=True, blank=True, help_text="Задължителна за мисия; домашната е без гилдия.")
+    # --- Само за домашна ---
+    subject = models.CharField("предмет", max_length=60, blank=True)
+    school_classes = models.ManyToManyField(
+        "accounts.SchoolClass", verbose_name="класове", blank=True, related_name="homework",
+        help_text="Домашната се вижда само от тези класове.",
+    )
     xp = models.PositiveIntegerField("XP")
     deadline = models.DateTimeField("краен срок")
     hints_allowed = models.BooleanField(
@@ -75,6 +87,19 @@ class Mission(models.Model):
     def __str__(self):
         return self.title
 
+    @property
+    def is_homework(self):
+        return self.kind == self.Kind.HOMEWORK
+
+    @property
+    def source(self):
+        """Откъде е: гилдията на мисията или предметът на домашната."""
+        return self.subject if self.is_homework else str(self.guild or "")
+
+    def is_visible_to(self, student):
+        """Домашната е само за класовете си; мисиите са за всички."""
+        return not self.is_homework or self.school_classes.filter(pk=student.school_class_id).exists()
+
     def is_open(self):
         """Може ли още да се заявява изпълнение."""
         return self.is_active and timezone.now() <= self.deadline
@@ -89,9 +114,15 @@ class Mission(models.Model):
         super().clean()
         errors = {}
 
-        max_xp = GameSettings.load().max_xp_per_mission
+        rules = GameSettings.load()
+        max_xp = rules.max_xp_per_homework if self.is_homework else rules.max_xp_per_mission
         if self.xp is not None and self.xp > max_xp:
-            errors["xp"] = f"Най-много {max_xp} XP за една мисия (настройва се от администратора)."
+            what = "домашна" if self.is_homework else "мисия"
+            errors["xp"] = f"Най-много {max_xp} XP за една {what} (настройва се от администратора)."
+        if self.is_homework and not self.subject.strip():
+            errors["subject"] = "Напишете предмета."
+        if not self.is_homework and not self.guild_id:
+            errors["guild"] = "Изберете гилдия."
         if self.xp == 0:
             errors["xp"] = "Мисията трябва да носи поне 1 XP."
 

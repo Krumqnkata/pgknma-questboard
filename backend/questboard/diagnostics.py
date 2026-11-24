@@ -91,7 +91,7 @@ def find_problems():
         Problem("no_start_level", "Няма ниво от 0 XP", 0 if Level.objects.filter(min_xp=0).exists() else 1,
                 "Новите ученици са без ниво. Добавете ниво с 0 XP.", reverse("admin:economy_level_changelist")),
         Problem("no_guild", "Ученици без гилдия", students.filter(guild__isnull=True).count(),
-                "Гилдията се избира според интересите на ученика, затова се попълва ръчно.", users_link),
+                "Могат да влязат с входен тест или гилдията да се попълни ръчно.", users_link),
         Problem("no_class", "Ученици без клас", students.filter(school_class__isnull=True).count(),
                 "Попълнете класа – без него няма разписание и класация на класа.", users_link),
         Problem("expired_missions", "Активни мисии с изтекъл срок", expired_missions().count(),

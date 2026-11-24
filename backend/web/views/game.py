@@ -27,7 +27,7 @@ from economy.services import (
     reject_claim, student_stats, unused_purchases,
 )
 from economy.words import coins_text
-from missions.models import Claim
+from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student
 from notifications.models import Notification
 
@@ -103,10 +103,12 @@ def suggested_missions(student, limit=4):
     на играча): активни мисии без заявка от ученика,
     първо тези на неговата гилдия, после по най-близък срок.
     """
-    return (missions_for_student()
+    return (missions_for_student(student)
             .exclude(claims__student=student)
             .annotate(
-                own_guild=Case(When(guild_id=student.guild_id, then=Value(0)), default=Value(1),
+                # Първо домашните за класа и мисиите на собствената гилдия.
+                own_guild=Case(When(kind=Mission.Kind.HOMEWORK, then=Value(0)),
+                               When(guild_id=student.guild_id, then=Value(0)), default=Value(1),
                                output_field=IntegerField()),
                 done_count=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
             )
@@ -281,10 +283,11 @@ def leaderboard_view(request):
         period,
         guild_id=int(guild_id) if guild_id.isdigit() else None,
         class_id=int(class_id) if class_id.isdigit() else None,
-        limit=None,  # всички – за да намерим и мястото на ученика, ако не е в първите 50
+        limit=None,  # всички – за да намерим и мястото на ученика, ако не е в показаните
     )
     everyone = tables["students"]
-    shown = everyone[:50]
+    top = 100 if request.GET.get("top") == "100" else 10
+    shown = everyone[:top]
     me = None
     if request.user.is_student and not any(row.user.pk == request.user.pk for row in shown):
         me = next((row for row in everyone if row.user.pk == request.user.pk), None)
@@ -292,6 +295,9 @@ def leaderboard_view(request):
         "guild_rows": tables["guilds"],
         "class_rows": tables["classes"],
         "student_rows": shown,
+        "podium": [row for row in shown[:3] if row.xp],
+        "top": top,
+        "total_students": len(everyone),
         "my_row": me,
         "period": period,
         "guilds": Guild.objects.all(),

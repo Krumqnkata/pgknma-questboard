@@ -100,7 +100,7 @@ def _parse_rows(rows, result):
             if not nickname or not values["клас"]:
                 result.errors.append(f"Ред {number}: за ученик са нужни псевдоним и клас.")
                 continue
-            if guild is None:
+            if guild is None and values["гилдия"]:  # празно – ученикът влиза с входен тест
                 result.errors.append(f"Ред {number}: непозната гилдия „{values['гилдия']}“ "
                                      f"(възможни: {', '.join(g.name for g in guilds.values())}).")
                 continue

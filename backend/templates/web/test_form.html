@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Нов тест – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head"><div><h1>Нов тест</h1><p>След това добавяте въпросите.</p></div></div>
+<section class="panel narrow">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "web/_form_fields.html" %}
+    <div class="actions"><button type="submit">Създай</button> <a class="btn btn-outline" href="{% url 'test_list' %}">Отказ</a></div>
+  </form>
+</section>
+{% endblock %}

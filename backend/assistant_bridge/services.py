@@ -231,3 +231,20 @@ def explain_problems(admin, problems):
     ]})
     log.finish(True, provider=result.get("provider", ""))
     return result["answer"]
+
+
+# ---------- Чернови на въпроси за тест ----------
+
+def draft_questions(teacher, test, topic, count):
+    """Предложени въпроси с четири отговора. Записват се като неодобрени – учителят решава кои остават."""
+    if not teacher.is_teacher:
+        raise GameRuleError("Чернови могат да правят само учители.")
+    _check_available(teacher)
+    log = _Logged(teacher, AssistantLog.Kind.QUIZ_DRAFT)
+    codes = TeacherCodes(queries.teacher_names())
+    result = _call(log, "/quiz-draft", {
+        "topic": codes.hide(topic)[:300], "guild": test.guild.name, "guild_description": test.guild.description[:300],
+        "count": count, "seconds": test.seconds,
+    })
+    log.finish(True, provider=result.get("provider", ""))
+    return result["questions"]

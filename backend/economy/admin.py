@@ -17,7 +17,7 @@ class GameSettingsAdmin(ModelAdmin):
     fieldsets = [
         ("Правила на играта", {"fields": [
             "xp_per_coin", "weekly_coin_limit", "carry_over_remainder",
-            "week_start_day", "max_xp_per_mission",
+            "week_start_day", "max_xp_per_mission", "max_xp_per_homework",
         ]}),
         ("Асистент", {"fields": [
             "assistant_status", "assistant_enabled", "llm_provider", "llm_model", "assistant_daily_limit",

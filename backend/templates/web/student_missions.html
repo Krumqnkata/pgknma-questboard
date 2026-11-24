@@ -12,7 +12,8 @@
 </div>
 
 <nav class="chip-row" aria-label="Филтър по гилдия">
-  <a href="{% url 'mission_list' %}" class="chip plain" {% if not selected_guild %}aria-current="true"{% endif %}>Всички</a>
+  <a href="{% url 'mission_list' %}" class="chip plain" {% if not selected_guild and not only_homework %}aria-current="true"{% endif %}>Всички</a>
+  {% if homework_count %}<a href="?kind=homework" class="chip" {% if only_homework %}aria-current="true"{% endif %}>Домашни ({{ homework_count }})</a>{% endif %}
   {% for guild in guilds %}
     <a href="?guild={{ guild.id }}" class="chip {{ guild|guild_class }}"
        {% if selected_guild == guild.id|stringformat:'s' %}aria-current="true"{% endif %}>{{ guild }}{% if guild == user.guild %} (твоята){% endif %}</a>

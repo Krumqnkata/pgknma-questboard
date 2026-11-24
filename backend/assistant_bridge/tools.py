@@ -73,10 +73,10 @@ TOOLS = {
     },
     # ---------- За самия сайт (site_tools.py) ----------
     "open_missions": {
-        "description": "Активните мисии, които питащият ученик още не е заявил: заглавие, гилдия, XP, срок, отбор и "
+        "description": "Активните мисии и домашни, които питащият ученик още не е заявил: заглавие, гилдия, XP, срок, отбор и "
                        "специална награда. За „коя мисия да избера“ и „има ли отборни мисии“.",
         "parameters": _schema(guild="име на гилдия само ако потребителят сам я назове в този въпрос, иначе празно",
-                              kind={"description": "вид на мисиите", "enum": [ALL, "отборни", "индивидуални"]}),
+                              kind={"description": "вид на мисиите", "enum": [ALL, "отборни", "индивидуални", "домашни"]}),
         "for_students": True, "only_students": True, "run": site_tools.open_missions,
     },
     "my_claims": {
@@ -146,7 +146,7 @@ def my_progress(student):
     """Данни за Ф14 – без име и псевдоним, само числа и мисии."""
     stats = student_stats(student)
     claimed = set(Claim.objects.filter(student=student).values_list("mission_id", flat=True))
-    open_missions = [m for m in missions_for_student().order_by("-xp") if m.id not in claimed][:5]
+    open_missions = [m for m in missions_for_student(student).order_by("-xp") if m.id not in claimed][:5]
     return {
         "xp": stats.xp,
         "level": stats.level.number if stats.level else None,
@@ -156,7 +156,7 @@ def my_progress(student):
         "coins_this_week": stats.coins_this_week,
         "weekly_coin_limit": stats.weekly_limit,
         "open_missions": [
-            {"title": m.title, "guild": m.guild.name, "xp": m.xp,
+            {"title": m.title, "guild": m.source, "xp": m.xp,
              "deadline": timezone.localtime(m.deadline).strftime("%d.%m %H:%M")}
             for m in open_missions
         ],

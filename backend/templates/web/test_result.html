@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Резултат – Questboard{% endblock %}
+
+{% block content %}
+<section class="panel test-result {% if attempt.status == 'passed' %}is-passed{% endif %}">
+  <p class="muted">{{ attempt.test.title }}</p>
+  <h1>{% if attempt.status == "passed" %}Минат!{% elif attempt.status == "void" %}Опитът е анулиран{% else %}Този път не{% endif %}</h1>
+  <p class="test-score">{{ attempt.percent }}%</p>
+  <p>{{ attempt.correct }} верни от {{ attempt.total }}. Минава се с {{ attempt.test.pass_percent }}%.</p>
+  {% if attempt.status == "passed" %}
+    {% if attempt.test.is_entry %}<p>Вече си в гилдия <strong>{{ attempt.test.guild }}</strong>.</p>{% elif attempt.xp_entry %}<p><strong>+{{ attempt.test.xp }} XP</strong></p>{% endif %}
+  {% elif attempt.status == "void" %}<p>{{ attempt.void_reason }}</p>
+  {% elif attempt.test.is_entry %}<p class="muted">Нов опит можеш да направиш след {{ attempt.test.retry_days }} дни.</p>
+  {% else %}<p class="muted">Опитай пак следващия месец.</p>{% endif %}
+  <a class="btn" href="{% url 'guild_list' %}">Към гилдиите</a>
+</section>
+{% endblock %}

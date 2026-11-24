@@ -19,10 +19,19 @@
     {% if user.is_student %}
       <dt>Псевдоним</dt><dd>{{ user.nickname }}</dd>
       <dt>Клас</dt><dd>{{ user.school_class }}</dd>
-      <dt>Гилдия</dt><dd><span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span></dd>
+      <dt>Гилдия</dt><dd>{% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% else %}<a href="{% url 'guild_list' %}">Избери гилдия</a>{% endif %}</dd>
     {% endif %}
   </dl>
   <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'password_change' %}">Смени паролата</a></div>
+</section>
+
+<section class="panel section" aria-labelledby="kit-title">
+  <h2 id="kit-title">Вид на сайта</h2>
+  <p class="muted">Помни се в този браузър.{% if user.is_student and user.guild %} В геймърския комплект цветът, формата на картите и фонът са на гилдия {{ user.guild }}.{% endif %}</p>
+  <div class="kit-choice">
+    <button type="button" data-kit-set="school" aria-pressed="true"><span class="kit-preview"></span>Училищен</button>
+    <button type="button" data-kit-set="gamer" aria-pressed="false"><span class="kit-preview is-gamer"></span>Геймърски</button>
+  </div>
 </section>
 
 {% if user.is_student %}

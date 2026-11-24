@@ -18,9 +18,11 @@ from assistant_bridge.models import Hint
 from assistant_bridge.services import AssistantError, draft_mission, unused_hint_tokens
 from economy.models import GameSettings
 from missions.models import Claim, Mission
-from missions.services import GameRuleError, leave_team, missions_for_student, missions_reviewed_by, submit_claim
+from missions.services import (
+    GameRuleError, leave_team, missions_for_student, missions_reviewed_by, submit_claim, visible_to,
+)
 
-from ..forms import ClaimForm, MissionForm, ReviewForm
+from ..forms import ClaimForm, HomeworkForm, MissionForm, ReviewForm
 
 STUDENT = User.Role.STUDENT
 TEACHER = User.Role.TEACHER
@@ -35,7 +37,7 @@ def mission_list(request):
 
 def _student_mission_list(request):
     # Колко ученици са изпълнили всяка мисия – показва се на картата.
-    missions = missions_for_student().annotate(
+    missions = missions_for_student(request.user).annotate(
         done_count=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
     )
 
@@ -43,6 +45,10 @@ def _student_mission_list(request):
     selected_guild = request.GET.get("guild", "")
     if selected_guild.isdigit():
         missions = missions.filter(guild_id=selected_guild)
+    only_homework = request.GET.get("kind") == "homework"
+    homework_count = missions_for_student(request.user).filter(kind=Mission.Kind.HOMEWORK).count()
+    if only_homework:
+        missions = missions.filter(kind=Mission.Kind.HOMEWORK)
 
     # Състоянието на собствените заявки, за да се показва до всяка мисия
     my_claims = {c.mission_id: c for c in Claim.objects.filter(student=request.user)}
@@ -53,6 +59,8 @@ def _student_mission_list(request):
         "rows": rows,
         "guilds": Guild.objects.all(),
         "selected_guild": selected_guild,
+        "only_homework": only_homework,
+        "homework_count": homework_count,
         "max_xp": GameSettings.load().max_xp_per_mission,
         "new_since": now - timedelta(days=3),   # „нова“ – създадена през последните 3 дни
         "soon": now + timedelta(days=3),        # „остават N дни“ – срокът е до 3 дни
@@ -81,6 +89,17 @@ def mission_create(request):
     return render(request, "web/mission_form.html", {"form": form, "is_new": True})
 
 
+@role_required(TEACHER)
+def homework_create(request):
+    form = HomeworkForm(request.POST or None, request.FILES or None,
+                        instance=Mission(created_by=request.user, kind=Mission.Kind.HOMEWORK))
+    if request.method == "POST" and form.is_valid():
+        mission = form.save()
+        messages.success(request, f"Домашната „{mission.title}“ е зададена.")
+        return redirect("mission_detail", pk=mission.pk)
+    return render(request, "web/mission_form.html", {"form": form, "is_new": True, "is_homework": True})
+
+
 def _mission_draft(request):
     idea = request.POST.get("draft_idea", "")
     initial = {}
@@ -98,12 +117,14 @@ def _mission_draft(request):
 def mission_edit(request, pk):
     # Само авторът редактира мисията си. За чужда мисия – страница 404.
     mission = get_object_or_404(Mission, pk=pk, created_by=request.user)
-    form = MissionForm(request.POST or None, request.FILES or None, instance=mission)
+    form_class = HomeworkForm if mission.is_homework else MissionForm
+    form = form_class(request.POST or None, request.FILES or None, instance=mission)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Промените са запазени.")
         return redirect("mission_detail", pk=mission.pk)
-    return render(request, "web/mission_form.html", {"form": form, "is_new": False, "mission": mission})
+    return render(request, "web/mission_form.html", {
+        "form": form, "is_new": False, "mission": mission, "is_homework": mission.is_homework})
 
 
 @role_required(STUDENT, TEACHER)
@@ -127,7 +148,8 @@ def _teacher_mission_detail(request, pk):
 def _student_mission_detail(request, pk):
     # Ученикът вижда активните мисии и тези, за които вече има заявка.
     mission = get_object_or_404(
-        Mission.objects.select_related("guild").filter(Q(is_active=True) | Q(claims__student=request.user)).distinct(),
+        Mission.objects.select_related("guild").filter(
+            (Q(is_active=True) & visible_to(request.user)) | Q(claims__student=request.user)).distinct(),
         pk=pk,
     )
     my_claim = Claim.objects.filter(mission=mission, student=request.user).select_related("captain__student").first()

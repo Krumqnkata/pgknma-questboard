@@ -8,6 +8,7 @@ from economy.models import GameSettings, Privilege
 from missions.evidence import ACCEPT, ALLOWED_TEXT, prepare_all
 from missions.models import TEAM_LIMIT, Mission, MissionFile
 from missions.services import EVIDENCE_MAX_LENGTH, GameRuleError, attach_to_mission, parse_nicknames
+from quizzes.models import GuildTest, Question
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -65,6 +66,13 @@ class MissionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         max_xp = GameSettings.load().max_xp_per_mission
         self.fields["xp"].help_text = f"Най-много {max_xp} XP."
+        if "guild" in self.fields:
+            self.fields["guild"].required = True
+        if "reward_badge" in self.fields:
+            self._setup_rewards()
+        self._setup_rest()
+
+    def _setup_rewards(self):
         self.fields["reward_badge"].queryset = Badge.objects.filter(
             Q(rule=Badge.Rule.MISSION, is_active=True) | Q(pk=self.instance.reward_badge_id))
         self.fields["reward_badge"].empty_label = "Без значка"
@@ -75,6 +83,8 @@ class MissionForm(forms.ModelForm):
             | Q(pk=self.instance.reward_item_id)).select_related("sponsor")
         self.fields["reward_item"].empty_label = "Без предмет"
         self.fields["reward_item"].label_from_instance = reward_label
+
+    def _setup_rest(self):
         self.fields["reviewers"].queryset = User.objects.filter(
             role=User.Role.TEACHER, is_active=True).exclude(pk=self.instance.created_by_id)
         self.fields["team_min"].required = self.fields["team_max"].required = False
@@ -114,6 +124,22 @@ class MissionForm(forms.ModelForm):
             record.delete()
         attach_to_mission(mission, getattr(self, "prepared_files", []))
         return mission
+
+
+class HomeworkForm(MissionForm):
+    """Домашна работа: мисия за избрани класове, без гилдия и без специални награди."""
+
+    class Meta(MissionForm.Meta):
+        fields = ["title", "subject", "school_classes", "description", "criteria", "xp", "deadline", "hints_allowed",
+                  "is_group", "team_min", "team_max", "reviewers", "is_active"]
+        widgets = {**MissionForm.Meta.widgets, "school_classes": forms.CheckboxSelectMultiple}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        limit = GameSettings.load().max_xp_per_homework
+        self.fields["xp"].help_text = f"За предадена и приета домашна, най-много {limit} XP. Не е оценка."
+        self.fields["subject"].required = self.fields["school_classes"].required = True
+        self.fields["criteria"].label = "Кога се приема"
 
 
 def reward_label(item):
@@ -223,3 +249,28 @@ class BadgeGiftForm(forms.Form):
 
         super().__init__(*args, **kwargs)
         self.fields["badge"].queryset = Badge.objects.filter(rule=Badge.Rule.MANUAL, is_active=True)
+
+
+class GuildTestForm(forms.ModelForm):
+    class Meta:
+        model = GuildTest
+        fields = ["guild", "kind", "title", "description", "questions_count", "seconds", "pass_percent", "xp",
+                  "retry_days", "is_active"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ["kind", "text", "answers", "seconds"]
+        widgets = {"text": forms.Textarea(attrs={"rows": 2}), "answers": forms.Textarea(attrs={"rows": 5})}
+
+
+class QuestionDraftForm(forms.Form):
+    topic = forms.CharField(label="Тема", min_length=3, max_length=300,
+                            widget=forms.TextInput(attrs={"placeholder": "напр. основи на Python: цикли и условия"}))
+    count = forms.IntegerField(label="Колко въпроса", min_value=1, max_value=10, initial=5)
+
+
+class SessionForm(forms.Form):
+    minutes = forms.IntegerField(label="Минути", min_value=5, max_value=90, initial=15)
