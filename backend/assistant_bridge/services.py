@@ -15,16 +15,21 @@ from dataclasses import dataclass, field
 from django.utils import timezone
 
 from accounts.models import Guild
+from badges.models import Badge
 from economy.models import GameSettings, Purchase
+from missions.models import TEAM_LIMIT
 from missions.services import GameRuleError
 from timetable import queries
 
 from . import client
 from .models import AssistantLog, Hint
 from .pseudonyms import TeacherCodes
+from .site_tools import visible_links
 from .tools import run_tool, tools_for
 
 HINT_TOKEN = "hint_token"
+HISTORY_MESSAGES = 6     # последните три въпроса с отговорите им
+HISTORY_CHARS = 400
 
 
 class AssistantError(Exception):
@@ -118,10 +123,13 @@ def draft_mission(teacher, idea):
 
     log = _Logged(teacher, AssistantLog.Kind.MISSION_DRAFT)
     guilds = list(Guild.objects.all())
+    badges = list(Badge.objects.filter(rule=Badge.Rule.MISSION, is_active=True))
     draft = _call(log, "/mission-draft", {
         "idea": idea[:1000],
         "guilds": [{"name": g.name, "description": g.description} for g in guilds],
         "max_xp": GameSettings.load().max_xp_per_mission,
+        "badges": [{"name": b.name, "description": b.description} for b in badges],
+        "team_limit": TEAM_LIMIT,
     })
     log.finish(True, provider=draft.get("provider", ""))
 
@@ -129,6 +137,9 @@ def draft_mission(teacher, idea):
     return {
         "title": draft["title"], "description": draft["description"], "criteria": draft["criteria"],
         "guild": guild.pk if guild else None, "xp": draft["xp"],
+        "is_group": draft.get("is_group", False),
+        "team_min": draft.get("team_min", 2), "team_max": draft.get("team_max", 4),
+        "reward_badge": next((b.pk for b in badges if b.name == draft.get("badge")), None),
     }
 
 
@@ -139,9 +150,21 @@ class Answer:
     text: str
     tool: str | None = None
     data: dict = field(default_factory=dict)
+    links: list = field(default_factory=list)  # [{"label", "url"}] – адресите са от сървъра
 
 
-def ask(user, question):
+def _clean_history(history, codes):
+    """
+    Последните реплики, за да разбере моделът „а в четвъртък?“. Идват от браузъра и не се пазят
+    на сървъра. Имената на учителите и тук се заменят с кодове. Правата не зависят от тях:
+    всяка справка пак се изпълнява с правата на питащия.
+    """
+    return [{"role": item["role"], "text": codes.hide(str(item["text"])[:HISTORY_CHARS])}
+            for item in list(history or [])[-HISTORY_MESSAGES:]
+            if item.get("role") in ("user", "assistant") and str(item.get("text", "")).strip()]
+
+
+def ask(user, question, history=()):
     """
     1) моделът избира справка (вижда само кодове вместо имената на учителите);
     2) Django я изпълнява с правата на потребителя;
@@ -155,10 +178,12 @@ def ask(user, question):
     log = _Logged(user, AssistantLog.Kind.QUERY)
     codes = TeacherCodes(queries.teacher_names())
     hidden_question = codes.hide(question)
+    hidden_history = _clean_history(history, codes)
     current = queries.now_slot()
 
     plan = _call(log, "/query/plan", {
         "question": hidden_question,
+        "history": hidden_history,
         "tools": tools_for(user),
         "context": {
             "today": queries.DAY_NAMES.get(current["day"], "почивен ден"),
@@ -172,16 +197,17 @@ def ask(user, question):
         return Answer(text=codes.reveal(plan.get("answer") or ""))
 
     try:
-        data = run_tool(user, plan["tool"], codes.reveal_data(plan.get("arguments") or {}))
+        found = run_tool(user, plan["tool"], codes.reveal_data(plan.get("arguments") or {}))
     except queries.QueryError as error:
         # Грешката е за потребителя (непознат учител, няма права и т.н.) – не я пращаме към модела.
         log.finish(True)
         return Answer(text=str(error), tool=plan["tool"])
 
     result = _call(log, "/query/answer", {"question": hidden_question, "tool": plan["tool"],
-                                         "data": codes.hide_data(data)})
+                                         "data": codes.hide_data(found.data), "history": hidden_history})
     log.finish(True, provider=result.get("provider", ""))
-    return Answer(text=codes.reveal(result["answer"]), tool=plan["tool"], data=data)
+    text = codes.reveal(result["answer"])
+    return Answer(text=text, tool=plan["tool"], data=found.data, links=visible_links(found.links, text))
 
 
 # ---------- Проверка на системата (само за администратора) ----------

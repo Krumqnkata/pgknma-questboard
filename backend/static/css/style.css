@@ -557,9 +557,13 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--in
 .bubble { max-width: 85%; padding: 0.7rem 1rem; border: 2px solid var(--stroke); border-radius: var(--radius-sm); white-space: pre-wrap; overflow-wrap: anywhere; }
 .bubble.user { align-self: flex-end; background: var(--panel); color: var(--on-panel); box-shadow: 3px 3px 0 var(--gold); }
 .bubble.bot { align-self: flex-start; background: var(--surface); box-shadow: 3px 3px 0 var(--shadow); }
+.bubble-links { display: flex; flex-wrap: wrap; gap: 0.4rem; align-self: flex-start; max-width: 85%; margin-top: -0.25rem; }
+.bubble-links a { padding: 0.2rem 0.6rem; border: 2px solid var(--stroke); border-radius: var(--radius-sm); background: var(--gold); color: #14151a; font-size: 0.85rem; font-weight: 700; text-decoration: none; box-shadow: 2px 2px 0 var(--shadow); }
+.bubble-links a:hover { color: #14151a; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shadow); }
 .bubble.waiting { color: var(--muted); }
 .bubble.error { border-color: var(--bad); color: var(--bad); background: transparent; box-shadow: none; }
 .chat-examples { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1.25rem 1rem; }
+.chat-examples[hidden] { display: none; }
 .chat-examples button { background: var(--surface); color: var(--ink); font-family: var(--font); font-weight: 600; font-size: 0.85rem; padding: 0.35rem 0.7rem; box-shadow: 2px 2px 0 var(--shadow); }
 .chat-examples button:hover { background: var(--sunken); color: var(--ink); }
 .chat-form { display: flex; gap: 0.6rem; padding: 1rem 1.25rem; border-top: 2px solid var(--stroke); }

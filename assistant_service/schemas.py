@@ -51,6 +51,8 @@ class DraftRequest(ModelChoice):
     idea: str = Field(min_length=5, max_length=1000)
     guilds: list[GuildInfo] = Field(min_length=1)
     max_xp: int = Field(ge=1)
+    badges: list[GuildInfo] = []          # значки, които се печелят само от мисия
+    team_limit: int = Field(default=10, ge=2)
 
 
 class MissionDraft(BaseModel):
@@ -61,6 +63,10 @@ class MissionDraft(BaseModel):
     criteria: str = Field(min_length=5, max_length=2000)
     guild: str
     xp: int
+    is_group: bool = False
+    team_min: int = 2
+    team_max: int = 4
+    badge: str = ""
 
 
 class DraftResponse(MissionDraft, Answered):
@@ -83,8 +89,16 @@ class QueryContext(BaseModel):
     role: str = ""           # ученик / учител / администратор
 
 
+class ChatMessage(BaseModel):
+    """Предишна реплика. Имената на учителите са заменени с кодове още в Django."""
+
+    role: Literal["user", "assistant"]
+    text: str = Field(max_length=2000)
+
+
 class PlanRequest(ModelChoice):
     question: str = Field(min_length=1, max_length=500)
+    history: list[ChatMessage] = Field(default=[], max_length=10)
     tools: list[ToolDefinition]
     context: QueryContext = QueryContext()
 
@@ -99,6 +113,7 @@ class PlanResponse(Answered):
 
 class AnswerRequest(ModelChoice):
     question: str = Field(min_length=1, max_length=500)
+    history: list[ChatMessage] = Field(default=[], max_length=10)
     tool: str
     data: dict[str, Any]
 

@@ -41,7 +41,7 @@ class TeacherCodes:
         if isinstance(value, list):
             return [self.hide_data(item) for item in value]
         if isinstance(value, str):
-            return self.name_to_code.get(value, value)
+            return self.name_to_code.get(value) or self.hide(value)
         return value
 
     def reveal_data(self, value):

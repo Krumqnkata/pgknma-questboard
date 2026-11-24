@@ -324,13 +324,14 @@ class AssistantAskView(APIView):
         data = QuestionSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         try:
-            answer = ask(request.user, data.validated_data["question"])
+            answer = ask(request.user, data.validated_data["question"], data.validated_data.get("history", []))
         except GameRuleError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         except AssistantError as error:
             # Асистентът е изключен, недостъпен или е достигнат лимитът – ясно съобщение.
             return Response({"detail": str(error)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response(AnswerSerializer({"answer": answer.text, "tool": answer.tool, "data": answer.data}).data)
+        return Response(AnswerSerializer({"answer": answer.text, "tool": answer.tool, "data": answer.data,
+                                          "links": answer.links}).data)
 
 
 class MissionDraftView(APIView):

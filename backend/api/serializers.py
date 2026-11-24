@@ -125,14 +125,27 @@ class RankingRowSerializer(serializers.Serializer):
     title = serializers.CharField(source="user.shown_title.name", allow_null=True, default=None)
 
 
+class ChatMessageSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=["user", "assistant"])
+    text = serializers.CharField(max_length=4000)
+
+
+class LinkSerializer(serializers.Serializer):
+    label = serializers.CharField()
+    url = serializers.CharField()
+
+
 class QuestionSerializer(serializers.Serializer):
     question = serializers.CharField(max_length=500)
+    history = ChatMessageSerializer(many=True, required=False, max_length=20,
+                                    help_text="Последните реплики от разговора, за въпроси като „а в четвъртък?“.")
 
 
 class AnswerSerializer(serializers.Serializer):
     answer = serializers.CharField()
     tool = serializers.CharField(allow_null=True)
     data = serializers.DictField()
+    links = LinkSerializer(many=True, help_text="Бутони към страници в сайта.")
 
 
 class IdeaSerializer(serializers.Serializer):
@@ -145,6 +158,10 @@ class DraftSerializer(serializers.Serializer):
     criteria = serializers.CharField()
     guild = serializers.IntegerField(allow_null=True)
     xp = serializers.IntegerField()
+    is_group = serializers.BooleanField()
+    team_min = serializers.IntegerField()
+    team_max = serializers.IntegerField()
+    reward_badge = serializers.IntegerField(allow_null=True)
 
 
 class HintSerializer(serializers.Serializer):

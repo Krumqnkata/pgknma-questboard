@@ -67,8 +67,11 @@ def make_hint(request: HintRequest) -> HintResponse:
 
 # ---------- Ф11: чернова на мисия ----------
 
-def draft_schema(guild_names):
-    """Фиксираният JSON формат на черновата. Гилдията е ограничена до съществуващите."""
+NO_BADGE = "без значка"  # празен текст не се приема като възможна стойност от всички модели
+
+
+def draft_schema(guild_names, badge_names):
+    """Фиксираният JSON формат на черновата. Гилдията и значката са ограничени до съществуващите."""
     return {
         "type": "object",
         "properties": {
@@ -77,8 +80,12 @@ def draft_schema(guild_names):
             "criteria": {"type": "string"},
             "guild": {"type": "string", "enum": guild_names},
             "xp": {"type": "integer"},
+            "is_group": {"type": "boolean"},
+            "team_min": {"type": "integer"},
+            "team_max": {"type": "integer"},
+            "badge": {"type": "string", "enum": [NO_BADGE, *badge_names]},
         },
-        "required": ["title", "description", "criteria", "guild", "xp"],
+        "required": ["title", "description", "criteria", "guild", "xp", "is_group", "team_min", "team_max", "badge"],
         "additionalProperties": False,
     }
 
@@ -86,10 +93,13 @@ def draft_schema(guild_names):
 def make_draft(request: DraftRequest) -> DraftResponse:
     names = [guild.name for guild in request.guilds]
     guilds_text = "\n".join(f"- {g.name}" + (f": {g.description}" if g.description else "") for g in request.guilds)
-    system = prompts.DRAFT.format(max_xp=request.max_xp, guilds=guilds_text)
+    badge_names = [badge.name for badge in request.badges]
+    badges_text = "\n".join(f"- {b.name}: {b.description}" for b in request.badges) or "- няма"
+    system = prompts.DRAFT.format(max_xp=request.max_xp, guilds=guilds_text, badges=badges_text,
+                                  team_limit=request.team_limit)
 
     def ask(provider):
-        raw = provider.json(system, request.idea, draft_schema(names))
+        raw = provider.json(system, request.idea, draft_schema(names, badge_names))
         # Проверяваме отговора, преди да го покажем (раздел 3.2 на плана).
         # Ако е невалиден, потребителят получава ясна грешка вместо съмнителна чернова.
         try:
@@ -99,6 +109,10 @@ def make_draft(request: DraftRequest) -> DraftResponse:
         if draft.guild not in names:
             raise ProviderError("предложена е несъществуваща гилдия")
         draft.xp = max(1, min(draft.xp, request.max_xp))  # XP се ограничава от правилата на играта
+        draft.team_min = max(2, min(draft.team_min, request.team_limit))
+        draft.team_max = max(draft.team_min, min(draft.team_max, request.team_limit))
+        if draft.badge not in badge_names:
+            draft.badge = ""
         return draft
 
     draft, used = answer_with(request, ask)
@@ -107,6 +121,15 @@ def make_draft(request: DraftRequest) -> DraftResponse:
 
 # ---------- Справки с извикване на функции ----------
 
+def with_history(request, text):
+    """Въпросът заедно с последните реплики – за „а в четвъртък?“."""
+    if not request.history:
+        return text
+    names = {"user": "Потребител", "assistant": "Асистент"}
+    lines = "\n".join(f"{names[item.role]}: {item.text}" for item in request.history)
+    return f"Разговорът досега (само за контекст):\n{lines}\n\n{text}"
+
+
 def plan_query(request: PlanRequest) -> PlanResponse:
     context = request.context
     system = prompts.QUERY_PLAN.format(today=context.today or "неизвестно",
@@ -114,7 +137,7 @@ def plan_query(request: PlanRequest) -> PlanResponse:
     allowed = {tool.name for tool in request.tools}
 
     def ask(provider):
-        result = provider.choose_tool(system, request.question, request.tools)
+        result = provider.choose_tool(system, with_history(request, f"Въпрос: {request.question}"), request.tools)
         if isinstance(result, ToolCall) and result.name not in allowed:
             raise ProviderError("избрана е справка, която не е разрешена")
         return result
@@ -131,7 +154,7 @@ def answer_query(request: AnswerRequest) -> AnswerResponse:
             f"Данни:\n{json.dumps(request.data, ensure_ascii=False, indent=1)}")
 
     def ask(provider):
-        answer = provider.text(prompts.QUERY_ANSWER, user)
+        answer = provider.text(prompts.QUERY_ANSWER, with_history(request, user))
         if not answer:
             raise ProviderError("празен отговор")
         return answer

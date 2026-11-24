@@ -20,6 +20,10 @@ class FakeProvider(LLMProvider):
             "criteria": "Библиотекарят потвърждава, че си помагал поне един час.",
             "guild": guild,
             "xp": 40,
+            "is_group": True,
+            "team_min": 1,
+            "team_max": 50,
+            "badge": schema["properties"]["badge"]["enum"][-1],
         }
 
     def choose_tool(self, system, user, tools):

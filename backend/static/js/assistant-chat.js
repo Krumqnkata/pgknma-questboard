@@ -35,9 +35,20 @@
     try { sessionStorage.setItem(KEY, JSON.stringify(state)); } catch (error) { /* напр. частен режим */ }
   }
 
-  function remember(text, kind) {
-    state.items.push({ text: text, kind: kind });
+  function remember(text, kind, links) {
+    state.items.push({ text: text, kind: kind, links: links || [] });
+    examples.hidden = true;  // след първия въпрос мястото е за разговора
     save();
+  }
+
+  // Последните три въпроса с отговорите им – за да разбере асистентът „а в четвъртък?“.
+  function history() {
+    return state.items
+      .filter(function (item) { return item.kind === "user" || item.kind === "bot"; })
+      .slice(-6)
+      .map(function (item) {
+        return { role: item.kind === "user" ? "user" : "assistant", text: item.text.slice(0, 400) };
+      });
   }
 
   // Django изисква CSRF ключ при всяка POST заявка. Взимаме го от бисквитката.
@@ -57,14 +68,31 @@
     return bubble;
   }
 
-  function finish(bubble, text, kind) {
+  // Бутоните под отговора. Адресите идват от сървъра; приемаме само страници от нашия сайт.
+  function addLinks(bubble, links) {
+    const safe = (links || []).filter(function (link) { return /^\/(?![\/\\])/.test(link.url); });
+    if (!safe.length) return;
+    const row = document.createElement("div");
+    row.className = "bubble-links";
+    safe.forEach(function (link) {
+      const anchor = document.createElement("a");
+      anchor.href = link.url;
+      anchor.textContent = link.label;
+      row.appendChild(anchor);
+    });
+    bubble.after(row);
+  }
+
+  function finish(bubble, text, kind, links) {
     bubble.textContent = text;
     bubble.className = "bubble " + kind;
+    addLinks(bubble, links);
     log.scrollTop = log.scrollHeight;
-    remember(text, kind);
+    remember(text, kind, links);
   }
 
   async function ask(question) {
+    const before = history();  // без новия въпрос – той се праща отделно
     addBubble(question, "user");
     remember(question, "user");
     const waiting = addBubble("Мисля…", "bot waiting");
@@ -74,12 +102,12 @@
       const response = await fetch(root.dataset.askUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
-        body: JSON.stringify({ question: question }),
+        body: JSON.stringify({ question: question, history: before }),
       });
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        finish(waiting, data.answer, "bot");
+        finish(waiting, data.answer, "bot", data.links);
       } else {
         // Ясно съобщение при грешка – напр. асистентът е изключен или е достигнат лимитът.
         finish(waiting, data.detail || "Възникна грешка. Опитайте отново.", "bot error");
@@ -92,7 +120,8 @@
     }
   }
 
-  state.items.forEach(function (item) { addBubble(item.text, item.kind); });
+  examples.hidden = state.items.length > 0;
+  state.items.forEach(function (item) { addLinks(addBubble(item.text, item.kind), item.links); });
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();

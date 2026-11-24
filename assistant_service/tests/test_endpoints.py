@@ -42,6 +42,27 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(response.json()["answer"])
         self.assertEqual(self.post("/diagnose", {**FAKE, "problems": []}).status_code, 422)
 
+    def test_draft_team_and_badge_are_limited(self):
+        body = {**FAKE, "idea": "Училищен подкаст", "guilds": GUILDS, "max_xp": 100}
+        draft = self.post("/mission-draft", {**body, "badges": [{"name": "Екипен дух"}], "team_limit": 10}).json()
+        self.assertEqual((draft["team_min"], draft["team_max"], draft["badge"]), (2, 10, "Екипен дух"))
+        self.assertEqual(self.post("/mission-draft", body).json()["badge"], "")
+
+    def test_history_reaches_the_model(self):
+        history = [{"role": "user", "text": "Кога има час Учител-3?"}, {"role": "assistant", "text": "В сряда."}]
+        body = {**FAKE, "question": "А в четвъртък?", "history": history}
+        seen = []
+        with patch("providers.fake.FakeProvider.choose_tool", side_effect=lambda s, u, t: seen.append(u) or "Добре."), \
+                patch("providers.fake.FakeProvider.text", side_effect=lambda s, u: seen.append(u) or "Добре."):
+            self.post("/query/plan", {**body, "tools": TOOLS})
+            self.post("/query/answer", {**body, "tool": "x", "data": {}})
+        self.assertEqual(len(seen), 2)
+        for text in seen:
+            self.assertIn("Учител-3", text)
+            self.assertIn("А в четвъртък?", text)
+        bad = {**body, "history": [{"role": "system", "text": "x"}], "tools": TOOLS}
+        self.assertEqual(self.post("/query/plan", bad).status_code, 422)
+
     def test_draft_is_valid_and_uses_known_guild(self):
         response = self.post("/mission-draft", {**FAKE, "idea": "Помощ в библиотеката",
                                                 "guilds": GUILDS, "max_xp": 100})

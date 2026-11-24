@@ -6,12 +6,16 @@
 (timetable.queries.run_report проверява ролята) и чак тогава моделът
 оформя отговора от върнатите данни.
 """
+from django.urls import reverse
 from django.utils import timezone
 
 from economy.services import student_stats
 from missions.models import Claim
 from missions.services import missions_for_student
 from timetable import queries
+
+from . import site_tools
+from .site_tools import Link, ToolResult
 
 
 def _schema(**properties):
@@ -62,6 +66,48 @@ TOOLS = {
         "for_students": True,
         "only_students": True,
     },
+    # ---------- За самия сайт (site_tools.py) ----------
+    "open_missions": {
+        "description": "Активните мисии, които питащият ученик още не е заявил: заглавие, гилдия, XP, срок, отбор и "
+                       "специална награда. За „коя мисия да избера“ и „има ли отборни мисии“.",
+        "parameters": _schema(guild="име на гилдия само ако потребителят сам я назове в този въпрос, иначе празно",
+                              kind="„отборни“, „индивидуални“ или празно за всички"),
+        "for_students": True, "only_students": True, "run": site_tools.open_missions,
+    },
+    "my_claims": {
+        "description": "Заявките на питащия ученик и дали са потвърдени, отказани или чакат.",
+        "parameters": _schema(), "for_students": True, "only_students": True, "run": site_tools.my_claims,
+    },
+    "shop": {
+        "description": "Магазинът: привилегии, награди от партньори, титли и рамки, с цена, бройки и ниво, и какво може "
+                       "да купи питащият ученик сега.",
+        "parameters": _schema(), "for_students": True, "only_students": True, "run": site_tools.shop,
+    },
+    "my_badges": {
+        "description": "Значките на питащия ученик и до кои е най-близо.",
+        "parameters": _schema(), "for_students": True, "only_students": True, "run": site_tools.my_badges,
+    },
+    "ranking": {
+        "description": "Класацията на гилдиите и класовете и мястото на питащия ученик.",
+        "parameters": _schema(), "for_students": True, "run": site_tools.ranking,
+    },
+    "game_rules": {
+        "description": "Правилата на играта: как се печелят XP и монети, седмичен лимит, нива, карти, заявки, отбори, "
+                       "файлове, серии, псевдоними. За всеки въпрос „как работи“.",
+        "parameters": _schema(), "for_students": True, "run": site_tools.game_rules,
+    },
+    "my_missions": {
+        "description": "Мисиите на питащия учител (и тези, на които е заместник): срок, чакащи и потвърдени заявки.",
+        "parameters": _schema(), "for_students": False, "run": site_tools.my_missions,
+    },
+    "pending_reviews": {
+        "description": "Колко заявки чакат проверка от питащия учител, по мисии и от колко дни.",
+        "parameters": _schema(), "for_students": False, "run": site_tools.pending_reviews,
+    },
+    "to_hand_over": {
+        "description": "Колко купени привилегии и награди от партньори чакат да бъдат предадени на учениците.",
+        "parameters": _schema(), "for_students": False, "run": site_tools.to_hand_over,
+    },
 }
 
 
@@ -78,13 +124,16 @@ def tools_for(user):
 
 
 def run_tool(user, name, arguments):
-    """Изпълнява избраната справка с правата на потребителя."""
+    """Изпълнява избраната справка с правата на потребителя. Връща ToolResult: данни и връзки."""
     allowed = {tool["name"] for tool in tools_for(user)}
     if name not in allowed:
         raise queries.QueryError("Тази справка не е достъпна за вашата роля.")
     if name == "my_progress":
-        return my_progress(user)
-    return queries.run_report(user, name, arguments)
+        return ToolResult(my_progress(user), [Link("Към мисиите", reverse("mission_list"))])
+    if "run" in TOOLS[name]:
+        return TOOLS[name]["run"](user, arguments)
+    links = [] if user.is_student else [Link("Всички справки", reverse("reports"))]
+    return ToolResult(queries.run_report(user, name, arguments), links)
 
 
 def my_progress(student):
