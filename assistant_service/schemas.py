@@ -85,6 +85,7 @@ class ToolDefinition(BaseModel):
 
 class QueryContext(BaseModel):
     today: str = ""          # напр. „вторник“
+    now: str = ""            # напр. „вторник, 24 ноември 2026 г., 14:05“
     now_period: str = ""     # текущ учебен час или празно
     role: str = ""           # ученик / учител / администратор
 

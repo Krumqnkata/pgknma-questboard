@@ -48,6 +48,14 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual((draft["team_min"], draft["team_max"], draft["badge"]), (2, 10, "Екипен дух"))
         self.assertEqual(self.post("/mission-draft", body).json()["badge"], "")
 
+    def test_date_and_role_reach_the_model(self):
+        seen = []
+        with patch("providers.fake.FakeProvider.choose_tool", side_effect=lambda s, u, t: seen.append(s) or "Добре."):
+            self.post("/query/plan", {**FAKE, "question": "Коя година е?", "tools": TOOLS,
+                                      "context": {"now": "вторник, 24 ноември 2026 г., 14:05", "role": "Учител"}})
+        self.assertIn("24 ноември 2026", seen[0])
+        self.assertIn("Учител", seen[0])
+
     def test_history_reaches_the_model(self):
         history = [{"role": "user", "text": "Кога има час Учител-3?"}, {"role": "assistant", "text": "В сряда."}]
         body = {**FAKE, "question": "А в четвъртък?", "history": history}

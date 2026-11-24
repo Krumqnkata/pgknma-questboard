@@ -132,7 +132,8 @@ def with_history(request, text):
 
 def plan_query(request: PlanRequest) -> PlanResponse:
     context = request.context
-    system = prompts.QUERY_PLAN.format(today=context.today or "неизвестно",
+    system = prompts.QUERY_PLAN.format(today=context.today or "неизвестно", now=context.now or "неизвестно",
+                                       role=context.role or "неизвестна",
                                        now_period=context.now_period or "няма учебен час")
     allowed = {tool.name for tool in request.tools}
 

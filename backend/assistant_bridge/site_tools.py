@@ -67,6 +67,7 @@ def open_missions(user, arguments):
     elif kind.startswith("индив"):
         missions = missions.filter(is_group=False)
     guild = str(arguments.get("guild") or "").strip()
+    guild = "" if guild.lower() in ("всички", "няма", "празно") else guild
     in_guild = missions.filter(guild__name=guild) if guild else missions
     # В тази гилдия няма такива – показваме останалите, вместо да кажем „няма“.
     note = f"в гилдия „{guild}“ няма такива; това са мисиите от другите гилдии" if guild and not in_guild else None

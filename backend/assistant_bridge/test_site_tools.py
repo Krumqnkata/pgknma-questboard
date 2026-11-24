@@ -3,13 +3,14 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.testing import make_mission, make_student, make_teacher
 from badges.models import Badge
 from economy.models import CoinTransaction, Privilege, Sponsor
 from missions.services import submit_claim
 from timetable.importer import import_timetable
-from timetable.queries import QueryError
+from timetable.queries import QueryError, parse_day, parse_period
 
 from .services import ask, draft_mission
 from .site_tools import Link, visible_links
@@ -151,3 +152,44 @@ class TeamDraftTests(TestCase):
     def test_unknown_badge_is_ignored(self):
         with patch("assistant_bridge.client.call", return_value={**self.DRAFT, "badge": "Измислена"}):
             self.assertIsNone(draft_mission(make_teacher(), "Училищен подкаст")["reward_badge"])
+
+
+class ForgivingArgumentsTests(TestCase):
+    """Моделът и хората пишат деня и часа по различен начин."""
+
+    def setUp(self):
+        import_timetable(SAMPLE.read_text(encoding="utf-8"))
+        self.teacher = make_teacher()
+
+    def test_days(self):
+        for text in ("сряда", "Сряда", "в сряда", "„сряда“", "среда", "ср", "Wednesday"):
+            self.assertEqual(parse_day(text), 2, text)
+        for text in ("четвъртък", "Четвъртак", "чт"):
+            self.assertEqual(parse_day(text), 3, text)
+        with self.assertRaisesMessage(QueryError, "делничните дни"):
+            parse_day("събота")
+        with self.assertRaisesMessage(QueryError, "Не разбрах деня"):
+            parse_day("тралала")
+
+    def test_periods(self):
+        for value in (3, "3", "3-ти", "3 час", "трети", "Третия час"):
+            self.assertEqual(parse_period(value), 3, value)
+        with self.assertRaises(QueryError):
+            parse_period("обяд")
+
+    def test_misspelled_day_still_gives_the_rooms(self):
+        good = run_tool(self.teacher, "free_rooms", {"day": "сряда", "period": "3"}).data
+        self.assertEqual(run_tool(self.teacher, "free_rooms", {"day": "среда", "period": "трети"}).data, good)
+
+    def test_day_is_a_closed_list_for_the_model(self):
+        tools = {tool["name"]: tool["parameters"]["properties"] for tool in tools_for(self.teacher)}
+        self.assertIn("сряда", tools["free_rooms"]["day"]["enum"])
+        self.assertNotIn("", tools["free_rooms"]["day"]["enum"])  # празна стойност не се приема от всички модели
+        week = run_tool(self.teacher, "teacher_schedule", {"teacher": "Маринова", "day": "цялата седмица"}).data
+        self.assertIsNone(week["day"])
+        self.assertGreater(len({lesson["day"] for lesson in week["lessons"]}), 1)
+
+    def test_the_model_knows_the_date(self):
+        with patch("assistant_bridge.client.call", return_value={"tool": None, "answer": "Здравей"}) as call:
+            ask(self.teacher, "Коя година е?")
+        self.assertIn(str(timezone.localdate().year), call.call_args.args[1]["context"]["now"])

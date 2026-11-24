@@ -22,20 +22,25 @@ def _schema(**properties):
     """Схема на параметрите. Всички са задължителни (строг режим); празен текст означава „по подразбиране“."""
     return {
         "type": "object",
-        "properties": {name: {"type": "string", "description": text} for name, text in properties.items()},
+        "properties": {name: {"type": "string", **(value if isinstance(value, dict) else {"description": value})}
+                       for name, value in properties.items()},
         "required": list(properties),
         "additionalProperties": False,
     }
 
 
-DAY = "ден: понеделник … петък, „днес“, „утре“ или празно за днес"
+# Денят е затворен списък, за да не може моделът да го напише грешно (напр. на руски – „среда“).
+DAYS = ["днес", "утре", *queries.DAY_NAMES.values()]
+WHOLE_WEEK = "цялата седмица"
+ALL = "всички"
+DAY = {"description": "ден от седмицата; „днес“, ако не е посочен", "enum": DAYS}
 PERIOD = "номер на учебния час (напр. „3“) или празно за текущия час"
 TEACHER = "кодът на учителя, напр. „Учител-3“"
 
 TOOLS = {
     "teacher_schedule": {
         "description": "Кога има часове даден учител – за един ден или за цялата седмица (Ф17).",
-        "parameters": _schema(teacher=TEACHER, day="ден или празно за цялата седмица"),
+        "parameters": _schema(teacher=TEACHER, day={"description": "ден; „цялата седмица“, ако не е посочен", "enum": [WHOLE_WEEK, *DAYS]}),
         "for_students": False,
     },
     "teacher_free_periods": {
@@ -71,7 +76,7 @@ TOOLS = {
         "description": "Активните мисии, които питащият ученик още не е заявил: заглавие, гилдия, XP, срок, отбор и "
                        "специална награда. За „коя мисия да избера“ и „има ли отборни мисии“.",
         "parameters": _schema(guild="име на гилдия само ако потребителят сам я назове в този въпрос, иначе празно",
-                              kind="„отборни“, „индивидуални“ или празно за всички"),
+                              kind={"description": "вид на мисиите", "enum": [ALL, "отборни", "индивидуални"]}),
         "for_students": True, "only_students": True, "run": site_tools.open_missions,
     },
     "my_claims": {
@@ -128,6 +133,7 @@ def run_tool(user, name, arguments):
     allowed = {tool["name"] for tool in tools_for(user)}
     if name not in allowed:
         raise queries.QueryError("Тази справка не е достъпна за вашата роля.")
+    arguments = {key: "" if value == WHOLE_WEEK else value for key, value in arguments.items()}
     if name == "my_progress":
         return ToolResult(my_progress(user), [Link("Към мисиите", reverse("mission_list"))])
     if "run" in TOOLS[name]:

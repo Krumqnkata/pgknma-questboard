@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass, field
 
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from accounts.models import Guild
 from badges.models import Badge
@@ -187,6 +188,7 @@ def ask(user, question, history=()):
         "tools": tools_for(user),
         "context": {
             "today": queries.DAY_NAMES.get(current["day"], "почивен ден"),
+            "now": date_format(timezone.localtime(), "l, j F Y г., H:i").lower(),
             "now_period": str(current["period"] or ""),
             "role": user.get_role_display(),
         },

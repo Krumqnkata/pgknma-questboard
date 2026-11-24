@@ -4,6 +4,7 @@
 Функциите връщат обикновени речници. Ползват ги и страницата „Справки“, и API-то,
 и асистентът. Правата се проверяват в ensure_allowed() – винаги на сървъра.
 """
+import re
 from datetime import timedelta
 
 from django.utils import timezone
@@ -14,6 +15,17 @@ from .models import Lesson, Room
 
 DAY_NAMES = dict(Lesson.Day.choices)            # 0 → „понеделник“
 DAY_NUMBERS = {name: number for number, name in DAY_NAMES.items()}
+
+# Други начини да се напише денят. Моделът понякога пише на руски („среда“), а хората – съкратено.
+DAY_ALIASES = {
+    "пон": 0, "пн": 0, "понедельник": 0, "monday": 0,
+    "вт": 1, "вто": 1, "tuesday": 1,
+    "ср": 2, "сря": 2, "среда": 2, "wednesday": 2,
+    "четв": 3, "чт": 3, "четвъртак": 3, "четвертък": 3, "четверг": 3, "thursday": 3,
+    "пет": 4, "пт": 4, "петак": 4, "пятница": 4, "friday": 4,
+}
+WEEKEND = {"събота", "неделя", "суббота", "воскресенье", "saturday", "sunday"}
+PERIOD_WORDS = ["първи", "втори", "трети", "четвърти", "пети", "шести", "седми", "осми"]
 
 # Справките и кой може да ги ползва
 TEACHER_REPORTS = {"teacher_schedule", "teacher_free_periods", "substitutes", "free_rooms"}
@@ -54,23 +66,42 @@ def now_slot(now=None):
 
 
 def parse_day(value, now=None):
-    """Приема „понеделник“, „днес“, „утре“ или число 0–4. Празно означава днес."""
+    """Приема „понеделник“, „в сряда“, „днес“, „утре“ или число 0–4. Празно означава днес."""
     if value in (None, ""):
         value = "днес"
     if isinstance(value, int) or str(value).isdigit():
         number = int(value)
     else:
-        text = str(value).strip().lower()
+        text = str(value).strip(" .,!?\"„“'").lower()
+        text = text.removeprefix("във ").removeprefix("в ").strip()
         today = timezone.localtime(now or timezone.now())
         if text in ("днес", "сега"):
             number = today.weekday()
         elif text == "утре":
             number = (today + timedelta(days=1)).weekday()
+        elif text == "вдругиден":
+            number = (today + timedelta(days=2)).weekday()
+        elif text in WEEKEND:
+            number = None
         else:
-            number = DAY_NUMBERS.get(text)
+            number = DAY_NUMBERS.get(text, DAY_ALIASES.get(text))
+            if number is None:
+                raise QueryError(f"Не разбрах деня „{str(value)[:30]}“. Напишете например „сряда“ или „утре“.")
     if number not in DAY_NAMES:
         raise QueryError("Разписанието е само за делничните дни (понеделник – петък).")
     return number
+
+
+def parse_period(value):
+    """Приема 3, „3“, „3-ти“, „3 час“ или „трети“."""
+    text = str(value).strip().lower()
+    digits = re.search(r"\d+", text)
+    if digits:
+        return int(digits.group())
+    for number, word in enumerate(PERIOD_WORDS, start=1):
+        if text.startswith(word):
+            return number
+    raise QueryError(f"Не разбрах часа „{text[:30]}“. Напишете номера му, например „3 час“.")
 
 
 def teacher_names():
@@ -131,7 +162,7 @@ def _slot(day, period, now):
         period = current["period"] if current["day"] == day else None
         if period is None:
             raise QueryError("В момента няма учебен час. Посочете кой час ви интересува.")
-    return day, int(period)
+    return day, parse_period(period)
 
 
 # ---------- Ф17: учители ----------
@@ -180,7 +211,7 @@ def class_schedule(class_name, day=None, period=None, now=None):
     day = parse_day(day, now)
     filters = {"school_class__name": name, "day": day}
     if period not in (None, ""):
-        filters["period"] = int(period)
+        filters["period"] = parse_period(period)
     return {"class": name, "day": DAY_NAMES[day], "period": filters.get("period"),
             "lessons": [_lesson(x) for x in _lessons(**filters)]}
 
