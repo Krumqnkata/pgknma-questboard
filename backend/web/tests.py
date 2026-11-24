@@ -20,7 +20,7 @@ class MissionPageTests(TestCase):
     def mission_form_data(self, **fields):
         data = {
             "title": "Нова мисия", "description": "Описание", "criteria": "Критерий",
-            "guild": Guild.objects.get(name="Explorers").pk, "xp": 40,
+            "guild": Guild.objects.get(name="Изследователи").pk, "xp": 40,
             "deadline": (timezone.localtime() + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M"),
             "hints_allowed": "on",
         }

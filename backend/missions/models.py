@@ -15,6 +15,8 @@ from django.utils import timezone
 
 from accounts.models import Guild
 
+TEAM_LIMIT = 10  # най-многото ученици в отбор
+
 
 class Mission(models.Model):
     title = models.CharField("заглавие", max_length=200)
@@ -28,6 +30,35 @@ class Mission(models.Model):
         help_text="Може ли ученикът да ползва Hint Token за тази мисия.",
     )
     is_active = models.BooleanField("активна", default=True)
+
+    # --- Отборна мисия ---
+    is_group = models.BooleanField(
+        "отборна мисия", default=False,
+        help_text="Един ученик (капитанът) подава заявката и посочва съотборниците си. "
+                  "При потвърждение всеки от отбора получава пълната награда.",
+    )
+    team_min = models.PositiveSmallIntegerField("най-малко ученици в отбор", default=2)
+    team_max = models.PositiveSmallIntegerField("най-много ученици в отбор", default=4)
+
+    # --- Награди само за тази мисия (освен XP) ---
+    reward_badge = models.ForeignKey(
+        "badges.Badge", verbose_name="значка за изпълнение", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="missions",
+        help_text="Значка с правило „Дава се от мисия“.",
+    )
+    reward_item = models.ForeignKey(
+        "economy.Privilege", verbose_name="предмет за изпълнение", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="missions",
+        help_text="Предмет, който се печели само от мисия, или награда от спонсор.",
+    )
+
+    # --- Кой проверява ---
+    reviewers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, verbose_name="заместници при проверката", blank=True,
+        related_name="missions_to_review", limit_choices_to={"role": "teacher", "is_active": True},
+        help_text="Учители, които също могат да потвърждават и отказват заявките. "
+                  "Ако не изберете никого, проверявате само вие.",
+    )
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, verbose_name="създадена от",
@@ -68,8 +99,22 @@ class Mission(models.Model):
         if self._state.adding and self.deadline and self.deadline <= timezone.now():
             errors["deadline"] = "Крайният срок трябва да е в бъдещето."
 
+        if self.is_group:
+            if not self.team_min or self.team_min < 2:
+                errors["team_min"] = "В отбор има поне 2 ученици."
+            elif not self.team_max or self.team_max < self.team_min:
+                errors["team_max"] = "Най-големият отбор не може да е по-малък от най-малкия."
+            elif self.team_max > TEAM_LIMIT:
+                errors["team_max"] = f"Най-много {TEAM_LIMIT} ученици в отбор."
+
         if errors:
             raise ValidationError(errors)
+
+    def can_be_reviewed_by(self, user):
+        """Авторът на мисията, избраните от него заместници и администраторът."""
+        if user.is_admin_role:
+            return True
+        return user.is_teacher and (self.created_by_id == user.pk or self.reviewers.filter(pk=user.pk).exists())
 
 
 class Claim(models.Model):
@@ -84,6 +129,13 @@ class Claim(models.Model):
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL, verbose_name="ученик",
         on_delete=models.PROTECT, related_name="claims",
+    )
+    # Отборна мисия: всеки от отбора има своя заявка, а тези на съотборниците сочат към
+    # заявката на капитана. Така XP, значките, серията и правилото „една заявка на мисия“
+    # важат за всеки поотделно. Решението се взима веднъж – по заявката на капитана.
+    captain = models.ForeignKey(
+        "self", verbose_name="заявка на капитана", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="team",
     )
     evidence = models.TextField("доказателство", help_text="Кратък текст или връзка.")
     status = models.CharField("състояние", max_length=10, choices=Status.choices, default=Status.PENDING)
@@ -111,22 +163,38 @@ class Claim(models.Model):
         return f"{self.student} → {self.mission}"
 
 
-def evidence_path(instance, filename):
+def _random_path(folder, instance):
     """Случайно име: никой не може да познае адреса на чужд файл, а и името не издава нищо."""
-    extension = ".pdf" if instance.kind == EvidenceFile.Kind.PDF else ".jpg"
-    return f"evidence/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{extension}"
+    extension = "jpg" if instance.kind == FileKind.IMAGE else instance.kind
+    return f"{folder}/{timezone.now():%Y/%m}/{uuid.uuid4().hex}.{extension}"
+
+
+def evidence_path(instance, filename):
+    return _random_path("evidence", instance)
+
+
+def mission_file_path(instance, filename):
+    return _random_path("mission_files", instance)
+
+
+class FileKind(models.TextChoices):
+    """Какво може да се качи. Проверява се по съдържанието на файла (missions/evidence.py)."""
+
+    IMAGE = "image", "Снимка"
+    PDF = "pdf", "PDF документ"
+    DOCX = "docx", "Word документ"
+    XLSX = "xlsx", "Excel таблица"
+    PPTX = "pptx", "PowerPoint презентация"
 
 
 class EvidenceFile(models.Model):
     """
-    Снимка или PDF към заявка. Файловете са в media/evidence/ и НЕ са публични:
+    Снимка или документ към заявка. Файловете са в media/evidence/ и НЕ са публични:
     показват се само през web/views/evidence.py, след проверка кой ги гледа
     (ученикът, учителят на мисията или администраторът).
     """
 
-    class Kind(models.TextChoices):
-        IMAGE = "image", "Снимка"
-        PDF = "pdf", "PDF документ"
+    Kind = FileKind
 
     claim = models.ForeignKey(Claim, verbose_name="заявка", on_delete=models.CASCADE, related_name="files")
     file = models.FileField("файл", upload_to=evidence_path)
@@ -149,3 +217,32 @@ class EvidenceFile(models.Model):
     @property
     def is_image(self):
         return self.kind == self.Kind.IMAGE
+
+
+class MissionFile(models.Model):
+    """
+    Файл от учителя към мисията: указания, образец, плакат. Не е публичен –
+    показва се през web/views/evidence.py на всеки, който вижда самата мисия.
+    """
+
+    mission = models.ForeignKey(Mission, verbose_name="мисия", on_delete=models.CASCADE, related_name="files")
+    file = models.FileField("файл", upload_to=mission_file_path)
+    kind = models.CharField("вид", max_length=10, choices=FileKind.choices)
+    original_name = models.CharField("име при качване", max_length=150)
+    size = models.PositiveIntegerField("размер (байта)")
+    uploaded_at = models.DateTimeField("качен на", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "файл към мисия"
+        verbose_name_plural = "файлове към мисии"
+        ordering = ["uploaded_at", "id"]
+
+    def __str__(self):
+        return self.original_name
+
+    def get_absolute_url(self):
+        return reverse("mission_file", args=[self.pk])
+
+    @property
+    def is_image(self):
+        return self.kind == FileKind.IMAGE

@@ -25,7 +25,7 @@ from economy.services import (
     reject_claim, student_stats, unused_purchases,
 )
 from missions.models import Claim, Mission
-from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
+from missions.services import GameRuleError, missions_for_student, missions_for_teacher, missions_reviewed_by, parse_nicknames, submit_claim
 from notifications.services import mark_all_read, recent_for, unread_count
 from timetable import queries
 
@@ -71,7 +71,7 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
             return Mission.objects.none()
         user = self.request.user
         if user.is_teacher:
-            return missions_for_teacher(user)
+            return missions_reviewed_by(user) if self.action in ("list", "retrieve") else missions_for_teacher(user)
         if user.is_student:
             return missions_for_student()
         return Mission.objects.select_related("guild")  # администратор
@@ -89,10 +89,12 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
     def claim(self, request, pk=None):
         """Ученикът заявява изпълнение. Срокът се проверява в submit_claim."""
         mission = get_object_or_404(Mission, pk=pk, is_active=True)
-        data = ClaimCreateSerializer(data={"evidence": request.data.get("evidence", "")})
+        data = ClaimCreateSerializer(data={"evidence": request.data.get("evidence", ""),
+                                           "teammates": request.data.get("teammates", "")})
         data.is_valid(raise_exception=True)
         try:
-            claim = submit_claim(request.user, mission, data.validated_data["evidence"], request.FILES.getlist("files"))
+            claim = submit_claim(request.user, mission, data.validated_data["evidence"], request.FILES.getlist("files"),
+                                 parse_nicknames(data.validated_data["teammates"]))
         except GameRuleError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(ClaimSerializer(claim).data, status=status.HTTP_201_CREATED)
@@ -129,7 +131,7 @@ class ClaimViewSet(viewsets.ReadOnlyModelViewSet):
         if user.is_student:
             return claims.filter(student=user)
         if user.is_teacher:
-            return claims.filter(mission__created_by=user)
+            return claims.filter(mission__in=missions_reviewed_by(user))
         return claims  # администратор
 
     def _review(self, request, review_function):

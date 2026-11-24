@@ -1,22 +1,25 @@
 {% load questboard %}
 {# Карта на мисия. Трябват: mission (с done_count), claim (или None), max_xp, new_since, soon. #}
-{# Горна лента: икона и име на гилдията с номера на мисията („BUILDERS // #01“) и XP наградата. #}
-{% with level=mission.xp|difficulty:max_xp slug=mission.guild|guild_slug %}
+{# Горна лента: икона и име на гилдията с номера на мисията („ТЕХНИЧАРИ #01“) и XP наградата. #}
+{# Картата е бронзова, сребърна или златна според трудността (XP спрямо най-многото позволено). #}
+{% with level=mission.xp|difficulty:max_xp %}
 <a class="quest-card tier-{{ level.slug }} {{ mission.guild|guild_class }}" href="{% url 'mission_detail' mission.pk %}">
   <div class="card-bar">
     <span class="card-id">
-      {% if slug == "builders" %}{% badge_icon "wrench" %}{% elif slug == "explorers" %}{% badge_icon "compass" %}{% elif slug == "guardians" %}{% badge_icon "shield" %}{% else %}{% badge_icon "users" %}{% endif %}
-      {{ mission.guild }} // #{{ mission.pk|stringformat:"02d" }}
+      {% guild_icon mission.guild %}
+      {{ mission.guild }} #{{ mission.pk|stringformat:"02d" }}
     </span>
     <span class="card-xp">+{{ mission.xp }} XP</span>
   </div>
   {% if claim.status == "approved" %}<span class="stamp" aria-hidden="true">Изпълнена</span>{% endif %}
   <div class="card-body">
     <div class="mission-tags">
-      <span class="tier" title="Трудност според XP">
+      <span class="tier" title="{{ level.name }} мисия – {{ level.card }}">
         <span class="pips" aria-hidden="true">{% for _ in "123"|make_list %}<i{% if forloop.counter <= level.pips %} class="on"{% endif %}></i>{% endfor %}</span>
-        {{ level.name }}
+        {{ level.rarity }} · {{ level.name|lower }}
       </span>
+      {% if mission.is_group %}<span class="tag">Отборна · до {{ mission.team_max }}</span>{% endif %}
+      {% if mission.reward_badge_id or mission.reward_item_id %}<span class="tag tag-reward">Специална награда</span>{% endif %}
       {% if mission.created_at >= new_since and not claim %}<span class="tag tag-new">Нова</span>{% endif %}
       {% if mission.deadline <= soon %}<span class="tag tag-soon">{{ mission.deadline|time_left }}</span>{% endif %}
     </div>

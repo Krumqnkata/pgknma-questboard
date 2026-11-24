@@ -7,6 +7,9 @@ from django.urls import reverse
 
 from .models import Badge, StudentBadge
 
+# Тези значки не се печелят с праг: дава ги учител или мисия.
+GIVEN_RULES = [Badge.Rule.MANUAL, Badge.Rule.MISSION]
+
 
 @dataclass
 class Progress:
@@ -51,7 +54,7 @@ def progress_for(student):
         by_guild=by_guild,
         xp=xp,
         level=level.number if level else 0,
-        purchases=student.purchases.count(),
+        purchases=student.purchases.filter(claim__isnull=True).count(),  # спечеленото от мисия не е покупка
         streak=streak_weeks(student),
     )
 
@@ -64,7 +67,8 @@ def award_badges(student):
     if not student.is_student:
         return []
     owned = set(student.badges.values_list("badge_id", flat=True))
-    candidates = Badge.objects.filter(is_active=True).exclude(pk__in=owned).exclude(rule=Badge.Rule.MANUAL)
+    candidates = Badge.objects.filter(is_active=True).exclude(pk__in=owned).exclude(
+        rule__in=GIVEN_RULES)
     if not candidates:
         return []
 
@@ -99,7 +103,7 @@ def badge_cards(student):
     progress = progress_for(student)
     cards = [BadgeCard(badge, badge.pk in owned, min(progress.value_for(badge), badge.threshold))
              for badge in Badge.objects.filter(is_active=True).select_related("guild")
-             if badge.rule != Badge.Rule.MANUAL or badge.pk in owned]  # ръчните – само ако са дадени
+             if badge.rule not in GIVEN_RULES or badge.pk in owned]  # от учител и от мисия – само ако са получени
     return sorted(cards, key=lambda card: not card.earned)
 
 

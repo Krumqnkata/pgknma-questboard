@@ -46,7 +46,7 @@ class AvatarTests(TestCase):
 
     def test_html_has_guild_color_and_frame(self):
         html = avatar_html(self.student, 40, "gold")
-        self.assertIn("guild-builders", html)
+        self.assertIn("guild-techies", html)
         self.assertIn("frame-gold", html)
         self.assertIn("--avatar-size:40px", html)
 
@@ -59,7 +59,7 @@ class AvatarTests(TestCase):
 
 class GuildAccentTests(TestCase):
     def test_student_pages_use_guild_color(self):
-        self.client.force_login(make_student(guild_name="Explorers"))
+        self.client.force_login(make_student(guild_name="Изследователи"))
         self.assertContains(self.client.get(reverse("home")), '<html lang="bg" class="accent-explorers">')
 
     def test_teacher_pages_keep_school_red(self):
@@ -73,6 +73,10 @@ class CosmeticShopTests(TestCase):
         give_coins(self.student, 20)
         self.title = Privilege.objects.get(code="title_legend")
         self.frame = Privilege.objects.get(code="frame_gold")
+        # Отключването по ниво се проверява в test_teams_and_rewards.py
+        Privilege.objects.update(min_level=1)
+        self.title.refresh_from_db()
+        self.frame.refresh_from_db()
 
     def test_buying_a_title_wears_it_and_needs_no_teacher(self):
         purchase = buy_privilege(self.student, self.title)

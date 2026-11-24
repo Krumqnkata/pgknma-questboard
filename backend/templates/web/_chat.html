@@ -1,0 +1,21 @@
+{# Разговорът с асистента – в прозорчето на всяка страница и на страницата „Асистент“ (static/js/assistant-chat.js). #}
+<div class="chat-log" aria-live="polite" data-chat-log>
+  {# Текстът е на един ред, защото балончетата пазят новите редове (white-space: pre-wrap). #}
+  <div class="bubble bot">Здравей! Напиши въпрос или избери някой от примерите отдолу.</div>
+</div>
+
+<div class="chat-examples" data-chat-examples>
+  {% if user.is_student %}
+    <button type="button">Какъв час имаме сега?</button>
+    <button type="button">Какво ми трябва за следващото ниво?</button>
+  {% else %}
+    <button type="button">Кои кабинети са свободни 3 час в сряда?</button>
+    <button type="button">Къде е 11Б сега?</button>
+    <button type="button">Кой може да замести Маринова 2 час в понеделник?</button>
+  {% endif %}
+</div>
+
+<form class="chat-form" data-chat-form>
+  <input name="question" maxlength="500" autocomplete="off" placeholder="Напиши въпрос" aria-label="Въпрос" required>
+  <button type="submit">Изпрати</button>
+</form>

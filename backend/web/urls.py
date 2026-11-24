@@ -13,6 +13,7 @@ urlpatterns = [
     path("notifications/", views.notifications, name="notifications"),
     path("password/", views.QuestboardPasswordChangeView.as_view(), name="password_change"),
     path("school-logo/", views.school_logo, name="school_logo"),
+    path("sponsor-logo/<str:name>", views.sponsor_logo, name="sponsor_logo"),
     path("terms/", views.terms, name="terms"),
     path("favicon.ico", views.favicon, name="favicon"),
     path("manifest.webmanifest", views.manifest, name="manifest"),
@@ -25,6 +26,8 @@ urlpatterns = [
     path("missions/<int:pk>/", views.mission_detail, name="mission_detail"),
     path("missions/<int:pk>/edit/", views.mission_edit, name="mission_edit"),
     path("missions/<int:pk>/hint/", views.mission_hint, name="mission_hint"),
+    path("missions/<int:pk>/leave-team/", views.team_leave, name="team_leave"),
+    path("mission-files/<int:pk>/", views.mission_file, name="mission_file"),
     # Проверка на заявки (учител)
     path("review/", views.review_list, name="review_list"),
     path("claims/<int:pk>/review/", views.review_claim, name="review_claim"),

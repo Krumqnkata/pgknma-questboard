@@ -71,7 +71,7 @@ class EvidenceFileTests(TestCase):
 
     def test_fake_image_is_refused(self):
         fake = SimpleUploadedFile("virus.jpg", b"MZ\x90\x00 not an image", content_type="image/jpeg")
-        with self.assertRaisesMessage(GameRuleError, "не е снимка"):
+        with self.assertRaisesMessage(GameRuleError, "не може да се качи"):
             self.submit([fake])
         self.assertFalse(Claim.objects.exists())  # нищо не се записва, ако един файл е невалиден
 

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% load static %}
 {% block title %}{% if is_new %}Нова мисия{% else %}Редакция{% endif %} – Questboard{% endblock %}
 
 {% block content %}
@@ -12,7 +13,7 @@
 
 <div class="mission-layout">
   <section class="panel">
-    <form method="post" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate data-mission-form>
       {% csrf_token %}
       {% include "web/_form_fields.html" %}
       <div class="actions">
@@ -40,4 +41,9 @@
     </aside>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/file-picker.js' %}" defer></script>
+<script src="{% static 'js/mission-form.js' %}" defer></script>
 {% endblock %}

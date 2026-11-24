@@ -16,8 +16,8 @@ from pydantic import ValidationError
 import prompts
 from providers import ProviderError, ToolCall, get_provider
 from schemas import (
-    AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DraftRequest, DraftResponse, HintRequest,
-    HintResponse, MissionDraft, PlanRequest, PlanResponse,
+    AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DiagnoseRequest, DraftRequest, DraftResponse,
+    HintRequest, HintResponse, MissionDraft, PlanRequest, PlanResponse,
 )
 
 
@@ -132,6 +132,22 @@ def answer_query(request: AnswerRequest) -> AnswerResponse:
 
     def ask(provider):
         answer = provider.text(prompts.QUERY_ANSWER, user)
+        if not answer:
+            raise ProviderError("празен отговор")
+        return answer
+
+    answer, used = answer_with(request, ask)
+    return AnswerResponse(answer=answer, provider=used)
+
+
+# ---------- Проверка на системата ----------
+
+def explain_problems(request: DiagnoseRequest) -> AnswerResponse:
+    lines = [f"- {item.title}: {item.count}. {item.advice} "
+             + (f"Има бутон „{item.fix}“." if item.fix else "Поправя се ръчно.") for item in request.problems]
+
+    def ask(provider):
+        answer = provider.text(prompts.DIAGNOSE, "Намерени проблеми:\n" + "\n".join(lines))
         if not answer:
             raise ProviderError("празен отговор")
         return answer

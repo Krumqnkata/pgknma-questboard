@@ -13,7 +13,7 @@ def make_teacher(email="uchitel@example.com"):
     return User.objects.create_user(email, PASSWORD, role=User.Role.TEACHER, first_name="Учител")
 
 
-def make_student(email="uchenik@example.com", nickname="Феникс", guild_name="Builders"):
+def make_student(email="uchenik@example.com", nickname="Феникс", guild_name="Техничари"):
     school_class, _ = SchoolClass.objects.get_or_create(name="11А")
     return User.objects.create_user(
         email, PASSWORD, role=User.Role.STUDENT, nickname=nickname,
@@ -24,7 +24,7 @@ def make_student(email="uchenik@example.com", nickname="Феникс", guild_nam
 def make_mission(teacher, title="Мисия", xp=50, days=7, **fields):
     defaults = {
         "description": "Описание", "criteria": "Критерий",
-        "guild": Guild.objects.get(name="Builders"),
+        "guild": Guild.objects.get(name="Техничари"),
         "deadline": timezone.now() + timedelta(days=days),
     }
     defaults.update(fields)

@@ -28,8 +28,10 @@ class MissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mission
         fields = ["id", "title", "description", "criteria", "guild", "guild_name", "xp", "deadline",
-                  "hints_allowed", "is_active", "created_by", "created_at"]
-        read_only_fields = ["created_by", "created_at"]
+                  "hints_allowed", "is_active", "is_group", "team_min", "team_max", "reward_badge", "reward_item",
+                  "created_by", "created_at"]
+        # Наградите и заместниците се избират от страницата на мисията.
+        read_only_fields = ["reward_badge", "reward_item", "created_by", "created_at"]
 
     def validate(self, attrs):
         """Пуска същите правила като формите – Mission.clean()."""
@@ -57,10 +59,11 @@ class ClaimSerializer(serializers.ModelSerializer):
     mission_title = serializers.CharField(source="mission.title", read_only=True)
     student = serializers.StringRelatedField()
     files = EvidenceFileSerializer(many=True, read_only=True)
+    captain = serializers.PrimaryKeyRelatedField(read_only=True, help_text="Заявката на капитана при отборна мисия.")
 
     class Meta:
         model = Claim
-        fields = ["id", "mission", "mission_title", "student", "evidence", "files", "status",
+        fields = ["id", "mission", "mission_title", "student", "captain", "evidence", "files", "status",
                   "submitted_at", "reviewed_at", "review_comment"]
         read_only_fields = fields
 
@@ -70,7 +73,9 @@ class ClaimCreateSerializer(serializers.Serializer):
 
     evidence = serializers.CharField(max_length=EVIDENCE_MAX_LENGTH, required=False, allow_blank=True, default="")
     files = serializers.ListField(child=serializers.FileField(), required=False,
-                                  help_text="Снимки (JPG, PNG, WebP) или PDF.")
+                                  help_text="Снимки (JPG, PNG, WebP), PDF, Word, Excel или PowerPoint.")
+    teammates = serializers.CharField(max_length=400, required=False, allow_blank=True, default="",
+                                      help_text="При отборна мисия: псевдонимите, разделени със запетая.")
 
 
 class ReviewSerializer(serializers.Serializer):
@@ -91,9 +96,12 @@ class StatsSerializer(serializers.Serializer):
 
 
 class PrivilegeSerializer(serializers.ModelSerializer):
+    sponsor = serializers.StringRelatedField()
+    left = serializers.IntegerField(read_only=True, allow_null=True)
+
     class Meta:
         model = Privilege
-        fields = ["id", "code", "name", "description", "price"]
+        fields = ["id", "code", "kind", "name", "description", "price", "min_level", "sponsor", "left"]
 
 
 class PurchaseSerializer(serializers.ModelSerializer):

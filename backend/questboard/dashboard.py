@@ -14,9 +14,11 @@ from django.utils import timezone
 
 from accounts.models import Guild, User
 from assistant_bridge.models import AssistantLog
+from economy.awards import recent_awards
 from economy.models import GameSettings, XPTransaction
 from economy.services import week_start_for
 from missions.models import Claim
+from missions.services import claims_to_decide
 from web.models import BotKnock
 
 WEEKS_SHOWN = 8
@@ -59,7 +61,7 @@ class Kpi:
 
 def kpis(week_start):
     since = start_of(week_start)
-    pending = Claim.objects.filter(status=Claim.Status.PENDING).count()
+    pending = claims_to_decide().count()
     return [
         Kpi("Ученици", number(User.objects.filter(role=User.Role.STUDENT, is_active=True).count()),
             link=reverse("admin:accounts_user_changelist") + "?role__exact=student"),
@@ -144,5 +146,6 @@ def dashboard_callback(request, context):
         "guilds": xp_by_guild(),
         "missions": top_missions(),
         "assistant": assistant_usage(),
+        "awards": recent_awards(8),
     }
     return context

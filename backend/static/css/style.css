@@ -59,10 +59,17 @@
   --bad: #c62828;
 
   /* Цветове на гилдиите */
-  --builders: #d97706;
+  --helpers: #2563eb;
+  --artists: #db2777;
+  --techies: #d97706;
   --explorers: #10b981;
-  --guardians: #2563eb;
-  --citizens: #7c3aed;
+  --athletes: #dc2626;
+  --organizers: #7c3aed;
+
+  /* Метал на картите: бронз (лесна), сребро (средна), злато (трудна) */
+  --bronze: #c98a52; --bronze-2: #f0c39a;
+  --silver: #a3adb8; --silver-2: #e9edf1;
+  --goldcard: #e9b100; --goldcard-2: #ffe680;
 
   /* Цветове в панела с код */
   --code-key: #c62828;
@@ -95,9 +102,11 @@
   --ok: #34d399;
   --warn: #f5b700;
   --bad: #ff7b7f;
-  --builders: #f59e0b;
-  --guardians: #60a5fa;
-  --citizens: #a78bfa;
+  --helpers: #60a5fa;
+  --artists: #f472b6;
+  --techies: #f59e0b;
+  --athletes: #f87171;
+  --organizers: #a78bfa;
   --code-key: #ff7b7f;
   --code-string: #8ab4ff;
   --code-number: #34d399;
@@ -316,11 +325,13 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
 .chip::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 2px; border: 1.5px solid var(--stroke); background: var(--chip-color, var(--gold)); flex: none; }
 .chip.plain::before { display: none; }
 
-/* Гилдиите – по името (slugify): builders, guardians, explorers, citizens */
-.guild-builders { --chip-color: var(--builders); }
-.guild-guardians { --chip-color: var(--guardians); }
+/* Гилдиите – по кода им (Guild.code) */
+.guild-helpers { --chip-color: var(--helpers); }
+.guild-artists { --chip-color: var(--artists); }
+.guild-techies { --chip-color: var(--techies); }
 .guild-explorers { --chip-color: var(--explorers); }
-.guild-citizens { --chip-color: var(--citizens); }
+.guild-athletes { --chip-color: var(--athletes); }
+.guild-organizers { --chip-color: var(--organizers); }
 
 /* ---------- Числа (статистика) ---------- */
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
@@ -341,7 +352,7 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
 
 .columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
 .columns .panel + .panel { margin-top: 0; }
-@media (max-width: 760px) { .columns { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .columns { grid-template-columns: minmax(0, 1fr); } }
 
 .list-row { padding: 0.75rem 0; border-bottom: 1px solid var(--line); display: flex; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; }
 .list-row:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -365,8 +376,9 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
 .xp { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
 
 /* ---------- Мисиите като карти ----------
- * Горна лента: икона на гилдията, „BUILDERS // #01“ и XP наградата.
+ * Горна лента: икона на гилдията, „ТЕХНИЧАРИ #01“ и XP наградата.
  * Под нея – трудност и етикети, заглавие, описание и долен ред.
+ * Лентата е от метала на картата: бронз, сребро или злато според трудността.
  */
 .quest-card {
   position: relative;
@@ -389,6 +401,21 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
   text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .card-id svg { flex: none; width: 18px; height: 18px; color: var(--chip-color, var(--ink)); }
+.quest-card.tier-easy { --metal: var(--bronze); --metal-2: var(--bronze-2); }
+.quest-card.tier-medium { --metal: var(--silver); --metal-2: var(--silver-2); }
+.quest-card.tier-hard { --metal: var(--goldcard); --metal-2: var(--goldcard-2); box-shadow: 4px 4px 0 var(--metal); }
+.quest-card.tier-hard:hover { box-shadow: 6px 6px 0 var(--metal); }
+.quest-card[class*="tier-"] .card-bar {
+  background: linear-gradient(115deg, var(--metal-2) 0%, var(--metal) 55%, var(--metal-2) 100%);
+  color: #14151a;
+}
+.quest-card[class*="tier-"] .card-id svg {
+  padding: 2px; width: 22px; height: 22px; border: 1.5px solid #14151a; border-radius: 3px;
+  background: var(--surface); color: var(--chip-color, var(--ink));
+}
+.quest-card.tier-easy .tier { background: color-mix(in srgb, var(--bronze) 22%, var(--surface)); }
+.quest-card.tier-medium .tier { background: color-mix(in srgb, var(--silver) 28%, var(--surface)); }
+.quest-card.tier-hard .tier { background: color-mix(in srgb, var(--goldcard) 30%, var(--surface)); }
 .card-xp {
   flex: none; padding: 0.05rem 0.45rem;
   border: 2px solid var(--stroke); border-radius: var(--radius-sm);
@@ -485,7 +512,9 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--in
 
 .field { margin-bottom: 1.1rem; }
 .field-checkbox { display: flex; align-items: center; gap: 0.6rem; }
-.field-checkbox label { margin: 0; font-weight: 600; }
+.field-checkbox label { margin: 0; font-weight: 600; white-space: nowrap; }
+.field-checkbox input { flex: none; }
+@media (max-width: 700px) { .field-checkbox { flex-wrap: wrap; } }
 .help { display: block; color: var(--muted); font-size: 0.83rem; margin-top: 0.3rem; }
 .error { display: block; color: var(--bad); font-size: 0.83rem; margin-top: 0.3rem; font-weight: 600; }
 .has-error input, .has-error textarea, .has-error select { border-color: var(--bad); }
@@ -767,7 +796,7 @@ tr.mine td { background: var(--accent-soft); }
   .has-tabbar .header-tools { gap: 0.5rem; }
   .has-tabbar .site-footer { padding-bottom: 5rem; }
   .tabbar {
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    display: grid; grid-template-columns: repeat(4, 1fr);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     background: var(--panel); border-top: 2px solid var(--stroke);
     padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom));
@@ -817,3 +846,67 @@ tr.mine td { background: var(--accent-soft); }
 /* ---------- Долна лента ---------- */
 .site-footer { border-top: 2px solid var(--stroke); background: var(--surface); }
 .footer-inner { max-width: 1180px; margin: 0 auto; padding: 1.1rem 1.25rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: var(--muted); font-size: 0.85rem; }
+
+/* ---------- Отбори и специални награди ---------- */
+.tag-reward { background: #14151a; color: #f5b700; }
+.team-list { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.mt-1 { margin-top: 1rem; }
+.field[hidden] { display: none; }
+.field div[id^="id_"] > div label { display: flex; gap: 0.5rem; align-items: center; font-weight: 500; }
+
+/* ---------- Магазин: партньори и заключени предмети ---------- */
+.ticket-card { position: relative; border-style: dashed; }
+.ticket-sponsor { display: flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.8rem; font-weight: 700; }
+.ticket-sponsor img { width: 36px; height: 36px; object-fit: contain; border: 2px solid var(--stroke); border-radius: var(--radius-sm); background: #fff; }
+.ticket-left { margin: 0; font-family: var(--mono); font-size: 0.8rem; font-weight: 700; }
+.is-locked .cosmetic-preview { filter: grayscale(1); opacity: 0.55; }
+
+/* ---------- Последни награди ---------- */
+.award-list { list-style: none; margin: 0; padding: 0; }
+.award-list li { display: flex; align-items: center; gap: 0.7rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+.award-list li:last-child { border-bottom: 0; }
+.award-list li > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* ---------- Асистентът в прозорче ---------- */
+.assistant-fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 30;
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.95rem;
+  border: 2px solid var(--stroke); border-radius: var(--radius); background: var(--gold); color: #14151a;
+  box-shadow: 4px 4px 0 var(--shadow); font-family: var(--mono); font-weight: 700; text-decoration: none;
+}
+.assistant-fab:hover { color: #14151a; transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--shadow); }
+.assistant-fab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+/* Бутонът да не закрива връзките в края на страницата */
+.has-assistant .footer-inner { padding-bottom: 5rem; }
+.assistant-fab.is-open { visibility: hidden; }
+.assistant-popup {
+  position: fixed; right: 20px; bottom: 20px; z-index: 31;
+  display: flex; flex-direction: column; width: min(24rem, calc(100vw - 2rem)); height: min(34rem, calc(100dvh - 3rem));
+  border: 2px solid var(--stroke); border-radius: var(--radius); background: var(--surface); box-shadow: 6px 6px 0 var(--shadow);
+  overflow: hidden;
+}
+.assistant-popup[hidden], .cookie-note[hidden] { display: none; }
+.assistant-head { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.6rem 0.5rem 1rem; background: var(--panel); color: var(--on-panel); border-bottom: 2px solid var(--stroke); }
+.assistant-head button { padding: 0 0.6rem; border: 0; background: transparent; color: inherit; box-shadow: none; font-size: 1.5rem; line-height: 1.3; }
+.assistant-popup .chat-log { flex: 1; min-height: 0; max-height: none; padding: 1rem; }
+.assistant-popup .chat-examples { padding: 0 1rem 0.75rem; }
+.assistant-popup .chat-form { padding: 0.75rem 1rem; }
+.assistant-popup .chat-form input { min-width: 0; }
+
+/* ---------- Бисквитки ---------- */
+.cookie-note {
+  position: fixed; left: 20px; bottom: 20px; z-index: 29;
+  display: flex; align-items: center; gap: 1rem; max-width: min(36rem, calc(100vw - 15rem)); padding: 0.9rem 1.1rem;
+  border: 2px solid var(--stroke); border-radius: var(--radius); background: var(--surface); box-shadow: 4px 4px 0 var(--shadow);
+  font-size: 0.9rem;
+}
+.cookie-note p { margin: 0; }
+.cookie-note button { flex: none; }
+@media (max-width: 700px) {
+  .assistant-fab { right: 14px; bottom: 14px; padding: 0.7rem; }
+  .assistant-fab span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .has-tabbar .assistant-fab { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .assistant-popup { right: 8px; left: 8px; bottom: 8px; width: auto; height: min(34rem, calc(100dvh - 5rem)); }
+  .cookie-note { left: 10px; right: 10px; bottom: calc(144px + env(safe-area-inset-bottom)); max-width: none; }
+}
+@media print { .assistant-fab, .assistant-popup, .cookie-note { display: none; } }

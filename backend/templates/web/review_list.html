@@ -22,6 +22,12 @@
       {{ claim.student.get_full_name|default:claim.student.nickname }} ({{ claim.student.nickname }}), {{ claim.student.school_class }},
       подадена на {{ claim.submitted_at|date:"j F, H:i"|lower }}
     </p>
+    {% if claim.team.all %}
+      <p class="team-list"><span class="muted small">Отбор – решението важи за всички:</span>
+        {% for member in claim.team.all %}<span class="tag">{{ member.student.get_full_name|default:member.student.nickname }} ({{ member.student.nickname }}), {{ member.student.school_class }}</span>{% endfor %}</p>
+    {% elif claim.mission.is_group %}
+      <p class="muted small">Отборна мисия, но в отбора е останал само капитанът.</p>
+    {% endif %}
     {% if claim.evidence %}<p class="evidence pre">{{ claim.evidence|urlize }}</p>{% endif %}
     {% include "web/_evidence_files.html" %}
     <p class="small"><strong>Критерий:</strong> {{ claim.mission.criteria }}</p>
@@ -30,7 +36,7 @@
 {% empty %}
   <section class="panel">
     <h2>Няма заявки за проверка</h2>
-    <p class="muted">Когато ученик заяви изпълнение на ваша мисия, ще я видите тук.</p>
+    <p class="muted">Когато ученик заяви изпълнение на ваша мисия или на мисия, на която сте заместник, ще я видите тук.</p>
     <a class="btn btn-outline" href="{% url 'mission_list' %}">Към моите мисии</a>
   </section>
 {% endfor %}

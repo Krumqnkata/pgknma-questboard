@@ -28,7 +28,7 @@
   <link rel="preload" href="{% static 'fonts/SofiaSans-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body{% if user.is_student %} class="has-tabbar"{% endif %}>
+<body class="{% if user.is_student %}has-tabbar{% endif %}{% if assistant_enabled and user.is_authenticated %} has-assistant{% endif %}">
   <a class="sr-only" href="#content">Към съдържанието</a>
 
   {% with page=request.resolver_match.url_name %}
@@ -49,7 +49,6 @@
             <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail" %}aria-current="page"{% endif %}>Мисии</a>
             <a href="{% url 'shop' %}" {% if page == "shop" %}aria-current="page"{% endif %}>Магазин</a>
             <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>Класация</a>
-            <a href="{% url 'assistant' %}" {% if page == "assistant" %}aria-current="page"{% endif %}>Асистент</a>
           {% elif user.is_teacher %}
             <a href="{% url 'review_list' %}" {% if page == "review_list" %}aria-current="page"{% endif %}>Заявки{% if pending_review_count %}<span class="count" aria-label="{{ pending_review_count }} чакат">{{ pending_review_count }}</span>{% endif %}</a>
             <a href="{% url 'mission_list' %}" {% if page in "mission_list mission_detail mission_create mission_edit" %}aria-current="page"{% endif %}>Мисии</a>
@@ -57,7 +56,6 @@
             <a href="{% url 'rewards' %}" {% if page == "rewards" %}aria-current="page"{% endif %}>Награди</a>
             <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>Класация</a>
             <a href="{% url 'reports' %}" {% if page == "reports" %}aria-current="page"{% endif %}>Справки</a>
-            <a href="{% url 'assistant' %}" {% if page == "assistant" %}aria-current="page"{% endif %}>Асистент</a>
           {% endif %}
           {% if user.is_staff %}<a href="{% url 'admin:index' %}">Администрация</a>{% endif %}
         </nav>
@@ -127,14 +125,36 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Магазин</span></a>
       <a href="{% url 'leaderboard' %}" {% if page == "leaderboard" %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg><span>Класация</span></a>
-      <a href="{% url 'assistant' %}" {% if page == "assistant" %}aria-current="page"{% endif %}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Асистент</span></a>
     </nav>
     {% endwith %}
   {% endif %}
 
+  {# Асистентът: бутон долу вдясно на всяка страница. Без JavaScript отваря страницата „Асистент“. #}
+  {% if assistant_enabled and user.is_authenticated and not user.is_admin_role and not user.must_change_password %}
+    {% if request.resolver_match.url_name != "assistant" %}
+      <a class="assistant-fab" href="{% url 'assistant' %}" data-assistant-open aria-controls="assistant-popup" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Асистент</span></a>
+      <section class="assistant-popup chat" id="assistant-popup" role="dialog" aria-label="Асистент" hidden
+               data-chat="{{ user.pk }}" data-ask-url="{% url 'api-assistant-ask' %}">
+        <header class="assistant-head">
+          <strong>Асистент</strong>
+          <button type="button" data-assistant-close aria-label="Затвори асистента">×</button>
+        </header>
+        {% include "web/_chat.html" %}
+      </section>
+    {% endif %}
+  {% endif %}
+
+  {# Ползваме само необходими бисквитки, затова тук се съобщава, без да се иска съгласие. #}
+  <div class="cookie-note" role="region" aria-label="Бисквитки" hidden data-cookie-note>
+    <p>Questboard ползва само бисквитки, без които сайтът не работи: за входа и за защита на формите.
+      Няма реклами и проследяване. <a href="{% url 'privacy' %}#cookies">Подробности</a></p>
+    <button type="button" class="btn-small" data-cookie-ok>Разбрах</button>
+  </div>
+
   <script src="{% static 'js/theme.js' %}" defer></script>
   <script src="{% static 'js/app.js' %}" defer></script>
+  {% if user.is_authenticated %}<script src="{% static 'js/assistant-chat.js' %}" defer></script>{% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

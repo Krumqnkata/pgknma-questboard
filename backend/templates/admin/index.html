@@ -80,6 +80,30 @@
     </section>
   </div>
 
+  <section class="qb-card qb-awards">
+    <header class="qb-card-head">
+      <h2>Последни награди</h2>
+      <p>Значки, бонус XP и предмети от мисии</p>
+    </header>
+    {% if dashboard.awards %}
+      <table class="qb-table">
+        <thead><tr><th>Ученик</th><th>Награда</th><th>За какво</th><th>Кога</th></tr></thead>
+        <tbody>
+          {% for award in dashboard.awards %}
+            <tr>
+              <td><a href="{% url 'admin:accounts_user_change' award.student.pk %}">{{ award.student.get_full_name|default:award.student.nickname }}</a></td>
+              <td><strong>{{ award.text }}</strong> <span class="qb-kpi-note">{{ award.kind }}</span></td>
+              <td>{{ award.note|default:"—" }}</td>
+              <td>{{ award.at|date:"j F, H:i"|lower }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="qb-empty">Още няма раздадени награди.</p>
+    {% endif %}
+  </section>
+
   <div class="qb-row">
     <section class="qb-card">
       <header class="qb-card-head">

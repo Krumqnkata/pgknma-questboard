@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% comment %}Проблемите и поправките идват от questboard/diagnostics.py.{% endcomment %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block branding %}{% include "unfold/helpers/site_branding.html" %}{% endblock %}
+
+{% block content %}
+<div class="qb-dash">
+  <section class="qb-card">
+    <header class="qb-card-head">
+      <h2>{% if problems %}Намерени проблеми: {{ problems|length }}{% else %}Всичко е наред{% endif %}</h2>
+      <p>Нищо не се променя, докато не натиснете бутона за поправка. Всяка поправка се записва в журнала.</p>
+    </header>
+    {% if problems %}
+      <table class="qb-table qb-check">
+        <thead><tr><th>Проблем</th><th class="qb-num">Брой</th><th>Какво да се направи</th><th></th></tr></thead>
+        <tbody>
+          {% for problem in problems %}
+            <tr>
+              <td>{% if problem.link %}<a href="{{ problem.link }}">{{ problem.title }}</a>{% else %}{{ problem.title }}{% endif %}</td>
+              <td class="qb-num">{{ problem.count }}</td>
+              <td>{{ problem.advice }}</td>
+              <td>
+                {% if problem.fix_label %}
+                  <form method="post">{% csrf_token %}
+                    <button type="submit" name="fix" value="{{ problem.code }}" class="qb-btn">{{ problem.fix_label }}</button>
+                  </form>
+                {% else %}<span class="qb-kpi-note">ръчно</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="qb-empty">Проверени са заявките, мисиите, магазинът, профилите и асистентът.</p>
+    {% endif %}
+  </section>
+
+  {% if problems and assistant_enabled %}
+    <section class="qb-card">
+      <header class="qb-card-head">
+        <h2>Анализ от асистента</h2>
+        <p>Към модела отиват само видът и броят на проблемите, без имена и данни за хора.</p>
+      </header>
+      {% if explanation %}<p class="qb-explanation">{{ explanation|linebreaksbr }}</p>{% endif %}
+      <form method="post">{% csrf_token %}
+        <button type="submit" name="explain" value="1" class="qb-btn">{% if explanation %}Анализирай отново{% else %}Анализирай{% endif %}</button>
+      </form>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

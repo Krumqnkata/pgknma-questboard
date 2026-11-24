@@ -27,10 +27,10 @@
     {"id": "Q6", "role": "ученик", "question": "Какво ми трябва, за да стигна следващото ниво?", "expected_tool": "my_progress"}
   ],
   "guilds": [
-    {"name": "Builders", "description": ""},
-    {"name": "Guardians", "description": ""},
-    {"name": "Explorers", "description": ""},
-    {"name": "Citizens", "description": ""}
+    {"name": "Техничари", "description": ""},
+    {"name": "Помощници", "description": ""},
+    {"name": "Изследователи", "description": ""},
+    {"name": "Организатори", "description": ""}
   ],
   "max_xp": 100
 }

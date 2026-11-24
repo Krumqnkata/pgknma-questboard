@@ -25,6 +25,7 @@ class Row:
     members: int = 0
     level: Level | None = None
     guild: str = ""
+    code: str = ""            # Guild.code – за цвета на гилдията
     user: User | None = None  # само за ученици – за аватара, титлата и рамката
     movement: int = 0         # с колко места се е качил (+) или паднал (-) от началото на седмицата
 
@@ -69,7 +70,7 @@ def guild_ranking(since=None):
         xp=_xp_sum("members__xp_transactions", "members__", since),
         member_count=Count("members", filter=_active_students_filter("members__"), distinct=True),
     ).order_by("-xp", "name")
-    return [Row(rank=i, name=g.name, xp=g.xp, members=g.member_count) for i, g in enumerate(guilds, start=1)]
+    return [Row(rank=i, name=g.name, code=g.code, xp=g.xp, members=g.member_count) for i, g in enumerate(guilds, start=1)]
 
 
 def class_ranking(since=None):
@@ -109,7 +110,7 @@ def student_ranking(guild_id=None, class_id=None, limit=50, since=None, week_sta
     level_of = _level_finder()
     return [
         Row(rank=now[s.pk], name=s.nickname, xp=s.xp, level=level_of(s.xp),
-            guild=s.guild.name if s.guild else "", user=s, movement=before[s.pk] - now[s.pk])
+            guild=s.guild.name if s.guild else "", code=s.guild.code if s.guild else "", user=s, movement=before[s.pk] - now[s.pk])
         for s in students[:limit]
     ]
 

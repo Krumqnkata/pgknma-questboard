@@ -37,7 +37,7 @@ def avatar_html(user, size=40, frame_style=None):
     """
     classes = ["avatar"]
     if getattr(user, "guild", None):
-        classes.append(f"guild-{slugify(str(user.guild))}")
+        classes.append(f"guild-{user.guild.code}")
     if frame_style is None:
         frame = getattr(user, "shown_frame", None)
         frame_style = frame.frame_style if frame else ""

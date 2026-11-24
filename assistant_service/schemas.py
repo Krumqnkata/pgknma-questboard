@@ -107,6 +107,21 @@ class AnswerResponse(Answered):
     answer: str
 
 
+# ---------- Проверка на системата ----------
+
+class ProblemInfo(BaseModel):
+    """Вид и брой на проблема – без имена и данни за хора."""
+
+    title: str = Field(max_length=200)
+    count: int = Field(ge=1)
+    advice: str = Field(max_length=500)
+    fix: str = ""  # надписът на бутона за поправка; празно – поправя се ръчно
+
+
+class DiagnoseRequest(ModelChoice):
+    problems: list[ProblemInfo] = Field(min_length=1, max_length=50)
+
+
 # ---------- Проверка от администрацията ----------
 
 class CheckRequest(ModelChoice):

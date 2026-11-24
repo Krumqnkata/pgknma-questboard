@@ -182,3 +182,24 @@ def ask(user, question):
                                          "data": codes.hide_data(data)})
     log.finish(True, provider=result.get("provider", ""))
     return Answer(text=codes.reveal(result["answer"]), tool=plan["tool"], data=data)
+
+
+# ---------- Проверка на системата (само за администратора) ----------
+
+def explain_problems(admin, problems):
+    """
+    Обяснява намерените проблеми и кой е най-важен. Моделът вижда само вида и броя им.
+    Нищо не поправя – поправките са бутони в questboard/diagnostics.py.
+    """
+    if not admin.is_admin_role:
+        raise GameRuleError("Проверката на системата е само за администратори.")
+    if not problems:
+        raise GameRuleError("Няма намерени проблеми.")
+    _check_available(admin)
+    log = _Logged(admin, AssistantLog.Kind.DIAGNOSE)
+    result = _call(log, "/diagnose", {"problems": [
+        {"title": item.title, "count": item.count, "advice": item.advice, "fix": item.fix_label}
+        for item in problems
+    ]})
+    log.finish(True, provider=result.get("provider", ""))
+    return result["answer"]

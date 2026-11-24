@@ -15,7 +15,7 @@ client = TestClient(app)
 HEADERS = {"X-Assistant-Token": "test-token"}
 FAKE = {"provider": "fake", "model": "тестов"}
 MISSION = {"title": "Репортаж", "description": "Направи репортаж за събитие.", "criteria": "Връзка към статия."}
-GUILDS = [{"name": "Builders"}, {"name": "Explorers"}]
+GUILDS = [{"name": "Техничари"}, {"name": "Изследователи"}]
 TOOLS = [{
     "name": "free_rooms",
     "description": "Свободни кабинети",
@@ -35,11 +35,18 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["hint"])
 
+    def test_diagnose_explains_the_problems(self):
+        problem = {"title": "Активни мисии с изтекъл срок", "count": 2, "advice": "Могат да се спрат.", "fix": "Спри"}
+        response = self.post("/diagnose", {**FAKE, "problems": [problem]})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["answer"])
+        self.assertEqual(self.post("/diagnose", {**FAKE, "problems": []}).status_code, 422)
+
     def test_draft_is_valid_and_uses_known_guild(self):
         response = self.post("/mission-draft", {**FAKE, "idea": "Помощ в библиотеката",
                                                 "guilds": GUILDS, "max_xp": 100})
         self.assertEqual(response.status_code, 200)
-        self.assertIn(response.json()["guild"], ["Builders", "Explorers"])
+        self.assertIn(response.json()["guild"], ["Техничари", "Изследователи"])
 
     def test_draft_xp_is_limited_by_game_rules(self):
         response = self.post("/mission-draft", {**FAKE, "idea": "Помощ в библиотеката",

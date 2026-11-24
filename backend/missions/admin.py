@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import Claim, EvidenceFile, Mission
+from .models import Claim, EvidenceFile, Mission, MissionFile
 
 
 class EvidenceFileInline(TabularInline):
@@ -27,10 +27,17 @@ class EvidenceFileInline(TabularInline):
         return False
 
 
+class MissionFileInline(EvidenceFileInline):
+    model = MissionFile
+    verbose_name_plural = "файлове към мисията"
+
+
 @admin.register(Mission)
 class MissionAdmin(ModelAdmin):
-    list_display = ["title", "guild", "xp", "deadline", "is_active", "hints_allowed", "created_by"]
-    list_filter = ["guild", "is_active", "hints_allowed"]
+    list_display = ["title", "guild", "xp", "deadline", "is_active", "is_group", "hints_allowed", "created_by"]
+    list_filter = ["guild", "is_active", "is_group", "hints_allowed"]
+    filter_horizontal = ["reviewers"]
+    inlines = [MissionFileInline]
     search_fields = ["title", "description"]
     date_hierarchy = "deadline"
 
@@ -42,5 +49,5 @@ class ClaimAdmin(ModelAdmin):
     search_fields = ["mission__title", "student__nickname", "student__email"]
     # Потвърждаването става през правилата на играта (economy), не с ръчна промяна тук,
     # иначе XP няма да се начисли. Затова тези полета са само за четене.
-    readonly_fields = ["status", "reviewed_by", "reviewed_at", "submitted_at"]
+    readonly_fields = ["status", "captain", "reviewed_by", "reviewed_at", "submitted_at"]
     inlines = [EvidenceFileInline]

@@ -17,7 +17,7 @@
       </span>
     </span>
   </td>
-  <td><span class="chip {{ row.guild|guild_class }}">{{ row.guild }}</span></td>
+  <td><span class="chip {% if row.code %}guild-{{ row.code }}{% endif %}">{{ row.guild }}</span></td>
   <td class="num">{{ row.level.number|default:"0" }}</td>
   <td class="num"><strong>{{ row.xp }}</strong></td>
 </tr>

@@ -20,7 +20,7 @@ class MissionRulesTests(TestCase):
     def new_mission(self, **fields):
         data = {
             "title": "Мисия", "description": "Описание", "criteria": "Критерий", "xp": 50,
-            "guild": Guild.objects.get(name="Builders"), "created_by": self.teacher,
+            "guild": Guild.objects.get(name="Техничари"), "created_by": self.teacher,
             "deadline": timezone.now() + timedelta(days=3),
         }
         data.update(fields)

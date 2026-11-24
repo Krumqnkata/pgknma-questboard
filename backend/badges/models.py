@@ -21,6 +21,7 @@ class Badge(models.Model):
         PURCHASES = "purchases", "Покупки от магазина"
         STREAK = "streak", "Поредни седмици с изпълнена мисия"
         MANUAL = "manual", "Дава се от учител"
+        MISSION = "mission", "Дава се от мисия"
 
     class Icon(models.TextChoices):
         FLAG = "flag", "Флаг"
@@ -36,7 +37,7 @@ class Badge(models.Model):
     icon = models.CharField("икона", max_length=10, choices=Icon.choices, default=Icon.STAR)
     rule = models.CharField("правило", max_length=20, choices=Rule.choices)
     threshold = models.PositiveIntegerField("праг", validators=[MinValueValidator(1)], default=1,
-                                            help_text="Напр. 5 за „5 мисии“. При „Дава се от учител“ не се ползва.")
+                                            help_text="Напр. 5 за „5 мисии“. При „Дава се от учител“ и „Дава се от мисия“ не се ползва.")
     guild = models.ForeignKey(
         Guild, verbose_name="гилдия", on_delete=models.CASCADE, null=True, blank=True,
         help_text="Само за правилото „в една гилдия“. Празно – която и да е гилдия.",
@@ -61,6 +62,8 @@ class StudentBadge(models.Model):
     given_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="дадена от", on_delete=models.SET_NULL,
                                  null=True, blank=True, related_name="+")
     note = models.CharField("за какво", max_length=200, blank=True)
+    claim = models.ForeignKey("missions.Claim", verbose_name="от заявка", on_delete=models.SET_NULL,
+                              null=True, blank=True, related_name="badges")
 
     class Meta:
         verbose_name = "получена значка"

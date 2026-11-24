@@ -4,6 +4,8 @@
 Наличностите НЕ се пазят като число в профила на ученика. Изчисляват се като
 сбор от движенията, за да може всяка точка да се проследи: кой, кога, за какво (Ф12).
 """
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
@@ -291,17 +293,50 @@ class CoinTransaction(models.Model):
         return f"{self.student}: {self.amount:+} монети"
 
 
+def sponsor_logo_storage():
+    from questboard.storage import SponsorLogoStorage
+
+    return SponsorLogoStorage()
+
+
+def sponsor_logo_path(instance, filename):
+    """Случайно име със същото разширение – логото се отваря от /sponsor-logo/<име>."""
+    return f"sponsors/{uuid.uuid4().hex}.{filename.rsplit('.', 1)[-1].lower()}"
+
+
+class Sponsor(models.Model):
+    """Партньор, който осигурява награди: билети, книги, курсове."""
+
+    name = models.CharField("име", max_length=80, unique=True)
+    logo = models.ImageField(
+        "лого", upload_to=sponsor_logo_path, storage=sponsor_logo_storage, blank=True,
+        validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"]), validate_logo_size],
+        help_text="PNG, JPG или WebP, до 1 MB.",
+    )
+    website = models.URLField("сайт", blank=True)
+
+    class Meta:
+        verbose_name = "спонсор"
+        verbose_name_plural = "спонсори"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Privilege(models.Model):
     """
-    Артикул в магазина (Ф8). Два вида:
+    Артикул в магазина (Ф8). Три вида:
       - привилегия (Deadline Pass, Hint Token) – учителят я отбелязва като използвана;
-      - за профила (титла или рамка на аватара) – само външен вид, не влияе на ученето.
+      - за профила (титла или рамка на аватара) – само външен вид, не влияе на ученето;
+      - награда от спонсор (билет, книга, курс) – ограничен брой, предава я учител.
     """
 
     class Kind(models.TextChoices):
         PRIVILEGE = "privilege", "Привилегия"
         TITLE = "title", "Титла до псевдонима"
         FRAME = "frame", "Рамка на аватара"
+        SPONSOR = "sponsor", "Награда от спонсор"
 
     class FrameStyle(models.TextChoices):
         GOLD = "gold", "Златна"
@@ -315,6 +350,20 @@ class Privilege(models.Model):
     price = models.PositiveIntegerField("цена в монети", validators=[MinValueValidator(1)])
     frame_style = models.CharField("вид на рамката", max_length=10, choices=FrameStyle.choices, blank=True,
                                    help_text="Само за рамки на аватара.")
+    min_level = models.PositiveIntegerField(
+        "от ниво", default=1, validators=[MinValueValidator(1)],
+        help_text="Отключва се за покупка на това ниво. 1 – за всички.",
+    )
+    only_from_mission = models.BooleanField(
+        "печели се само от мисия", default=False,
+        help_text="Не се продава – дава се като награда за конкретна мисия.",
+    )
+    sponsor = models.ForeignKey(Sponsor, verbose_name="спонсор", on_delete=models.PROTECT, null=True, blank=True,
+                                related_name="rewards", help_text="Само за награди от спонсор.")
+    stock = models.PositiveIntegerField(
+        "общо бройки", null=True, blank=True,
+        help_text="Колко са осигурени общо. Празно – без ограничение.",
+    )
     is_active = models.BooleanField("продава се", default=True)
 
     class Meta:
@@ -328,9 +377,22 @@ class Privilege(models.Model):
     @property
     def is_cosmetic(self):
         """Титлите и рамките са само за външен вид – учителят не ги отбелязва."""
-        return self.kind != self.Kind.PRIVILEGE
+        return self.kind in (self.Kind.TITLE, self.Kind.FRAME)
+
+    @property
+    def left(self):
+        """Колко бройки остават; None – без ограничение."""
+        return None if self.stock is None else max(0, self.stock - self.purchases.count())
+
+    @property
+    def is_sold_out(self):
+        return self.left == 0
 
     def clean(self):
+        if self.kind == self.Kind.SPONSOR and not self.sponsor_id:
+            raise ValidationError({"sponsor": "Изберете спонсора."})
+        if self.kind != self.Kind.SPONSOR and self.sponsor_id:
+            raise ValidationError({"sponsor": "Спонсор се избира само за награда от спонсор."})
         if self.kind == self.Kind.FRAME and not self.frame_style:
             raise ValidationError({"frame_style": "Изберете вид на рамката."})
 
@@ -344,6 +406,8 @@ class Purchase(models.Model):
                                   related_name="purchases")
     # Цената се записва, защото администраторът може да я промени по-късно.
     price_paid = models.PositiveIntegerField("платена цена")
+    claim = models.ForeignKey("missions.Claim", verbose_name="спечелена от заявка", on_delete=models.SET_NULL,
+                              null=True, blank=True, related_name="rewards")
     purchased_at = models.DateTimeField("купена на", auto_now_add=True)
 
     used_at = models.DateTimeField("използвана на", null=True, blank=True)

@@ -17,8 +17,8 @@ import config
 import logic
 from providers import NAMES, ProviderError
 from schemas import (
-    AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DraftRequest, DraftResponse, HintRequest,
-    HintResponse, PlanRequest, PlanResponse,
+    AnswerRequest, AnswerResponse, CheckRequest, CheckResponse, DiagnoseRequest, DraftRequest, DraftResponse,
+    HintRequest, HintResponse, PlanRequest, PlanResponse,
 )
 
 app = FastAPI(
@@ -92,6 +92,12 @@ def query_plan(request: PlanRequest):
 def query_answer(request: AnswerRequest):
     """Втора стъпка: моделът оформя отговора само от данните, които Django е върнал."""
     return run(logic.answer_query, request)
+
+
+@router.post("/diagnose", response_model=AnswerResponse)
+def diagnose(request: DiagnoseRequest):
+    """Обяснява проблемите, намерени от Django, и кой е най-важен. Само текст – нищо не поправя."""
+    return run(logic.explain_problems, request)
 
 
 app.include_router(router)

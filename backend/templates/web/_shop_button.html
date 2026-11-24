@@ -1,0 +1,16 @@
+{% load questboard %}
+{# Бутонът „Купи“ за един предмет (item). Казва и защо не може: ниво, бройки или монети. #}
+<form method="post" action="{% url 'shop_buy' item.pk %}" class="mission-foot">
+  {% csrf_token %}
+  {% if item.is_cosmetic and item.pk in owned %}
+    <span class="badge status-approved">твоя</span>
+  {% elif not item.unlocked %}
+    <button type="submit" class="btn-small" disabled>Отключва се на ниво {{ item.min_level }}</button>
+  {% elif item.is_sold_out %}
+    <button type="submit" class="btn-small" disabled>Изчерпана</button>
+  {% elif stats.coins < item.price %}
+    <button type="submit" class="btn-small" disabled>Не стигат монетите</button>
+  {% else %}
+    <button type="submit" class="btn-small">Купи за {{ item.price|coins }}</button>
+  {% endif %}
+</form>

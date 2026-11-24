@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from accounts.models import Guild, User
 from accounts.permissions import role_required
@@ -17,7 +18,7 @@ from assistant_bridge.models import Hint
 from assistant_bridge.services import AssistantError, draft_mission, unused_hint_tokens
 from economy.models import GameSettings
 from missions.models import Claim, Mission
-from missions.services import GameRuleError, missions_for_student, missions_for_teacher, submit_claim
+from missions.services import GameRuleError, leave_team, missions_for_student, missions_reviewed_by, submit_claim
 
 from ..forms import ClaimForm, MissionForm, ReviewForm
 
@@ -59,8 +60,8 @@ def _student_mission_list(request):
 
 
 def _teacher_mission_list(request):
-    missions = missions_for_teacher(request.user).annotate(
-        pending_count=Count("claims", filter=Q(claims__status=Claim.Status.PENDING)),
+    missions = missions_reviewed_by(request.user).select_related("created_by").annotate(
+        pending_count=Count("claims", filter=Q(claims__status=Claim.Status.PENDING, claims__captain__isnull=True)),
         claims_count=Count("claims"),
     ).order_by("-is_active", "deadline")
     return render(request, "web/teacher_missions.html", {"missions": missions})
@@ -72,8 +73,7 @@ def mission_create(request):
     if request.method == "POST" and "draft_idea" in request.POST:
         return _mission_draft(request)
 
-    form = MissionForm(request.POST or None)
-    form.instance.created_by = request.user
+    form = MissionForm(request.POST or None, request.FILES or None, instance=Mission(created_by=request.user))
     if request.method == "POST" and form.is_valid():
         mission = form.save()
         messages.success(request, f"Мисията „{mission.title}“ е публикувана.")
@@ -90,7 +90,7 @@ def _mission_draft(request):
         messages.error(request, str(error))
     else:
         messages.success(request, "Черновата е готова. Прегледайте и редактирайте, преди да публикувате.")
-    form = MissionForm(initial=initial)
+    form = MissionForm(initial=initial, instance=Mission(created_by=request.user))
     return render(request, "web/mission_form.html", {"form": form, "is_new": True, "draft_idea": idea})
 
 
@@ -98,7 +98,7 @@ def _mission_draft(request):
 def mission_edit(request, pk):
     # Само авторът редактира мисията си. За чужда мисия – страница 404.
     mission = get_object_or_404(Mission, pk=pk, created_by=request.user)
-    form = MissionForm(request.POST or None, instance=mission)
+    form = MissionForm(request.POST or None, request.FILES or None, instance=mission)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Промените са запазени.")
@@ -114,11 +114,13 @@ def mission_detail(request, pk):
 
 
 def _teacher_mission_detail(request, pk):
-    mission = get_object_or_404(Mission.objects.select_related("guild"), pk=pk, created_by=request.user)
-    claims = mission.claims.select_related("student", "student__school_class").prefetch_related(
+    # Авторът и заместниците му. Заместникът проверява заявките, но не редактира мисията.
+    mission = get_object_or_404(missions_reviewed_by(request.user), pk=pk)
+    claims = mission.claims.select_related("student", "student__school_class", "captain__student").prefetch_related(
         "files").order_by("status", "-submitted_at")
     return render(request, "web/mission_detail.html", {
         "mission": mission, "claims": claims, "review_form": ReviewForm(),
+        "is_author": mission.created_by_id == request.user.pk,
     })
 
 
@@ -128,21 +130,39 @@ def _student_mission_detail(request, pk):
         Mission.objects.select_related("guild").filter(Q(is_active=True) | Q(claims__student=request.user)).distinct(),
         pk=pk,
     )
-    my_claim = Claim.objects.filter(mission=mission, student=request.user).first()
+    my_claim = Claim.objects.filter(mission=mission, student=request.user).select_related("captain__student").first()
     can_claim = mission.is_open() and (my_claim is None or my_claim.status == Claim.Status.REJECTED)
-    form = ClaimForm(request.POST or None, request.FILES or None)
+    form = ClaimForm(request.POST or None, request.FILES or None, mission=mission)
 
     if request.method == "POST" and form.is_valid():
         try:
-            submit_claim(request.user, mission, form.cleaned_data["evidence"], form.cleaned_data.get("files", []))
+            submit_claim(request.user, mission, form.cleaned_data["evidence"], form.cleaned_data.get("files", []),
+                         form.cleaned_data.get("teammates", []))
         except GameRuleError as error:
             messages.error(request, str(error))
         else:
             messages.success(request, "Заявката е изпратена. Учителят ще я провери.")
-        return redirect("mission_detail", pk=mission.pk)
+            return redirect("mission_detail", pk=mission.pk)
+        # При грешка оставаме на страницата, за да не се загуби написаното (файловете се избират пак).
 
+    team_lead = (my_claim.captain or my_claim) if my_claim else None
     return render(request, "web/mission_detail.html", {
+        "team": [team_lead, *team_lead.team.select_related("student")] if team_lead and mission.is_group else [],
         "mission": mission, "my_claim": my_claim, "can_claim": can_claim, "form": form,
         "hints": Hint.objects.filter(student=request.user, mission=mission),
         "hint_tokens": unused_hint_tokens(request.user).count(),
     })
+
+
+@require_POST
+@role_required(STUDENT)
+def team_leave(request, pk):
+    """Съотборник, записан от капитана, се отказва, преди учителят да е решил."""
+    mission = get_object_or_404(Mission, pk=pk)
+    try:
+        leave_team(request.user, mission)
+    except GameRuleError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, "Напусна отбора.")
+    return redirect("mission_detail", pk=mission.pk)

@@ -20,7 +20,7 @@ class BadgeTests(TestCase):
         self.student = make_student()
         self.missions_made = 0
 
-    def complete(self, count, guild="Builders", xp=10):
+    def complete(self, count, guild="Техничари", xp=10):
         for _ in range(count):
             self.missions_made += 1
             mission = make_mission(self.teacher, title=f"Мисия {self.missions_made}", xp=xp,
@@ -37,19 +37,19 @@ class BadgeTests(TestCase):
         self.assertIn("„Първа мисия“", note.text)
 
     def test_five_missions_in_one_guild(self):
-        self.complete(4, guild="Builders")
-        self.complete(1, guild="Explorers")
+        self.complete(4, guild="Техничари")
+        self.complete(1, guild="Изследователи")
         self.assertIn("Пет мисии", self.earned())
         self.assertNotIn("Верен на гилдията", self.earned())  # 4 + 1 в различни гилдии
-        self.complete(1, guild="Builders")
+        self.complete(1, guild="Техничари")
         self.assertIn("Верен на гилдията", self.earned())
 
     def test_badge_for_a_specific_guild(self):
-        Badge.objects.create(name="Изследовател", description="3 мисии на Explorers", rule=Badge.Rule.GUILD_MISSIONS,
-                             threshold=3, guild=Guild.objects.get(name="Explorers"))
-        self.complete(3, guild="Builders")
+        Badge.objects.create(name="Изследовател", description="3 мисии на Изследователи", rule=Badge.Rule.GUILD_MISSIONS,
+                             threshold=3, guild=Guild.objects.get(name="Изследователи"))
+        self.complete(3, guild="Техничари")
         self.assertNotIn("Изследовател", self.earned())
-        self.complete(3, guild="Explorers")
+        self.complete(3, guild="Изследователи")
         self.assertIn("Изследовател", self.earned())
 
     def test_level_badge(self):

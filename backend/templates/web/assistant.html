@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}Асистент – Questboard{% endblock %}
 
@@ -12,38 +11,12 @@
   {% if not user.is_student %}<a class="btn btn-outline" href="{% url 'reports' %}">Справки без асистента</a>{% endif %}
 </div>
 
-<section class="code-card chat" aria-label="Разговор с асистента">
+<section class="code-card chat" aria-label="Разговор с асистента" data-chat="{{ user.pk }}" data-ask-url="{% url 'api-assistant-ask' %}">
   <div class="code-card-head"><span>assistant.chat</span><span>отговорите са според разписанието</span></div>
 
-  <div id="chat-log" class="chat-log" aria-live="polite">
-    {# Текстът е на един ред, защото балончетата пазят новите редове (white-space: pre-wrap). #}
-    <div class="bubble bot">Здравей! Напиши въпрос или избери някой от примерите отдолу.</div>
-  </div>
-
-  <div class="chat-examples" id="examples">
-    {% if user.is_student %}
-      <button type="button">Какъв час имаме сега?</button>
-      <button type="button">Какво ми трябва за следващото ниво?</button>
-    {% else %}
-      <button type="button">Кои кабинети са свободни 3 час в сряда?</button>
-      <button type="button">Къде е 11Б сега?</button>
-      <button type="button">Кой може да замести Маринова 2 час в понеделник?</button>
-    {% endif %}
-  </div>
-
-  <form id="chat-form" class="chat-form">
-    <label for="chat-input" class="sr-only">Въпрос</label>
-    <input id="chat-input" name="question" maxlength="500" autocomplete="off" placeholder="Напиши въпрос" required>
-    <button type="submit" id="chat-send">Изпрати</button>
-  </form>
+  {% include "web/_chat.html" %}
 </section>
 
 <p class="muted small section">Имената на учителите се заменят с кодове, преди въпросът да отиде към езиковия модел.
   Към модела не се изпращат данни за ученици.</p>
-{% endblock %}
-
-{% block scripts %}
-{# Адресът на API-то се подава от Django, за да не е записан на ръка в JavaScript. #}
-<script>window.QUESTBOARD_ASK_URL = "{% url 'api-assistant-ask' %}";</script>
-<script src="{% static 'js/assistant-chat.js' %}" defer></script>
 {% endblock %}

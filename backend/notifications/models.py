@@ -15,6 +15,7 @@ class Notification(models.Model):
         BADGE = "badge", "Нова значка"
         BONUS = "bonus", "Бонус от учител"
         UNDONE = "undone", "Отменена награда"
+        TEAM = "team", "Отборна мисия"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="потребител", on_delete=models.CASCADE,
                              related_name="notifications")

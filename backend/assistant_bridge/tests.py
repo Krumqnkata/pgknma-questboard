@@ -148,7 +148,7 @@ class HintTests(TestCase):
 
 class DraftTests(TestCase):
     DRAFT = {"title": "Коледен базар", "description": "Помогни при подготовката на базара.",
-             "criteria": "Класният ръководител потвърждава участието.", "guild": "Citizens", "xp": 40}
+             "criteria": "Класният ръководител потвърждава участието.", "guild": "Организатори", "xp": 40}
 
     def setUp(self):
         self.teacher = make_teacher()
@@ -243,7 +243,7 @@ class EvaluationCommandTests(TestCase):
         if path == "/hint":
             return {"hint": "Започни, като прочетеш внимателно условието."}
         if path == "/mission-draft":
-            return {"title": "Мисия", "description": "Описание", "criteria": "Критерий", "guild": "Builders", "xp": 40}
+            return {"title": "Мисия", "description": "Описание", "criteria": "Критерий", "guild": "Техничари", "xp": 40}
         # Справка: връща първата позволена справка – някои случаи ще са „неуспешни“, и това е очаквано.
         return {"tool": payload["tools"][0]["name"], "arguments": {}}
 

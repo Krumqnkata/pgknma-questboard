@@ -21,29 +21,48 @@
         <span class="xp">{{ privilege.price|coins }}</span>
       </div>
       <p class="muted small">{{ privilege.description }}</p>
-      <form method="post" action="{% url 'shop_buy' privilege.pk %}" class="mission-foot">
-        {% csrf_token %}
-        {% if stats.coins < privilege.price %}
-          <button type="submit" class="btn-small" disabled>Не стигат монетите</button>
-        {% else %}
-          <button type="submit" class="btn-small">Купи за {{ privilege.price|coins }}</button>
-        {% endif %}
-      </form>
+      {% include "web/_shop_button.html" with item=privilege %}
     </section>
   {% empty %}
     <p class="muted">В момента няма привилегии за продажба.</p>
   {% endfor %}
 </div>
 
+{% if sponsor_rewards %}
+<section class="section">
+  <div class="section-head">
+    <h2>От нашите партньори</h2>
+    <span class="muted small">Билети, книги и курсове. Наградата се получава от учител.</span>
+  </div>
+  <div class="mission-grid">
+    {% for item in sponsor_rewards %}
+      <section class="mission-card ticket-card">
+        <div class="ticket-sponsor">
+          {% if item.sponsor.logo %}<img src="{{ item.sponsor.logo.url }}" alt="" width="36" height="36">{% endif %}
+          {% if item.sponsor.website %}<a href="{{ item.sponsor.website }}" target="_blank" rel="noopener noreferrer">{{ item.sponsor }}</a>{% else %}<span>{{ item.sponsor }}</span>{% endif %}
+        </div>
+        <div class="mission-meta">
+          <h3>{{ item.name }}</h3>
+          <span class="xp">{{ item.price|coins }}</span>
+        </div>
+        <p class="muted small">{{ item.description }}</p>
+        {% if item.left is not None %}<p class="ticket-left">{% if item.left %}остават {{ item.left }} от {{ item.stock }}{% else %}изчерпана{% endif %}</p>{% endif %}
+        {% include "web/_shop_button.html" %}
+      </section>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {% if cosmetics %}
 <section class="section">
   <div class="section-head">
     <h2>За профила</h2>
-    <span class="muted small">Само за външен вид в класациите. Слагаш ги от <a href="{% url 'profile' %}">профила</a>.</span>
+    <span class="muted small">Само за външен вид в класациите. Отключват се с нивото. Слагаш ги от <a href="{% url 'profile' %}">профила</a>.</span>
   </div>
   <div class="mission-grid">
     {% for item in cosmetics %}
-      <section class="mission-card cosmetic-card">
+      <section class="mission-card cosmetic-card{% if not item.unlocked %} is-locked{% endif %}">
         <div class="mission-meta">
           <h3>{{ item.name }}</h3>
           <span class="xp">{{ item.price|coins }}</span>
@@ -55,16 +74,7 @@
             <span class="who">{% avatar user 32 %}<span><strong>{{ user.nickname }}</strong><span class="player-title">{{ item.name }}</span></span></span>
           {% endif %}
         </div>
-        <form method="post" action="{% url 'shop_buy' item.pk %}" class="mission-foot">
-          {% csrf_token %}
-          {% if item.pk in owned %}
-            <span class="badge status-approved">твоя</span>
-          {% elif stats.coins < item.price %}
-            <button type="submit" class="btn-small" disabled>Не стигат монетите</button>
-          {% else %}
-            <button type="submit" class="btn-small">Купи за {{ item.price|coins }}</button>
-          {% endif %}
-        </form>
+        {% include "web/_shop_button.html" %}
       </section>
     {% endfor %}
   </div>
@@ -81,12 +91,12 @@
           {% for purchase in purchases %}
             <tr>
               <td>{{ purchase.privilege.name }}</td>
-              <td>{{ purchase.price_paid|coins }}</td>
+              <td>{% if purchase.price_paid %}{{ purchase.price_paid|coins }}{% else %}от мисия{% endif %}</td>
               <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
               <td>
                 {% if purchase.privilege.is_cosmetic %}<span class="badge">за профила</span>
-                {% elif purchase.is_used %}<span class="badge">използвана на {{ purchase.used_at|date:"j F"|lower }}</span>
-                {% else %}<span class="badge status-approved">неизползвана</span>{% endif %}
+                {% elif purchase.is_used %}<span class="badge">{% if purchase.privilege.kind == "sponsor" %}получена{% else %}използвана{% endif %} на {{ purchase.used_at|date:"j F"|lower }}</span>
+                {% else %}<span class="badge status-approved">{% if purchase.privilege.kind == "sponsor" %}чака те при учител{% else %}неизползвана{% endif %}</span>{% endif %}
               </td>
             </tr>
           {% endfor %}

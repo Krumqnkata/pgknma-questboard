@@ -27,7 +27,7 @@
           {% for row in guild_rows %}
             <tr class="{% if row.rank == 1 and row.xp %}top-1{% endif %}{% if user.is_student and row.name == user.guild.name %} mine{% endif %}">
               <td class="rank">{{ row.rank }}</td>
-              <td><span class="chip {{ row.name|guild_class }}">{{ row.name }}</span></td>
+              <td><span class="chip guild-{{ row.code }}">{{ row.name }}</span></td>
               <td class="num">{{ row.xp }}</td><td class="num">{{ row.members }}</td>
             </tr>
           {% endfor %}

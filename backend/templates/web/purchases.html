@@ -5,8 +5,8 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Неизползвани привилегии</h1>
-    <p>Когато ученик използва привилегия при вас, например удължен срок, отбележете я тук.</p>
+    <h1>Привилегии и награди за предаване</h1>
+    <p>Когато ученик използва привилегия при вас, например удължен срок, или получи награда от спонсор, отбележете я тук.</p>
   </div>
 </div>
 
@@ -19,12 +19,12 @@
           <tr>
             <td>{{ purchase.student.get_full_name|default:purchase.student.nickname }}<br><span class="muted small">{{ purchase.student.nickname }}</span></td>
             <td>{{ purchase.student.school_class }}</td>
-            <td><strong>{{ purchase.privilege.name }}</strong></td>
+            <td><strong>{{ purchase.privilege.name }}</strong>{% if purchase.privilege.sponsor %}<br><span class="muted small">от {{ purchase.privilege.sponsor }}</span>{% endif %}</td>
             <td>{{ purchase.purchased_at|date:"j F, H:i"|lower }}</td>
             <td class="num">
               <form method="post" action="{% url 'purchase_use' purchase.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn-outline btn-small">Отбележи като използвана</button>
+                <button type="submit" class="btn-outline btn-small">{% if purchase.privilege.kind == "sponsor" %}Отбележи като предадена{% else %}Отбележи като използвана{% endif %}</button>
               </form>
             </td>
           </tr>

@@ -18,11 +18,12 @@ from accounts.models import Guild, SchoolClass, User
 from accounts.nicknames import change_nickname, next_change_at
 from accounts.permissions import role_required
 from badges.services import award_badges, badge_cards
+from economy.awards import recent_awards
 from economy import leaderboard
 from economy.models import GameSettings, Privilege, Purchase, XPTransaction
 from economy.services import owned_cosmetics, undo_approval, wear
 from economy.services import (
-    active_privileges, approve_claim, buy_privilege, mark_purchase_used, pending_claims_for,
+    active_privileges, approve_claim, buy_privilege, is_unlocked, mark_purchase_used, pending_claims_for,
     reject_claim, student_stats, unused_purchases,
 )
 from economy.words import coins_text
@@ -53,7 +54,7 @@ def landing(request):
     mission_fields = [
         ("title", mission.title), ("guild", mission.guild.name), ("xp", mission.xp),
         ("deadline", timezone.localtime(mission.deadline).strftime("%d.%m.%Y")),
-    ] if mission else [("title", "Първата мисия"), ("guild", "Builders"), ("xp", 50)]
+    ] if mission else [("title", "Първата мисия"), ("guild", "Техничари"), ("xp", 50)]
 
     return render(request, "web/landing.html", {
         "mission_fields": mission_fields,
@@ -92,6 +93,7 @@ def student_home(request):
         "badge_cards": cards,
         "badges_earned": sum(card.earned for card in cards),
         "celebrations": celebrations,
+        "recent_awards": recent_awards(6),
     })
 
 
@@ -186,7 +188,8 @@ def review_claim(request, pk):
         if form.cleaned_data["decision"] == ReviewForm.APPROVE:
             result = approve_claim(claim, request.user, comment)
             coins = f" и {coins_text(result.coins)}" if result.coins else " (без монети – седмичният лимит е достигнат)"
-            messages.success(request, f"Потвърдено: {nickname} получава {result.xp} XP{coins}.")
+            team = f" Същото получават и съотборниците ({result.team})." if result.team else ""
+            messages.success(request, f"Потвърдено: {nickname} получава {result.xp} XP{coins}.{team}")
             if result.new_level:
                 messages.success(request, f"{nickname} достигна {result.new_level}!")
         else:
@@ -213,12 +216,18 @@ def _safe_next(request):
 @role_required(STUDENT)
 def shop(request):
     items = list(active_privileges())
+    stats = student_stats(request.user)
+    for item in items:
+        item.unlocked = is_unlocked(item, stats.level)
     owned = {item.pk for item in owned_cosmetics(request.user)}
     return render(request, "web/shop.html", {
-        "privileges": [item for item in items if not item.is_cosmetic],
-        "cosmetics": [item for item in items if item.is_cosmetic],
+        "privileges": [item for item in items if item.kind == Privilege.Kind.PRIVILEGE],
+        "sponsor_rewards": [item for item in items if item.kind == Privilege.Kind.SPONSOR],
+        # Първо отключените; сред тях и сред заключените – по ниво и цена.
+        "cosmetics": sorted((item for item in items if item.is_cosmetic),
+                            key=lambda item: (not item.unlocked, item.min_level, item.price)),
         "owned": owned,
-        "stats": student_stats(request.user),
+        "stats": stats,
         "purchases": Purchase.objects.filter(student=request.user).select_related("privilege"),
     })
 
@@ -234,6 +243,8 @@ def shop_buy(request, pk):
     else:
         if privilege.is_cosmetic:
             messages.success(request, f"Купено: {privilege.name}. Вече се вижда в класацията – смени го от профила.")
+        elif privilege.kind == Privilege.Kind.SPONSOR:
+            messages.success(request, f"Купено: {privilege.name}. Ще го получиш от учител – виж „Моите покупки“.")
         else:
             messages.success(request, f"Купено: {privilege.name}. Покажи го на учителя, когато го използваш.")
     return redirect("shop")

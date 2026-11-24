@@ -10,9 +10,22 @@ from django.db import models
 
 
 class Guild(models.Model):
-    """Една от четирите гилдии: Builders, Guardians, Explorers, Citizens."""
+    """
+    Гилдия по интереси: Помощници, Артисти, Техничари, Изследователи, Спортисти, Организатори.
+    `code` е на латиница и не се сменя – по него сайтът избира цвета и иконата.
+    """
+
+    class Code(models.TextChoices):
+        HELPERS = "helpers", "Помощници (син, щит)"
+        ARTISTS = "artists", "Артисти (розов, четка)"
+        TECHIES = "techies", "Техничари (оранжев, гаечен ключ)"
+        EXPLORERS = "explorers", "Изследователи (зелен, компас)"
+        ATHLETES = "athletes", "Спортисти (червен, мълния)"
+        ORGANIZERS = "organizers", "Организатори (лилав, хора)"
 
     name = models.CharField("име", max_length=50, unique=True)
+    code = models.CharField("цвят и икона", max_length=12, choices=Code.choices, default=Code.EXPLORERS,
+                            help_text="Определя цвета и иконата на гилдията в сайта.")
     description = models.TextField("описание", blank=True)
 
     class Meta:

@@ -13,9 +13,10 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
+from badges.models import StudentBadge
 from badges.services import award_badges
 from missions.models import Claim
-from missions.services import GameRuleError
+from missions.services import GameRuleError, claims_to_decide, missions_reviewed_by
 from notifications.models import Notification
 from notifications.services import notify
 
@@ -171,12 +172,15 @@ class ReviewResult:
     xp: int = 0
     coins: int = 0
     new_level: Level | None = None  # попълва се, ако ученикът е минал на ново ниво
+    team: int = 0  # колко съотборници са получили същата награда
 
 
 def _check_reviewer(claim, reviewer):
-    # Заявката се проверява от автора на мисията (или администратор).
-    if not (reviewer.is_admin_role or (reviewer.is_teacher and claim.mission.created_by_id == reviewer.id)):
-        raise GameRuleError("Само учителят, създал мисията, може да проверява заявките по нея.")
+    # Заявката се проверява от автора на мисията, от избран от него заместник или от администратор.
+    if not claim.mission.can_be_reviewed_by(reviewer):
+        raise GameRuleError("Само учителят, създал мисията, и заместниците му могат да проверяват заявките по нея.")
+    if claim.captain_id:
+        raise GameRuleError("Заявката е част от отбор – решава се със заявката на капитана.")
 
 
 def _mark_reviewed(claim, reviewer, status, comment):
@@ -193,30 +197,88 @@ def _mark_reviewed(claim, reviewer, status, comment):
 
 
 def approve_claim(claim, reviewer, comment="", now=None):
-    """Учителят потвърждава заявка (Ф5): XP се начислява само сега."""
+    """
+    Учителят потвърждава заявка (Ф5): XP се начислява само сега.
+    При отборна мисия същото решение важи за всички от отбора.
+    """
     _check_reviewer(claim, reviewer)
     with transaction.atomic():
-        _mark_reviewed(claim, reviewer, Claim.Status.APPROVED, comment.strip())
+        result = _approve_one(claim, reviewer, comment, now)
+        for member in _team_of(claim):
+            _approve_one(member, reviewer, comment, now)
+            result.team += 1
+    return result
 
-        student = claim.student
-        old_level = level_for_xp(xp_total(student))
-        xp = claim.mission.xp
-        coins = award_xp(student, xp, reason=f"Мисия „{claim.mission.title}“",
-                         created_by=reviewer, claim=claim, now=now)
-        new_level = level_for_xp(xp_total(student))
-        new_level = new_level if new_level != old_level else None
 
-        # Известия за ученика (Ф15) и значки (Ф16) – в същата транзакция като XP
-        text = f"Заявката за „{claim.mission.title}“ е потвърдена: +{xp} XP"
-        if coins:
-            text += f" и +{coins_text(coins)}"
-        notify(student, Notification.Kind.CLAIM_APPROVED, text + "." + _teacher_says(claim),
-               link=reverse("mission_detail", args=[claim.mission_id]))
-        if new_level:
-            notify(student, Notification.Kind.LEVEL_UP, f"Мина на {str(new_level).lower()}!", link=reverse("home"))
-        award_badges(student)
+def _team_of(claim):
+    return list(claim.team.filter(status=Claim.Status.PENDING).select_related("mission", "student"))
 
+
+def _approve_one(claim, reviewer, comment, now):
+    _mark_reviewed(claim, reviewer, Claim.Status.APPROVED, comment.strip())
+
+    student = claim.student
+    old_level = level_for_xp(xp_total(student))
+    xp = claim.mission.xp
+    coins = award_xp(student, xp, reason=f"Мисия „{claim.mission.title}“",
+                     created_by=reviewer, claim=claim, now=now)
+    new_level = level_for_xp(xp_total(student))
+    new_level = new_level if new_level != old_level else None
+
+    # Известия за ученика (Ф15) и значки (Ф16) – в същата транзакция като XP
+    text = f"Заявката за „{claim.mission.title}“ е потвърдена: +{xp} XP"
+    if coins:
+        text += f" и +{coins_text(coins)}"
+    notify(student, Notification.Kind.CLAIM_APPROVED, text + "." + _teacher_says(claim),
+           link=reverse("mission_detail", args=[claim.mission_id]))
+    if new_level:
+        notify(student, Notification.Kind.LEVEL_UP, f"Мина на {str(new_level).lower()}!", link=reverse("home"))
+    _give_mission_rewards(claim, reviewer)
+    award_badges(student)
     return ReviewResult(claim=claim, xp=xp, coins=coins, new_level=new_level)
+
+
+def _give_mission_rewards(claim, reviewer):
+    """Значката и предметът, които се печелят само от тази мисия."""
+    mission, student = claim.mission, claim.student
+    badge = mission.reward_badge
+    if badge and badge.is_active:
+        _, created = StudentBadge.objects.get_or_create(student=student, badge=badge, defaults={
+            "given_by": reviewer, "claim": claim, "note": f"Мисия „{mission.title}“"[:200]})
+        if created:
+            notify(student, Notification.Kind.BADGE, f"Нова значка: „{badge.name}“ – {badge.description}",
+                   link=reverse("profile"))
+    if not mission.reward_item_id:
+        return
+    # Редът на предмета се заключва, за да не се раздадат повече бройки от наличните.
+    item = Privilege.objects.select_for_update().get(pk=mission.reward_item_id)
+    if item.is_cosmetic and student.purchases.filter(privilege=item).exists():
+        return
+    if item.is_sold_out:
+        notify(student, Notification.Kind.CLAIM_APPROVED, f"Наградата „{item.name}“ вече е изчерпана.",
+               link=reverse("mission_detail", args=[mission.pk]))
+        return
+    Purchase.objects.create(student=student, privilege=item, price_paid=0, claim=claim,
+                            used_at=timezone.now() if item.is_cosmetic else None)
+    if item.is_cosmetic:
+        wear(student, item)
+    notify(student, Notification.Kind.BONUS, f"Спечели „{item.name}“ от мисията „{mission.title}“!",
+           link=reverse("profile" if item.is_cosmetic else "shop"))
+
+
+def _take_mission_rewards(claim):
+    """При отмяна: значката и предметът от мисията се връщат (освен ако предметът вече е предаден)."""
+    claim.badges.all().delete()
+    student = claim.student
+    for purchase in claim.rewards.select_related("privilege"):
+        item = purchase.privilege
+        if not item.is_cosmetic and purchase.is_used:
+            continue
+        if item.is_cosmetic:
+            field = "shown_title" if item.kind == Privilege.Kind.TITLE else "shown_frame"
+            if getattr(student, f"{field}_id") == item.pk:
+                wear(student, None, kind=item.kind)
+        purchase.delete()
 
 
 def _teacher_says(claim):
@@ -227,19 +289,20 @@ def reject_claim(claim, reviewer, comment=""):
     """Учителят отказва заявка. Ученикът може да я подаде отново."""
     _check_reviewer(claim, reviewer)
     with transaction.atomic():
-        _mark_reviewed(claim, reviewer, Claim.Status.REJECTED, comment.strip())
-        notify(claim.student, Notification.Kind.CLAIM_REJECTED,
-               f"Заявката за „{claim.mission.title}“ е отказана.{_teacher_says(claim)} Можеш да я подадеш отново.",
-               link=reverse("mission_detail", args=[claim.mission_id]))
+        for member in [claim, *_team_of(claim)]:
+            _mark_reviewed(member, reviewer, Claim.Status.REJECTED, comment.strip())
+            notify(member.student, Notification.Kind.CLAIM_REJECTED,
+                   f"Заявката за „{claim.mission.title}“ е отказана.{_teacher_says(claim)} Можеш да я подадеш отново.",
+                   link=reverse("mission_detail", args=[claim.mission_id]))
     return ReviewResult(claim=claim)
 
 
 def pending_claims_for(reviewer):
-    claims = Claim.objects.filter(status=Claim.Status.PENDING).select_related(
-        "mission", "student", "student__school_class").prefetch_related("files")
+    claims = claims_to_decide().select_related(
+        "mission", "student", "student__school_class").prefetch_related("files", "team__student__school_class")
     if reviewer.is_admin_role:
         return claims
-    return claims.filter(mission__created_by=reviewer)
+    return claims.filter(mission__in=missions_reviewed_by(reviewer))
 
 
 # ---------- Бонус XP от учител ----------
@@ -364,23 +427,33 @@ def undo_approval(actor, claim, why, now=None):
     why = _check_reason(why)
     if claim.status != Claim.Status.APPROVED:
         raise GameRuleError("Само потвърдена заявка може да се отмени.")
-    if not can_undo(actor, claim.mission.created_by_id, claim.reviewed_at, now):
-        raise GameRuleError("Можете да отмените само потвърждение по своя мисия, и то до "
+    allowed = actor.pk if claim.mission.can_be_reviewed_by(actor) else None
+    if not can_undo(actor, allowed, claim.reviewed_at, now):
+        raise GameRuleError("Можете да отмените само потвърждение по мисия, която проверявате, и то до "
                             f"{GameSettings.load().undo_days} дни след него.")
     with transaction.atomic():
-        User.objects.select_for_update().get(pk=claim.student_id)
-        for entry in claim.xp_transactions.filter(amount__gt=0, reversal__isnull=True):
-            _undo_xp(entry, actor, why, now)
-        Claim.objects.filter(pk=claim.pk).update(status=Claim.Status.REJECTED, reviewed_by=actor,
-                                                 reviewed_at=timezone.now(), review_comment=why)
+        # При капитан се отменя за целия отбор, а при съотборник – само за него.
+        team = claim.team.filter(status=Claim.Status.APPROVED).select_related("mission", "student")
+        for member in [claim, *team]:
+            User.objects.select_for_update().get(pk=member.student_id)
+            for entry in member.xp_transactions.filter(amount__gt=0, reversal__isnull=True):
+                _undo_xp(entry, actor, why, now)
+            _take_mission_rewards(member)
+            Claim.objects.filter(pk=member.pk).update(status=Claim.Status.REJECTED, reviewed_by=actor,
+                                                      reviewed_at=timezone.now(), review_comment=why)
+            notify(member.student, Notification.Kind.UNDONE,
+                   f"Потвърждението на „{claim.mission.title}“ е отменено: {why}",
+                   link=reverse("mission_detail", args=[claim.mission_id]))
         claim.refresh_from_db()
-        notify(claim.student, Notification.Kind.UNDONE,
-               f"Потвърждението на „{claim.mission.title}“ е отменено: {why}",
-               link=reverse("mission_detail", args=[claim.mission_id]))
     return claim
 
 
 # ---------- Магазин ----------
+
+
+def is_unlocked(privilege, level):
+    """Достатъчно ли е нивото за този предмет. Всеки предмет от ниво 1 е отключен."""
+    return privilege.min_level <= 1 or (level is not None and level.number >= privilege.min_level)
 
 
 def buy_privilege(student, privilege):
@@ -393,9 +466,18 @@ def buy_privilege(student, privilege):
         raise GameRuleError("Само ученици могат да пазаруват.")
     if not privilege.is_active:
         raise GameRuleError("Тази привилегия вече не се продава.")
+    if privilege.only_from_mission:
+        raise GameRuleError(f"„{privilege.name}“ се печели само от мисия.")
 
     with transaction.atomic():
         User.objects.select_for_update().get(pk=student.pk)
+        if not is_unlocked(privilege, level_for_xp(xp_total(student))):
+            raise GameRuleError(f"„{privilege.name}“ се отключва на ниво {privilege.min_level}.")
+        if privilege.stock is not None:
+            # Заключва се и предметът – последната бройка се продава само веднъж.
+            privilege = Privilege.objects.select_for_update().get(pk=privilege.pk)
+            if privilege.is_sold_out:
+                raise GameRuleError(f"„{privilege.name}“ е изчерпана.")
         if privilege.is_cosmetic and student.purchases.filter(privilege=privilege).exists():
             raise GameRuleError(f"Вече имаш „{privilege.name}“.")
         balance = coin_balance(student)
@@ -416,8 +498,9 @@ def buy_privilege(student, privilege):
 
 
 def owned_cosmetics(student):
-    """Титлите и рамките, които ученикът е купил."""
-    return Privilege.objects.filter(purchases__student=student).exclude(kind=Privilege.Kind.PRIVILEGE).distinct()
+    """Титлите и рамките, които ученикът е купил или спечелил."""
+    return Privilege.objects.filter(purchases__student=student).filter(
+        kind__in=[Privilege.Kind.TITLE, Privilege.Kind.FRAME]).distinct()
 
 
 def wear(student, privilege=None, kind=None):
@@ -427,7 +510,7 @@ def wear(student, privilege=None, kind=None):
     """
     if privilege is not None:
         if not privilege.is_cosmetic or not owned_cosmetics(student).filter(pk=privilege.pk).exists():
-            raise GameRuleError("Можеш да сложиш само титла или рамка, която си купил.")
+            raise GameRuleError("Можеш да сложиш само титла или рамка, която си купил или спечелил.")
         kind = privilege.kind
     field = "shown_title" if kind == Privilege.Kind.TITLE else "shown_frame"
     setattr(student, field, privilege)
@@ -449,10 +532,12 @@ def mark_purchase_used(purchase, teacher, mission=None):
 
 def unused_purchases():
     """Неизползваните покупки, които учителят отбелязва. Hint Token се харчи сам – през асистента."""
-    return Purchase.objects.filter(used_at__isnull=True, privilege__kind=Privilege.Kind.PRIVILEGE).exclude(
+    return Purchase.objects.filter(used_at__isnull=True, privilege__kind__in=[
+        Privilege.Kind.PRIVILEGE, Privilege.Kind.SPONSOR]).exclude(
         privilege__code="hint_token").select_related(
         "student", "student__school_class", "privilege").order_by("purchased_at")
 
 
 def active_privileges():
-    return Privilege.objects.filter(is_active=True)
+    """Каквото се продава в магазина. Предметите само от мисия не са тук."""
+    return Privilege.objects.filter(is_active=True, only_from_mission=False).select_related("sponsor")

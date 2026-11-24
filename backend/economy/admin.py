@@ -7,7 +7,7 @@ from unfold.decorators import action
 
 from assistant_bridge.client import check_assistant_health, check_model
 
-from .models import CoinTransaction, CoinWeek, GameSettings, Level, Privilege, Purchase, XPTransaction
+from .models import CoinTransaction, CoinWeek, GameSettings, Level, Privilege, Purchase, Sponsor, XPTransaction
 
 
 @admin.register(GameSettings)
@@ -65,8 +65,14 @@ class LevelAdmin(ModelAdmin):
 
 @admin.register(Privilege)
 class PrivilegeAdmin(ModelAdmin):
-    list_display = ["name", "code", "price", "is_active"]
-    list_editable = ["price", "is_active"]
+    list_display = ["name", "kind", "sponsor", "price", "min_level", "stock", "only_from_mission", "is_active"]
+    list_editable = ["price", "min_level", "is_active"]
+    list_filter = ["kind", "sponsor", "only_from_mission", "is_active"]
+
+
+@admin.register(Sponsor)
+class SponsorAdmin(ModelAdmin):
+    list_display = ["name", "website"]
 
 
 class ReadOnlyLedgerAdmin(ModelAdmin):
@@ -129,6 +135,6 @@ class CoinWeekAdmin(ReadOnlyLedgerAdmin):
 
 @admin.register(Purchase)
 class PurchaseAdmin(ReadOnlyLedgerAdmin):
-    list_display = ["purchased_at", "student", "privilege", "price_paid", "used_at", "marked_used_by"]
+    list_display = ["purchased_at", "student", "privilege", "price_paid", "claim", "used_at", "marked_used_by"]
     list_filter = ["privilege", "used_at"]
     search_fields = ["student__nickname", "student__email"]

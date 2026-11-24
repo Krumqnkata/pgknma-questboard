@@ -2,7 +2,6 @@
 from django import template
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.text import slugify
 
 from economy.words import coins_text
 
@@ -17,8 +16,8 @@ def coins(count):
 
 @register.filter
 def guild_class(guild):
-    """CSS клас с цвета на гилдията: {{ mission.guild|guild_class }} → „guild-builders“."""
-    return f"guild-{slugify(str(guild))}" if guild else ""
+    """CSS клас с цвета на гилдията: {{ mission.guild|guild_class }} → „guild-techies“."""
+    return f"guild-{guild.code}" if guild else ""
 
 
 def _value_tokens(value):
@@ -67,6 +66,7 @@ BADGE_ICONS = {
     "coin": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/>',
     # Икони на гилдиите в горната лента на картата с мисия
     "wrench": '<path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z"/>',
+    "brush": '<path d="M14 4.5 19.5 10 11 18.5 5.5 13zM5.5 13c-2 1-2.5 3-2.5 5.5V21h2.5c2.5 0 4.5-.5 5.5-2.5"/>',
     "compass": '<circle cx="12" cy="12" r="9"/><path d="m8 16 2-6 6-2-2 6z"/>',
     "users": '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .6 3 2.6 3 6"/>',
     "flame": '<path d="M12 22c4 0 7-2.7 7-6.8 0-3.6-2.4-6-4.3-8.2-.4 2-1.6 3.4-3.2 3.9.6-3.1-.6-6.5-3.5-8.9 '
@@ -115,7 +115,9 @@ def page_text(text, school=None):
             flush()
         elif line.startswith("## "):
             flush()
-            html.append(f"<h2>{line[3:]}</h2>")
+            # Съобщението за бисквитките води направо до този раздел (/privacy/#cookies).
+            anchor = ' id="cookies"' if line[3:].startswith("Бисквитки") else ""
+            html.append(f"<h2{anchor}>{line[3:]}</h2>")
         elif line.startswith("- "):
             if paragraph:
                 flush()
@@ -130,8 +132,18 @@ def page_text(text, school=None):
 
 @register.filter
 def guild_slug(guild):
-    """{{ user.guild|guild_slug }} → „builders“ (за цвета на сайта според гилдията)."""
-    return slugify(str(guild)) if guild else ""
+    """{{ user.guild|guild_slug }} → „techies“ (за цвета на сайта според гилдията)."""
+    return guild.code if guild else ""
+
+
+GUILD_ICONS = {"helpers": "shield", "artists": "brush", "techies": "wrench",
+               "explorers": "compass", "athletes": "bolt", "organizers": "users"}
+
+
+@register.simple_tag
+def guild_icon(guild):
+    """{% guild_icon mission.guild %} → иконата на гилдията."""
+    return badge_icon(GUILD_ICONS.get(getattr(guild, "code", ""), "users"))
 
 
 @register.simple_tag
@@ -146,14 +158,14 @@ def avatar(user, size=40, frame_style=None):
 def difficulty(xp, max_xp):
     """
     Трудност на мисия според XP спрямо най-многото позволено:
-    до 1/3 – лесна, до 2/3 – средна, над това – трудна.
+    до 1/3 – лесна (бронзова карта), до 2/3 – средна (сребърна), над това – трудна (златна).
     """
     share = (xp or 0) / (max_xp or 1)
     if share <= 1 / 3:
-        return {"slug": "easy", "name": "Лесна", "pips": 1}
+        return {"slug": "easy", "name": "Лесна", "rarity": "Бронз", "card": "бронзова карта", "pips": 1}
     if share <= 2 / 3:
-        return {"slug": "medium", "name": "Средна", "pips": 2}
-    return {"slug": "hard", "name": "Трудна", "pips": 3}
+        return {"slug": "medium", "name": "Средна", "rarity": "Сребро", "card": "сребърна карта", "pips": 2}
+    return {"slug": "hard", "name": "Трудна", "rarity": "Злато", "card": "златна карта", "pips": 3}
 
 
 @register.filter

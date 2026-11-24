@@ -128,7 +128,7 @@ def _passwords_csv(created):
 
 @admin.register(Guild)
 class GuildAdmin(ModelAdmin):
-    list_display = ["name", "description"]
+    list_display = ["name", "code", "description"]
 
 
 @admin.register(SchoolClass)

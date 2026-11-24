@@ -14,6 +14,10 @@
       <p class="pre">{{ mission.description }}</p>
       <h3>Критерий за изпълнение</h3>
       <p class="pre mb-0">{{ mission.criteria }}</p>
+      {% if mission.files.all %}
+        <h3 class="mt-1">Файлове към мисията</h3>
+        {% include "web/_evidence_files.html" with claim=mission %}
+      {% endif %}
     </section>
 
     {% if user.is_student %}
@@ -24,6 +28,19 @@
             {% include "web/_claim_status.html" with claim=my_claim %}
             <span class="muted small">подадена на {{ my_claim.submitted_at|date:"j F, H:i"|lower }}</span>
           </div>
+          {% if my_claim.captain %}
+            <p>Ти си в отбора на <strong>{{ my_claim.captain.student.nickname }}</strong>.</p>
+          {% endif %}
+          {% if team|length > 1 %}
+            <p class="team-list"><span class="muted small">Отбор:</span>
+              {% for member in team %}<span class="tag">{{ member.student.nickname }}{% if forloop.first %} · капитан{% endif %}</span>{% endfor %}</p>
+          {% endif %}
+          {% if my_claim.captain and my_claim.status == "pending" %}
+            <form method="post" action="{% url 'team_leave' mission.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-outline btn-small">Напусни отбора</button>
+            </form>
+          {% endif %}
           {% if my_claim.evidence %}<p class="evidence pre">{{ my_claim.evidence }}</p>{% endif %}
           {% include "web/_evidence_files.html" with claim=my_claim %}
           {% if my_claim.review_comment %}<p><strong>Учителят:</strong> {{ my_claim.review_comment }}</p>{% endif %}
@@ -48,15 +65,20 @@
     <section class="panel">
       <dl class="facts">
         <dt>Гилдия</dt><dd><span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span></dd>
-        <dt>Опит</dt><dd class="xp">{{ mission.xp }} XP</dd>
+        <dt>Опит</dt><dd class="xp">{{ mission.xp }} XP{% if mission.is_group %} на човек{% endif %}</dd>
+        {% if mission.is_group %}<dt>Отбор</dt><dd>от {{ mission.team_min }} до {{ mission.team_max }} ученици</dd>{% endif %}
+        {% if mission.reward_badge %}<dt>Значка</dt><dd>{{ mission.reward_badge.name }}</dd>{% endif %}
+        {% if mission.reward_item %}<dt>Награда</dt><dd>{{ mission.reward_item.name }}{% if mission.reward_item.sponsor %}<br><span class="muted small">от {{ mission.reward_item.sponsor }}</span>{% endif %}</dd>{% endif %}
         <dt>Срок</dt><dd>{{ mission.deadline|date:"j F Y, H:i"|lower }}</dd>
         <dt>Състояние</dt>
         <dd>{% if not mission.is_active %}спряна{% elif mission.is_open %}приема заявки{% else %}срокът изтече{% endif %}</dd>
         {% if user.is_teacher %}
           <dt>Подсказки</dt><dd>{{ mission.hints_allowed|yesno:"разрешени,забранени" }}</dd>
+          <dt>Проверяват</dt>
+          <dd>{{ mission.created_by.get_full_name|default:mission.created_by.email }}{% for teacher in mission.reviewers.all %}, {{ teacher.get_full_name|default:teacher.email }}{% endfor %}</dd>
         {% endif %}
       </dl>
-      {% if user.is_teacher %}
+      {% if is_author %}
         <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'mission_edit' mission.pk %}">Редактирай</a></div>
       {% endif %}
     </section>
@@ -98,7 +120,8 @@
           <tbody>
             {% for claim in claims %}
               <tr>
-                <td>{{ claim.student.get_full_name|default:claim.student.nickname }}<br><span class="muted small">{{ claim.student.nickname }}</span></td>
+                <td>{{ claim.student.get_full_name|default:claim.student.nickname }}<br><span class="muted small">{{ claim.student.nickname }}</span>
+                  {% if claim.captain %}<br><span class="tag">в отбора на {{ claim.captain.student.nickname }}</span>{% endif %}</td>
                 <td>{{ claim.student.school_class }}</td>
                 <td><div class="pre">{{ claim.evidence|urlize }}</div>{% include "web/_evidence_files.html" %}</td>
                 <td>{{ claim.submitted_at|date:"j F, H:i"|lower }}</td>
@@ -108,7 +131,7 @@
                   {% if claim.status == "approved" %}{% url 'claim_undo' claim.pk as undo_url %}{% include "web/_undo_form.html" with url=undo_url action="" id="" %}{% endif %}
                 </td>
               </tr>
-              {% if claim.status == "pending" %}
+              {% if claim.status == "pending" and not claim.captain %}
                 <tr class="review-row"><td colspan="5">{% include "web/_review_buttons.html" %}</td></tr>
               {% endif %}
             {% endfor %}

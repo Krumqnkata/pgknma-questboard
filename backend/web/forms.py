@@ -1,45 +1,13 @@
 """Формите в страниците за ученици и учители."""
 from django import forms
+from django.db.models import Q
 
-from economy.models import GameSettings
-from missions.evidence import ACCEPT
-from missions.models import Mission
-from missions.services import EVIDENCE_MAX_LENGTH
-
-
-class MissionForm(forms.ModelForm):
-    """Учителят създава или редактира мисия (Ф3). Правилата са в Mission.clean()."""
-
-    class Meta:
-        model = Mission
-        fields = ["title", "description", "criteria", "guild", "xp", "deadline", "hints_allowed", "is_active"]
-        widgets = {
-            "description": forms.Textarea(attrs={"rows": 4}),
-            "criteria": forms.Textarea(attrs={"rows": 3}),
-            # Календар с час в браузъра
-            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        max_xp = GameSettings.load().max_xp_per_mission
-        self.fields["xp"].help_text = f"Най-много {max_xp} XP."
-        if self.instance._state.adding:
-            # Нова мисия винаги е активна – полето е само за редакция.
-            del self.fields["is_active"]
-
-
-class ReviewForm(forms.Form):
-    """Учителят потвърждава или отказва заявка (Ф5)."""
-
-    APPROVE = "approve"
-    REJECT = "reject"
-
-    decision = forms.ChoiceField(choices=[(APPROVE, "Потвърди"), (REJECT, "Откажи")])
-    comment = forms.CharField(
-        label="Коментар", required=False, max_length=500,
-        widget=forms.TextInput(attrs={"placeholder": "Коментар към ученика (по желание)"}),
-    )
+from accounts.models import User
+from badges.models import Badge
+from economy.models import GameSettings, Privilege
+from missions.evidence import ACCEPT, ALLOWED_TEXT, prepare_all
+from missions.models import TEAM_LIMIT, Mission, MissionFile
+from missions.services import EVIDENCE_MAX_LENGTH, GameRuleError, attach_to_mission, parse_nicknames
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -60,27 +28,150 @@ class MultipleFileField(forms.FileField):
         return [single(data, initial)] if data else []
 
 
-class ClaimForm(forms.Form):
-    """Ученикът заявява изпълнение с доказателство (Ф4): текст и/или снимки и PDF."""
+class TeacherChoices(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, teacher):
+        return teacher.get_full_name() or teacher.email
 
+
+class MissionForm(forms.ModelForm):
+    """Учителят създава или редактира мисия (Ф3). Правилата са в Mission.clean()."""
+
+    reviewers = TeacherChoices(
+        queryset=User.objects.none(), required=False, label="Заместници при проверката",
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Учители, които също могат да потвърждават и отказват заявките. "
+                  "Ако не изберете никого, проверявате само вие.",
+    )
+    files = MultipleFileField(label="Файлове към мисията", required=False)
+    remove_files = forms.ModelMultipleChoiceField(
+        queryset=MissionFile.objects.none(), required=False, label="Махни файлове",
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    class Meta:
+        model = Mission
+        fields = ["title", "description", "criteria", "guild", "xp", "deadline", "hints_allowed",
+                  "is_group", "team_min", "team_max", "reward_badge", "reward_item", "reviewers", "is_active"]
+        widgets = {
+            "team_min": forms.NumberInput(attrs={"min": 2, "max": TEAM_LIMIT}),
+            "team_max": forms.NumberInput(attrs={"min": 2, "max": TEAM_LIMIT}),
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "criteria": forms.Textarea(attrs={"rows": 3}),
+            # Календар с час в браузъра
+            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        max_xp = GameSettings.load().max_xp_per_mission
+        self.fields["xp"].help_text = f"Най-много {max_xp} XP."
+        self.fields["reward_badge"].queryset = Badge.objects.filter(
+            Q(rule=Badge.Rule.MISSION, is_active=True) | Q(pk=self.instance.reward_badge_id))
+        self.fields["reward_badge"].empty_label = "Без значка"
+        self.fields["reward_badge"].help_text = "Получава се само от тази мисия. Нови значки добавя администраторът."
+        # Учителят не може да подари обикновена стока от магазина – само предмет за мисии или награда от спонсор.
+        self.fields["reward_item"].queryset = Privilege.objects.filter(
+            Q(only_from_mission=True, is_active=True) | Q(kind=Privilege.Kind.SPONSOR, is_active=True)
+            | Q(pk=self.instance.reward_item_id)).select_related("sponsor")
+        self.fields["reward_item"].empty_label = "Без предмет"
+        self.fields["reward_item"].label_from_instance = reward_label
+        self.fields["reviewers"].queryset = User.objects.filter(
+            role=User.Role.TEACHER, is_active=True).exclude(pk=self.instance.created_by_id)
+        self.fields["team_min"].required = self.fields["team_max"].required = False
+        rules = GameSettings.load()
+        self.fields["files"].widget.attrs["accept"] = ACCEPT
+        self.fields["files"].help_text = (f"Указания, образец или плакат – до {rules.evidence_max_files} файла по "
+                                          f"{rules.evidence_max_mb} MB: {ALLOWED_TEXT}.")
+        if not rules.evidence_max_files:
+            del self.fields["files"]
+        own_files = MissionFile.objects.filter(mission=self.instance) if self.instance.pk else MissionFile.objects.none()
+        if own_files:
+            self.fields["remove_files"].queryset = own_files
+        else:
+            del self.fields["remove_files"]
+        if self.instance._state.adding:
+            # Нова мисия винаги е активна – полето е само за редакция.
+            del self.fields["is_active"]
+
+    # Празно поле за размер на отбора = стойността по подразбиране.
+    def clean_team_min(self):
+        return self.cleaned_data.get("team_min") or Mission._meta.get_field("team_min").default
+
+    def clean_team_max(self):
+        return self.cleaned_data.get("team_max") or Mission._meta.get_field("team_max").default
+
+    def clean_files(self):
+        """Файловете се проверяват още тук, за да се покаже грешката до полето."""
+        try:
+            self.prepared_files = prepare_all(self.cleaned_data.get("files") or [], GameSettings.load())
+        except GameRuleError as error:
+            raise forms.ValidationError(str(error))
+        return self.cleaned_data.get("files")
+
+    def save(self, commit=True):
+        mission = super().save(commit)
+        for record in self.cleaned_data.get("remove_files") or []:
+            record.delete()
+        attach_to_mission(mission, getattr(self, "prepared_files", []))
+        return mission
+
+
+def reward_label(item):
+    if item.kind == Privilege.Kind.SPONSOR:
+        left = "" if item.left is None else f", остават {item.left}"
+        return f"{item.name} ({item.sponsor}{left})"
+    return f"{item.name} ({item.get_kind_display().lower()})"
+
+
+class ReviewForm(forms.Form):
+    """Учителят потвърждава или отказва заявка (Ф5)."""
+
+    APPROVE = "approve"
+    REJECT = "reject"
+
+    decision = forms.ChoiceField(choices=[(APPROVE, "Потвърди"), (REJECT, "Откажи")])
+    comment = forms.CharField(
+        label="Коментар", required=False, max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": "Коментар към ученика (по желание)"}),
+    )
+
+
+class ClaimForm(forms.Form):
+    """Ученикът заявява изпълнение с доказателство (Ф4): текст и/или файлове, а при отборна мисия – и съотборниците."""
+
+    teammates = forms.CharField(
+        label="Съотборници", required=False, max_length=400,
+        widget=forms.TextInput(attrs={"placeholder": "Комета, Вихър", "autocomplete": "off"}),
+    )
     evidence = forms.CharField(
         label="Доказателство",
         max_length=EVIDENCE_MAX_LENGTH, required=False,
         widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Кратко описание или връзка (например към видео)"}),
     )
-    files = MultipleFileField(label="Снимки или PDF", required=False)
+    files = MultipleFileField(label="Файлове", required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, mission=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if mission is None or not mission.is_group:
+            del self.fields["teammates"]
+        else:
+            self.fields["teammates"].help_text = (
+                f"Псевдонимите им, разделени със запетая. Отборът е от {mission.team_min} до "
+                f"{mission.team_max} ученици заедно с теб. Всеки получава известие и пълната награда."
+            )
         rules = GameSettings.load()
         if not rules.evidence_max_files:
             del self.fields["files"]
             return
         self.fields["files"].widget.attrs["accept"] = ACCEPT
         self.fields["files"].help_text = (
-            f"До {rules.evidence_max_files} файла по {rules.evidence_max_mb} MB: снимки (JPG, PNG, WebP) или PDF. "
+            f"До {rules.evidence_max_files} файла по {rules.evidence_max_mb} MB: {ALLOWED_TEXT}. "
             "За видео сложи връзка в текста (YouTube, Google Drive)."
         )
+
+
+    def clean_teammates(self):
+        return parse_nicknames(self.cleaned_data.get("teammates"))
 
 
 class NicknameForm(forms.Form):

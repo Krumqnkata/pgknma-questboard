@@ -8,15 +8,16 @@ from .models import Guild, SchoolClass, User
 
 
 class GuildSeedTests(TestCase):
-    def test_four_guilds_exist(self):
-        names = set(Guild.objects.values_list("name", flat=True))
-        self.assertEqual(names, {"Builders", "Guardians", "Explorers", "Citizens"})
+    def test_six_interest_guilds_exist(self):
+        guilds = dict(Guild.objects.values_list("name", "code"))
+        self.assertEqual(guilds, {"Помощници": "helpers", "Артисти": "artists", "Техничари": "techies",
+                                  "Изследователи": "explorers", "Спортисти": "athletes", "Организатори": "organizers"})
 
 
 class UserRoleTests(TestCase):
     def setUp(self):
         self.school_class = SchoolClass.objects.create(name="11А")
-        self.guild = Guild.objects.get(name="Builders")
+        self.guild = Guild.objects.get(name="Техничари")
 
     def test_password_is_hashed(self):
         user = User.objects.create_user("uchenik@example.com", "TaynaParola123")
@@ -54,7 +55,7 @@ class AdminAddUserTests(TestCase):
         self.client.force_login(User.objects.create_superuser("a@example.com", "TaynaParola123"))
         self.url = reverse("admin:accounts_user_add")
         self.school_class = SchoolClass.objects.create(name="10А")
-        self.guild = Guild.objects.get(name="Explorers")
+        self.guild = Guild.objects.get(name="Изследователи")
 
     def post(self, **fields):
         data = {"password1": "НоваПарола2026!", "password2": "НоваПарола2026!", "usable_password": "true",
@@ -118,7 +119,7 @@ class ImportUsersTests(TestCase):
         return import_users(self.HEADER + rows)
 
     def test_students_and_teachers_are_created(self):
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Explorers\n"
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n"
                                  "maria@example.bg,Мария,Иванова,учител,,,\n")
         self.assertTrue(result.ok, result.errors)
         student = User.objects.get(email="ivan@example.bg")
@@ -127,15 +128,15 @@ class ImportUsersTests(TestCase):
         self.assertEqual(User.objects.get(email="maria@example.bg").role, User.Role.TEACHER)
 
     def test_temporary_password_works_and_must_be_changed(self):
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Explorers\n")
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n")
         user = User.objects.get(email="ivan@example.bg")
         self.assertTrue(user.check_password(result.created[0].password))
         self.assertTrue(user.must_change_password)
         self.assertNotEqual(user.password, result.created[0].password)  # в базата е само хешът
 
     def test_one_bad_row_imports_nothing(self):
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Explorers\n"
-                                 "bad-email,Мария,Иванова,ученик,Лъв,11Б,Builders\n")
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n"
+                                 "bad-email,Мария,Иванова,ученик,Лъв,11Б,Техничари\n")
         self.assertFalse(result.ok)
         self.assertIn("Ред 3", result.errors[0])
         self.assertFalse(User.objects.filter(email="ivan@example.bg").exists())
@@ -146,16 +147,16 @@ class ImportUsersTests(TestCase):
 
     def test_unknown_guild_and_missing_student_fields(self):
         self.assertFalse(self.run_import("a@example.bg,А,Б,ученик,Ник,11Б,Пирати\n").ok)
-        self.assertFalse(self.run_import("a@example.bg,А,Б,ученик,,,Builders\n").ok)
+        self.assertFalse(self.run_import("a@example.bg,А,Б,ученик,,,Техничари\n").ok)
 
     def test_duplicate_nickname_is_rejected(self):
-        result = self.run_import("a@example.bg,А,Б,ученик,Сокол,11Б,Builders\n"
-                                 "b@example.bg,В,Г,ученик,сокол,11Б,Builders\n")
+        result = self.run_import("a@example.bg,А,Б,ученик,Сокол,11Б,Техничари\n"
+                                 "b@example.bg,В,Г,ученик,сокол,11Б,Техничари\n")
         self.assertFalse(result.ok)
 
     def test_existing_email_is_skipped(self):
         User.objects.create_user("ivan@example.bg", "TaynaParola123", role=User.Role.TEACHER)
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Explorers\n")
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n")
         self.assertTrue(result.ok)
         self.assertEqual(result.skipped, ["ivan@example.bg"])
         self.assertEqual(User.objects.get(email="ivan@example.bg").role, User.Role.TEACHER)  # не е променен
@@ -167,7 +168,7 @@ class ImportUsersTests(TestCase):
         url = reverse("admin:accounts_user_import_csv")
         self.assertContains(self.client.get(url), "Внасяне на ученици и учители")
 
-        upload = SimpleUploadedFile("hora.csv", (self.HEADER + "ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Explorers\n")
+        upload = SimpleUploadedFile("hora.csv", (self.HEADER + "ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n")
                                     .encode("utf-8"), content_type="text/csv")
         response = self.client.post(url, {"file": upload})
         self.assertContains(response, "Свали паролите")

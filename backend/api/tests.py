@@ -37,7 +37,7 @@ class MissionApiTests(TestCase):
     def mission_data(self, **fields):
         data = {
             "title": "API мисия", "description": "Описание", "criteria": "Критерий",
-            "guild": Guild.objects.get(name="Citizens").pk, "xp": 30,
+            "guild": Guild.objects.get(name="Организатори").pk, "xp": 30,
             "deadline": (timezone.now() + timedelta(days=3)).isoformat(),
         }
         data.update(fields)

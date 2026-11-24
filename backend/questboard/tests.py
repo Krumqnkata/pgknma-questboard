@@ -82,7 +82,7 @@ class DashboardTests(TestCase):
         self.assertContains(response, "Озеленяване на двора")
         dashboard = response.context["dashboard"]
         self.assertEqual(dashboard["weekly"]["total"], 1)
-        self.assertEqual(dashboard["guilds"][0]["name"], "Builders")
+        self.assertEqual(dashboard["guilds"][0]["name"], "Техничари")
         self.assertEqual(dashboard["guilds"][0]["xp"], 40)
         kpis = {kpi.label: kpi.value for kpi in dashboard["kpis"]}
         self.assertEqual(kpis["Чакащи заявки"], "1")

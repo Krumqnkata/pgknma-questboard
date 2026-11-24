@@ -99,6 +99,19 @@
         {% if not recent_xp and not recent_coins %}<p class="muted">Тук ще видиш опита и монетите, които печелиш и харчиш.</p>{% endif %}
       </section>
     </div>
+
+    {% if recent_awards %}
+    <section class="panel">
+      <h2>Последни награди в училище</h2>
+      <ul class="award-list">
+        {% for award in recent_awards %}
+          <li>{% avatar award.student 32 %}
+            <span><strong>{{ award.student.nickname }}</strong> получи {{ award.kind }} <strong>{{ award.text }}</strong></span>
+            <time class="muted small" datetime="{{ award.at|date:'c' }}">{{ award.at|date:"j F"|lower }}</time></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
   </div>
 </div>
 

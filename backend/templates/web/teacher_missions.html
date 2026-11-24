@@ -7,7 +7,7 @@
 <div class="page-head">
   <div>
     <h1>Моите мисии</h1>
-    <p>Мисиите, които сте публикували, и колко заявки чакат проверка.</p>
+    <p>Мисиите, които сте публикували или проверявате като заместник, и колко заявки чакат проверка.</p>
   </div>
   <a class="btn" href="{% url 'mission_create' %}">Нова мисия</a>
 </div>
@@ -21,7 +21,9 @@
       <tbody>
         {% for mission in missions %}
           <tr>
-            <td><a href="{% url 'mission_detail' mission.pk %}"><strong>{{ mission.title }}</strong></a></td>
+            <td><a href="{% url 'mission_detail' mission.pk %}"><strong>{{ mission.title }}</strong></a>
+              {% if mission.created_by_id != user.pk %}<br><span class="tag">заместник на {{ mission.created_by.get_full_name|default:mission.created_by.email }}</span>{% endif %}
+              {% if mission.is_group %}<br><span class="tag">отборна</span>{% endif %}</td>
             <td><span class="chip {{ mission.guild|guild_class }}">{{ mission.guild }}</span></td>
             <td class="num xp">{{ mission.xp }}</td>
             <td>{{ mission.deadline|date:"j F, H:i"|lower }}</td>

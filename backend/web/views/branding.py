@@ -2,9 +2,10 @@
 import mimetypes
 
 from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import cache_control
 
-from economy.models import GameSettings
+from economy.models import GameSettings, Sponsor
 
 
 @cache_control(public=True, max_age=86400)
@@ -16,6 +17,16 @@ def school_logo(request):
     logo = GameSettings.load().school_logo
     if not logo:
         raise Http404("Няма качено лого.")
+    return _send_logo(logo)
+
+
+@cache_control(public=True, max_age=86400)
+def sponsor_logo(request, name):
+    """Логото на спонсор. Името на файла трябва да е записано при някой спонсор."""
+    return _send_logo(get_object_or_404(Sponsor, logo=f"sponsors/{name}").logo)
+
+
+def _send_logo(logo):
     try:
         file = logo.open("rb")
     except FileNotFoundError:

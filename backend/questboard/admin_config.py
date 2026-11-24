@@ -14,9 +14,9 @@ def environment_label(request):
 
 def pending_claims_badge(request):
     """Число до „Заявки“ в менюто: колко заявки чакат проверка."""
-    from missions.models import Claim
+    from missions.services import claims_to_decide
 
-    count = Claim.objects.filter(status=Claim.Status.PENDING).count()
+    count = claims_to_decide().count()
     return count or None  # при 0 не показваме нищо
 
 

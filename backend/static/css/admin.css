@@ -121,3 +121,11 @@ a.qb-kpi:hover { border-color: var(--qb-muted); }
 @media (prefers-reduced-motion: reduce) {
   .qb-col-bar, .qb-bar, .qb-col::after, .qb-bar-row::after { transition: none; }
 }
+
+/* ---------- Последни награди и проверка на системата ---------- */
+.qb-awards { margin-bottom: 1rem; }
+.qb-check td { vertical-align: middle; }
+.qb-btn { padding: 0.4rem 0.8rem; border-radius: 6px; background: #14151a; color: #fff; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.qb-btn:hover { background: #33353f; }
+.dark .qb-btn { background: #f5b700; color: #14151a; }
+.qb-explanation { margin-bottom: 1rem; max-width: 70ch; line-height: 1.6; }
