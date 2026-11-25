@@ -62,3 +62,10 @@ class OpenAIProviderTests(unittest.TestCase):
             target.text("п", "в")
         self.assertNotIn("тайна", str(caught.exception))
         self.assertIn("тайна", caught.exception.detail)
+
+
+class PlainTextTests(unittest.TestCase):
+    def test_no_long_dashes(self):
+        from logic import plain
+
+        self.assertEqual(plain("Подсказка — 2 монети"), "Подсказка - 2 монети")

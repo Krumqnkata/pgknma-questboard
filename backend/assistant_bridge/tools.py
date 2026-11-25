@@ -80,7 +80,7 @@ TOOLS = {
         "for_students": True, "only_students": True, "run": site_tools.open_missions,
     },
     "my_claims": {
-        "description": "Заявките на питащия ученик и дали са потвърдени, отказани или чакат.",
+        "description": "Заявките на питащия ученик: потвърдени, върнати (отказани) или чакащи.",
         "parameters": _schema(), "for_students": True, "only_students": True, "run": site_tools.my_claims,
     },
     "shop": {

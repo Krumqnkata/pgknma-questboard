@@ -97,8 +97,11 @@ def open_missions(user, arguments):
 
 def my_claims(user, arguments):
     claims = list(Claim.objects.filter(student=user).select_related("mission").order_by("-submitted_at")[:8])
+    count = {status: sum(c.status == status for c in claims) for status in Claim.Status.values}
     return ToolResult(
-        data={"claims": [{"mission": c.mission.title, "status": c.get_status_display(), "xp": c.mission.xp,
+        data={"summary": f"върнати за поправяне (отказани): {count['rejected']}, чакат проверка: {count['pending']}, "
+                         f"потвърдени: {count['approved']}",
+              "claims": [{"mission": c.mission.title, "status": c.get_status_display(), "xp": c.mission.xp,
                           "submitted": _date(c.submitted_at), "as_teammate": c.captain_id is not None}
                          for c in claims]},
         links=_mission_links([c.mission for c in claims]) + [Link("Към мисиите", reverse("mission_list"))],

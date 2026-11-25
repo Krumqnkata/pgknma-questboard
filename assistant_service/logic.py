@@ -49,6 +49,11 @@ def check_model(request: CheckRequest) -> CheckResponse:
                          error="" if answer else "Моделът върна празен отговор.")
 
 
+def plain(text):
+    """Дългите тирета стават къси: така пишем навсякъде в сайта."""
+    return text.replace("—", "-")
+
+
 # ---------- Ф10: подсказка ----------
 
 def make_hint(request: HintRequest) -> HintResponse:
@@ -63,7 +68,7 @@ def make_hint(request: HintRequest) -> HintResponse:
         return hint
 
     hint, used = answer_with(request, ask)
-    return HintResponse(hint=hint, provider=used)
+    return HintResponse(hint=plain(hint), provider=used)
 
 
 # ---------- Ф11: чернова на мисия ----------
@@ -147,7 +152,7 @@ def plan_query(request: PlanRequest) -> PlanResponse:
     result, used = answer_with(request, ask)
     if isinstance(result, ToolCall):
         return PlanResponse(tool=result.name, arguments=result.arguments, provider=used)
-    return PlanResponse(answer=result or "Не разбрах въпроса. Опитайте да го зададете по друг начин.",
+    return PlanResponse(answer=plain(result) or "Не разбрах въпроса. Опитайте да го зададете по друг начин.",
                         provider=used)
 
 
@@ -162,7 +167,7 @@ def answer_query(request: AnswerRequest) -> AnswerResponse:
         return answer
 
     answer, used = answer_with(request, ask)
-    return AnswerResponse(answer=answer, provider=used)
+    return AnswerResponse(answer=plain(answer), provider=used)
 
 
 # ---------- Проверка на системата ----------
@@ -178,7 +183,7 @@ def explain_problems(request: DiagnoseRequest) -> AnswerResponse:
         return answer
 
     answer, used = answer_with(request, ask)
-    return AnswerResponse(answer=answer, provider=used)
+    return AnswerResponse(answer=plain(answer), provider=used)
 
 
 # ---------- Въпроси за тест ----------
