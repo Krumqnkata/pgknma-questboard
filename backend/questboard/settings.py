@@ -168,6 +168,7 @@ LOGOUT_REDIRECT_URL = "login"
 # Интерфейсът е само на български, независимо от езика на браузъра.
 LANGUAGE_CODE = "bg"
 LANGUAGES = [("bg", "Български")]
+FORMAT_MODULE_PATH = ["questboard.formats"]  # датите и като 15.12.2026
 TIME_ZONE = "Europe/Sofia"
 USE_I18N = True
 USE_TZ = True
@@ -288,6 +289,7 @@ UNFOLD = {
                 "items": [
                     {"title": "Мисии", "icon": "flag", "link": _admin_link("missions_mission")},
                     {"title": "Тестове на гилдиите", "icon": "quiz", "link": _admin_link("quizzes_guildtest")},
+                    {"title": "Удължени срокове", "icon": "more_time", "link": _admin_link("missions_deadlineextension")},
                     {"title": "Заявки", "icon": "task_alt", "link": _admin_link("missions_claim"),
                      "badge": "questboard.admin_config.pending_claims_badge"},
                 ],

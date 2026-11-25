@@ -199,3 +199,21 @@ class PageTests(Base):
         self.client.force_login(self.student)
         privilege = Privilege.objects.get(code="deadline_pass")
         self.assertContains(self.client.post(reverse("shop_buy", args=[privilege.pk]), follow=True), "Използва се от страницата")
+
+    def test_admin_finds_it_in_the_menu(self):
+        from accounts.models import User
+
+        admin = User.objects.create_user("admin@example.com", "TaynaParola123", role=User.Role.ADMIN)
+        self.client.force_login(admin)
+        self.assertContains(self.client.get(reverse("admin:index")), reverse("admin:missions_deadlineextension_changelist"))
+
+    def test_admin_gives_time_for_free_with_a_bulgarian_date(self):
+        from accounts.models import User
+
+        self.client.force_login(User.objects.create_user("admin@example.com", "TaynaParola123", role=User.Role.ADMIN))
+        url = reverse("admin:missions_deadlineextension_add")
+        self.assertNotContains(self.client.get(url), self.teacher.email)  # само ученици
+        for pk, date in ((self.student.pk, "15.12.2030"), (self.other.pk, "2030-12-15")):
+            self.client.post(url, {"mission": self.mission.pk, "student": pk, "until_0": date, "until_1": "23:59:00"})
+        self.assertEqual(DeadlineExtension.objects.count(), 2)
+        self.assertEqual(timezone.localtime(DeadlineExtension.objects.first().until).day, 15)

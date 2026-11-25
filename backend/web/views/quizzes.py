@@ -46,7 +46,8 @@ def guild_list(request):
 def _guilds_with_members():
     return Guild.objects.prefetch_related("leaders").annotate(
         member_count=Count("members", filter=Q(members__role=STUDENT, members__is_active=True), distinct=True)
-        + Count("second_members", filter=Q(second_members__role=STUDENT, second_members__is_active=True), distinct=True))
+        + Count("second_members", filter=Q(second_members__role=STUDENT, second_members__is_active=True), distinct=True)
+    ).order_by("name")
 
 
 def _guilds_for_teacher(request):
@@ -134,11 +135,11 @@ def test_left(request, pk):
 def test_list(request):
     tests = GuildTest.objects.select_related("guild", "created_by").annotate(
         ready=Count("questions", filter=Q(questions__is_approved=True), distinct=True),
-        drafts=Count("questions", filter=Q(questions__is_approved=False), distinct=True))
+        drafts=Count("questions", filter=Q(questions__is_approved=False), distinct=True)).order_by("guild__name", "kind", "title")
     return render(request, "web/tests.html", {
         "tests": tests, "session_form": SessionForm(),
         "sessions": TestSession.objects.filter(teacher=request.user).select_related("test", "test__guild").annotate(
-            attempts_count=Count("attempts"))[:8],
+            attempts_count=Count("attempts")).order_by("-opened_at", "-pk")[:8],
     })
 
 

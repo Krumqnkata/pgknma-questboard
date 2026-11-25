@@ -103,6 +103,8 @@ def student_ranking(guild_id=None, class_id=None, limit=50, since=None, week_sta
     if class_id:
         students = students.filter(school_class_id=class_id)
 
+    if since:  # нивото е по целия XP, не само по този за седмицата
+        students = students.annotate(total_xp=_xp_sum("xp_transactions", ""))
     students = list(students)
     now = _ranks(students, lambda s: s.xp)
     before = _ranks(students, lambda s: s.xp - s.week_xp) if week_start and not since else now
@@ -110,7 +112,7 @@ def student_ranking(guild_id=None, class_id=None, limit=50, since=None, week_sta
 
     level_of = _level_finder()
     return [
-        Row(rank=now[s.pk], name=s.nickname, xp=s.xp, level=level_of(s.xp),
+        Row(rank=now[s.pk], name=s.nickname, xp=s.xp, level=level_of(s.total_xp if since else s.xp),
             guild=s.guild.name if s.guild else "", code=s.guild.code if s.guild else "", user=s, movement=before[s.pk] - now[s.pk])
         for s in students[:limit]
     ]

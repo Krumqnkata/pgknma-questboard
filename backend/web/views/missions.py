@@ -22,7 +22,7 @@ from missions.deadlines import (
 )
 from missions.models import Claim, Mission
 from missions.services import (
-    GameRuleError, leave_team, missions_for_student, missions_reviewed_by, submit_claim, visible_to,
+    GameRuleError, leave_team, missions_for_student, missions_reviewed_by, open_first, submit_claim, visible_to,
 )
 
 from ..forms import ClaimForm, HomeworkForm, MissionForm, ReviewForm
@@ -42,7 +42,7 @@ def _student_mission_list(request):
     # Колко ученици са изпълнили всяка мисия – показва се на картата.
     missions = missions_for_student(request.user).annotate(
         done_count=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
-    )
+    ).order_by("deadline")
 
     # Филтър по гилдия: ?guild=<id>
     selected_guild = request.GET.get("guild", "")
@@ -74,10 +74,10 @@ def _student_mission_list(request):
 
 
 def _teacher_mission_list(request):
-    missions = missions_reviewed_by(request.user).select_related("created_by").annotate(
+    missions = open_first(missions_reviewed_by(request.user).select_related("created_by").annotate(
         pending_count=Count("claims", filter=Q(claims__status=Claim.Status.PENDING, claims__captain__isnull=True)),
         claims_count=Count("claims"),
-    ).order_by("-is_active", "deadline")
+    ))
     return render(request, "web/teacher_missions.html", {"missions": missions})
 
 

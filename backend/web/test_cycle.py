@@ -152,3 +152,53 @@ class RewardNoticeTests(TestCase):
         self.assertEqual(Privilege.objects.get(code="deadline_pass").name, "Удължен срок")
         self.assertEqual(Privilege.objects.get(code="hint_token").name, "Подсказка")
         self.assertNotContains(self.client.get(reverse("terms")), "Hint Token")
+
+
+class OrderTests(TestCase):
+    """annotate(Count(...)) изхвърля подредбата от модела, затова се пише изрично."""
+
+    def setUp(self):
+        self.teacher, self.student = make_teacher(), make_student()
+
+    def deadlines(self, *days):
+        return [make_mission(self.teacher, title=f"след {n}", deadline=timezone.now() + timedelta(days=n)) for n in days]
+
+    def test_student_list_by_deadline(self):
+        self.deadlines(9, 2, 5)
+        self.client.force_login(self.student)
+        rows = self.client.get(reverse("mission_list")).context["rows"]
+        self.assertEqual([mission.title for mission, _claim in rows], ["след 2", "след 5", "след 9"])
+
+    def test_teacher_list_open_first(self):
+        self.deadlines(9, 2, -4, -1)
+        self.client.force_login(self.teacher)
+        missions = self.client.get(reverse("mission_list")).context["missions"]
+        self.assertEqual([mission.title for mission in missions], ["след 2", "след 9", "след -1", "след -4"])
+
+    def test_pending_claims_first_on_the_home_page(self):
+        approve_claim(submit_claim(self.student, self.deadlines(3)[0], "Готово"), self.teacher)
+        waiting = submit_claim(self.student, self.deadlines(4)[0], "Готово")
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(reverse("home")).context["recent_claims"][0], waiting)
+
+    def test_weekly_board_shows_the_real_level(self):
+        XPTransaction.objects.create(student=self.student, amount=600, reason="тест")
+        XPTransaction.objects.update(created_at=timezone.now() - timedelta(days=30))
+        XPTransaction.objects.create(student=self.student, amount=10, reason="тест")
+        self.client.force_login(self.student)
+        row = self.client.get(reverse("leaderboard"), {"period": "week"}).context["student_rows"][0]
+        self.assertEqual((row.xp, row.level.number), (10, 4))
+
+    def test_guilds_by_name_and_newest_session_first(self):
+        from accounts.models import Guild
+        from quizzes.models import GuildTest, TestSession
+
+        self.client.force_login(self.teacher)
+        names = [guild.name for guild in self.client.get(reverse("guild_list")).context["guilds"]]
+        self.assertEqual(names, sorted(names))
+        test = GuildTest.objects.create(guild=Guild.objects.first(), title="Тест", created_by=self.teacher)
+        sessions = [TestSession.objects.create(test=test, teacher=self.teacher, code=str(n), expires_at=timezone.now())
+                    for n in range(10)]
+        shown = list(self.client.get(reverse("test_list")).context["sessions"])
+        self.assertEqual(shown[0], sessions[-1])
+        self.assertNotIn(sessions[0], shown)

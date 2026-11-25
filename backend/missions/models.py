@@ -203,7 +203,7 @@ class DeadlineExtension(models.Model):
 
     mission = models.ForeignKey(Mission, verbose_name="мисия", on_delete=models.CASCADE, related_name="extensions")
     student = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="ученик", on_delete=models.CASCADE,
-                                related_name="deadline_extensions")
+                                related_name="deadline_extensions", limit_choices_to={"role": "student", "is_active": True})
     purchase = models.OneToOneField("economy.Purchase", verbose_name="използван „Удължен срок“", on_delete=models.SET_NULL,
                                     null=True, blank=True, related_name="extension",
                                     help_text="Празно – даден безплатно от администратора.")

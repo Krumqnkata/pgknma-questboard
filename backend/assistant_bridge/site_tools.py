@@ -18,7 +18,7 @@ from economy.models import GameSettings, Level, Privilege
 from economy.services import active_privileges, is_unlocked, student_stats, unused_purchases
 from missions.deadlines import apply_extensions
 from missions.models import Claim, Mission
-from missions.services import claims_to_decide, missions_for_student, missions_reviewed_by
+from missions.services import claims_to_decide, missions_for_student, missions_reviewed_by, open_first
 
 MAX_MISSIONS = 12
 MAX_LINKS = 3
@@ -167,7 +167,7 @@ def game_rules(user, arguments):
             "max_xp_per_mission": rules.max_xp_per_mission,
             "cards": "бронзова, сребърна и златна карта според XP на мисията",
             "claim": "ученикът изпълнява мисията и подава заявка с текст или файлове, учителят я потвърждава или отказва; "
-                     "отказана заявка може да се подаде отново, докато срокът тече",
+                     f"отказана заявка може да се подаде отново поне {rules.resubmit_days} дни, дори срокът да е минал",
             "evidence_files": f"до {rules.evidence_max_files} файла по {rules.evidence_max_mb} MB: снимки, PDF, Word, "
                               "Excel, PowerPoint",
             "teams": "при отборна мисия капитанът подава заявката и изписва псевдонимите на съотборниците; "
@@ -195,10 +195,10 @@ def game_rules(user, arguments):
 # ---------- За учителя ----------
 
 def my_missions(user, arguments):
-    missions = list(missions_reviewed_by(user).annotate(
+    missions = list(open_first(missions_reviewed_by(user).annotate(
         pending=Count("claims", filter=Q(claims__status=Claim.Status.PENDING, claims__captain__isnull=True)),
         approved=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
-    ).order_by("-is_active", "deadline")[:MAX_MISSIONS])
+    ))[:MAX_MISSIONS])
     return ToolResult(
         data={"missions": [{
             "title": m.title, "guild": m.source, "xp": m.xp, "deadline": _date(m.deadline),

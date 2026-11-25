@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% load static %}
-{% block title %}{% if is_new %}Нова мисия{% else %}Редакция{% endif %} – Questboard{% endblock %}
+{% block title %}{% if is_new %}{% if is_homework %}Нова домашна{% else %}Нова мисия{% endif %}{% else %}Редакция{% endif %} – Questboard{% endblock %}
 
 {% block content %}
 <div class="page-head">

@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
+from django.db.models import Case, Count, F, IntegerField, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -93,7 +93,7 @@ def student_home(request):
         "new_since": now - timedelta(days=3),
         "soon": now + timedelta(days=3),
         "recent_claims": Claim.objects.filter(student=student).select_related("mission")
-                                      .order_by("-reviewed_at", "-submitted_at")[:5],
+                                      .order_by(F("reviewed_at").desc(nulls_first=True), "-submitted_at")[:5],
         "recent_xp": student.xp_transactions.order_by("-created_at")[:5],
         "recent_coins": student.coin_transactions.order_by("-created_at")[:5],
         "badge_cards": cards,

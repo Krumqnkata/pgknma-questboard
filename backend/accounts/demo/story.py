@@ -281,9 +281,10 @@ class Story:
 
     def use_hint(self):
         student = self.fresh("Феникс")
-        mission = Mission.objects.get(title=content.HINT_MISSION)
+        mission = (missions_for_student(student).filter(hints_allowed=True, kind=Mission.Kind.MISSION)
+                   .exclude(claims__student=student).order_by("deadline").first())
         token = student.purchases.filter(privilege__code="hint_token", used_at__isnull=True).first()
-        if token:
+        if token and mission:
             token.used_at, token.used_for_mission = timezone.now(), mission
             token.save()
             Hint.objects.create(student=student, mission=mission, purchase=token, text=content.HINT)

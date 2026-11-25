@@ -210,9 +210,9 @@ def _finish(attempt, now):
                link=reverse("guild_list"))
     elif passed and test.guild_id in student.guild_ids:
         before = level_for_xp(xp_total(student))
-        award_xp(student, test.xp, reason=f"Месечен тест „{test.title}“"[:255], created_by=attempt.session.teacher, now=now)
+        award_xp(student, test.xp, reason=f"Тест „{test.title}“"[:255], created_by=attempt.session.teacher, now=now)
         attempt.xp_entry = student.xp_transactions.order_by("-pk").first()
-        notify(student, Notification.Kind.TEST, f"Мина месечния тест „{test.title}“ с {attempt.percent}%: +{test.xp} XP.",
+        notify(student, Notification.Kind.TEST, f"Мина „{test.title}“ с {attempt.percent}%: +{test.xp} XP.",
                link=reverse("guild_list"))
         after = level_for_xp(xp_total(student))
         if after and after != before:

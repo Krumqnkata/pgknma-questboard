@@ -5,7 +5,7 @@
 Така едно правило е написано само веднъж и се тества на едно място.
 """
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.urls import reverse
 from django.utils import timezone
 
@@ -42,6 +42,13 @@ def missions_reviewed_by(teacher):
     # Подзаявка вместо JOIN, за да не се повтарят редовете и да не се объркат броенията.
     deputy = Mission.reviewers.through.objects.filter(user_id=teacher.pk).values("mission_id")
     return Mission.objects.filter(Q(created_by=teacher) | Q(pk__in=deputy)).select_related("guild")
+
+
+def open_first(missions):
+    """Отворените по най-близък срок, после спрените и изтеклите, най-новите първи."""
+    is_open = Q(is_active=True, deadline__gte=timezone.now())
+    return missions.order_by(Case(When(is_open, then=Value(0)), default=Value(1), output_field=IntegerField()),
+                             Case(When(is_open, then=F("deadline"))), "-deadline")
 
 
 def claims_to_decide():
