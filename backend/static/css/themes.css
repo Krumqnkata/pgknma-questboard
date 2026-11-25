@@ -76,3 +76,4 @@
 
 .guild-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.8rem; margin-top: 0.8rem; }
 .guild-actions summary { cursor: pointer; font-size: 0.9rem; padding: 0.3rem 0; }
+.guild-led h3 { margin: 1.4rem 0 0.5rem; }

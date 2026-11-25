@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load questboard %}
+
+{% block title %}Гилдии – Questboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Гилдии</h1>
+    <p>Отговорниците се избират от администратора. Мисии и тестове може да прави всеки учител.</p>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Гилдия</th><th>Отговаря</th><th class="num">Ученици</th></tr></thead>
+    <tbody>
+      {% for guild in guilds %}
+        <tr>
+          <td><span class="chip {{ guild|guild_class }}">{{ guild }}</span><br><span class="muted small">{{ guild.description }}</span></td>
+          <td>{% for person in guild.active_leaders %}{% if person == user %}<strong>вие</strong>{% else %}{{ person.get_full_name|default:person.email }}{% endif %}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">няма отговорник</span>{% endfor %}</td>
+          <td class="num">{{ guild.member_count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% for row in mine %}
+<section class="section guild-led" aria-labelledby="guild-{{ row.guild.pk }}">
+  <div class="section-head"><h2 id="guild-{{ row.guild.pk }}">{{ row.guild }}</h2>
+    <a href="{% url 'test_list' %}">Пусни тест</a></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Членове ({{ row.members|length }})</th><th>Псевдоним</th><th>Клас</th><th>Гилдията е</th></tr></thead>
+      <tbody>
+        {% for student in row.members %}
+          <tr><td>{{ student.get_full_name }}</td><td>{{ student.nickname }}</td><td>{{ student.school_class }}</td>
+            <td>{% if student.guild_id == row.guild.pk %}основна{% else %}втора{% endif %}</td></tr>
+        {% empty %}
+          <tr><td colspan="4" class="muted">Още няма членове.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Тестове</h3>
+  {% for test in row.tests %}
+    <p class="mb-0"><strong>{{ test.title }}</strong> <span class="muted small">{{ test.get_kind_display }}, от {{ test.created_by.get_full_name|default:test.created_by.email }}</span></p>
+  {% empty %}
+    <p class="muted">Още няма тест за тази гилдия.</p>
+  {% endfor %}
+
+  {% if row.attempts %}
+    <h3>Последни опити</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ученик</th><th>Тест</th><th>Кога</th><th class="num">Резултат</th><th>Състояние</th></tr></thead>
+        <tbody>
+          {% for attempt in row.attempts %}
+            <tr><td>{{ attempt.student.get_full_name }} <span class="muted small">{{ attempt.student.school_class }}</span></td>
+              <td>{{ attempt.test.title }}</td><td>{{ attempt.started_at|date:"j F, H:i"|lower }}</td>
+              <td class="num">{{ attempt.percent }}%</td>
+              <td><span class="badge {% if attempt.status == 'passed' %}status-approved{% elif attempt.status == 'failed' %}status-rejected{% endif %}">{{ attempt.get_status_display }}</span></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

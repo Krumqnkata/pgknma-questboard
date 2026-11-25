@@ -4,6 +4,7 @@
 Всеки потребител има една от трите роли: ученик, учител или администратор.
 Правата се проверяват на сървъра по полето `role`.
 """
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -29,6 +30,12 @@ class Guild(models.Model):
     code = models.CharField("цвят и икона", max_length=12, choices=Code.choices, default=Code.HELPERS,
                             help_text="Определя цвета и иконата на гилдията в сайта.")
     description = models.TextField("описание", blank=True)
+    # Само за връзка и информация: мисии и тестове може да прави всеки учител.
+    leaders = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, verbose_name="отговорници", blank=True, related_name="led_guilds",
+        limit_choices_to={"role": "teacher", "is_active": True},
+        help_text="Учителите, към които учениците се обръщат за гилдията. Един учител може да отговаря за няколко.",
+    )
 
     class Meta:
         verbose_name = "гилдия"
@@ -37,6 +44,10 @@ class Guild(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def active_leaders(self):
+        return [user for user in self.leaders.all() if user.is_active and user.is_teacher]
 
 
 class SchoolClass(models.Model):

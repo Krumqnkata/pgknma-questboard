@@ -35,7 +35,7 @@
     <section class="guild-card guild-{{ guild.code }}{% if guild in user.guilds %} is-mine{% endif %}">
       <header>{% guild_icon guild %}<h2>{{ guild }}</h2>{% if guild == user.guild %}<span class="tag">основна</span>{% elif guild == user.second_guild %}<span class="tag">втора</span>{% endif %}</header>
       <p class="muted small">{{ guild.description }}</p>
-      <p class="small"><strong>{{ guild.member_count }}</strong> ученици</p>
+      <p class="small"><strong>{{ guild.member_count }}</strong> ученици{% if guild.active_leaders %}. Отговаря: <strong>{% for person in guild.active_leaders %}{{ person.get_full_name|default:"учител" }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>{% endif %}</p>
       {% for test, problem in tests %}
         <div class="guild-test">
           <strong>{{ test.title }}</strong>

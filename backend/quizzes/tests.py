@@ -14,6 +14,7 @@ from accounts.testing import make_student, make_teacher
 from economy.leaderboard import guild_ranking, student_ranking
 from economy.services import award_xp, xp_total
 from missions.errors import GameRuleError
+from questboard.diagnostics import find_problems
 
 from .models import Attempt, GuildTest, Question, normalize
 from .services import (
@@ -350,3 +351,34 @@ class PageTests(Base):
         self.assertContains(page, 'data-kit-set="gamer"')
         self.assertContains(page, "css/gamer.css")
         self.assertContains(self.client.get(reverse("privacy")), "Тестове: отговорите")
+
+
+class LeaderTests(Base):
+    def test_everyone_sees_who_leads_the_guild(self):
+        other = make_teacher("drug@example.com")
+        self.artists.leaders.add(self.teacher)
+        name = self.teacher.get_full_name()
+        self.solve(self.start(), 5)  # ученикът вече е член
+        self.client.force_login(self.student)
+        self.assertContains(self.client.get(reverse("guild_list")), f"Отговаря: <strong>{name}</strong>")
+        self.client.force_login(self.teacher)
+        page = self.client.get(reverse("guild_list"))
+        self.assertEqual([row["guild"] for row in page.context["mine"]], [self.artists])
+        self.assertContains(page, self.student.nickname)
+        self.assertContains(page, "100%")
+        self.assertContains(page, "няма отговорник")  # другите гилдии
+        self.assertContains(self.client.get(reverse("profile")), "Отговаря за")
+        self.client.force_login(other)  # не е отговорник: вижда кой е, но не и членовете
+        page = self.client.get(reverse("guild_list"))
+        self.assertContains(page, name)
+        self.assertNotContains(page, self.student.nickname)
+        session = open_session(other, self.entry, 15)  # тестът пак се пуска от всеки учител
+        self.assertTrue(session.is_open)
+
+    def test_former_teacher_is_not_shown(self):
+        self.artists.leaders.add(self.teacher)
+        self.teacher.is_active = False
+        self.teacher.save()
+        self.assertEqual(Guild.objects.get(code="artists").active_leaders, [])
+        problems = {problem.code: problem.count for problem in find_problems()}
+        self.assertEqual(problems["no_leader"], Guild.objects.count())

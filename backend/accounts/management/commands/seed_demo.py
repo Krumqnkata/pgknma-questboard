@@ -57,6 +57,10 @@ class Command(BaseCommand):
                            school_class=classes[class_name], guild=self.guilds.get(guild),
                            second_guild=self.guilds.get(content.SECOND_GUILDS.get(nickname)), avatar_seed=number * 37)
 
+        for code, numbers in content.LEADERS.items():
+            if code in self.guilds and not self.guilds[code].leaders.exists():
+                self.guilds[code].leaders.set([self.teachers[number] for number in numbers])
+
         self.save_rewards()
         for quest in content.MISSIONS:
             self.save_quest(quest)

@@ -140,6 +140,8 @@ def profile(request):
             "titles": [item for item in owned_cosmetics(user) if item.kind == Privilege.Kind.TITLE],
             "frames": [item for item in owned_cosmetics(user) if item.kind == Privilege.Kind.FRAME],
         }
+    elif user.is_teacher:
+        context = {"led_guilds": user.led_guilds.all()}
     return render(request, "web/profile.html", context)
 
 

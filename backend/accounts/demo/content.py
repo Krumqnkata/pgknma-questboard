@@ -63,6 +63,9 @@ STUDENTS = [
     ("Явор", "Каменов", "Бряг", "9В", None, 1),
 ]
 
+# Отговорници на гилдиите (номера в TEACHERS)
+LEADERS = {HELPERS: [2], ARTISTS: [2], TECHIES: [0, 1], ATHLETES: [3], ORGANIZERS: [0]}
+
 # Втората гилдия на някои ученици (до две на човек)
 SECOND_GUILDS = {"Феникс": ARTISTS, "Комета": ORGANIZERS, "Луна": HELPERS, "Нова": TECHIES, "Ракета": ORGANIZERS,
                  "Байт": ATHLETES, "Искра": ARTISTS, "Сокол": TECHIES}

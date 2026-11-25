@@ -20,6 +20,8 @@
       <dt>Псевдоним</dt><dd>{{ user.nickname }}</dd>
       <dt>Клас</dt><dd>{{ user.school_class }}</dd>
       <dt>Гилдии</dt><dd>{% for guild in user.guilds %}<span class="chip {{ guild|guild_class }}">{{ guild }}</span> {% endfor %}<a class="small" href="{% url 'guild_list' %}">{% if user.guilds %}Управление{% else %}Избери гилдия{% endif %}</a></dd>
+    {% elif user.is_teacher and led_guilds %}
+      <dt>Отговаря за</dt><dd>{% for guild in led_guilds %}<span class="chip {{ guild|guild_class }}">{{ guild }}</span> {% endfor %}</dd>
     {% endif %}
   </dl>
   <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'password_change' %}">Смени паролата</a></div>

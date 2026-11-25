@@ -15,7 +15,7 @@ from django.db.models import Count, F, Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import Guild, User
 from assistant_bridge.models import AssistantLog
 from economy.models import Level, Privilege
 from economy.services import owned_cosmetics
@@ -92,6 +92,10 @@ def find_problems():
                 "Новите ученици са без ниво. Добавете ниво с 0 XP.", reverse("admin:economy_level_changelist")),
         Problem("no_guild", "Ученици без гилдия", students.filter(guild__isnull=True).count(),
                 "Могат да влязат с входен тест или гилдията да се попълни ръчно.", users_link),
+        Problem("no_leader", "Гилдии без отговорник",
+                Guild.objects.exclude(pk__in=Guild.objects.filter(
+                    leaders__is_active=True, leaders__role=User.Role.TEACHER).values("pk")).count(),
+                "Изберете учител, към когото учениците да се обръщат.", reverse("admin:accounts_guild_changelist")),
         Problem("no_class", "Ученици без клас", students.filter(school_class__isnull=True).count(),
                 "Попълнете класа – без него няма разписание и класация на класа.", users_link),
         Problem("expired_missions", "Активни мисии с изтекъл срок", expired_missions().count(),

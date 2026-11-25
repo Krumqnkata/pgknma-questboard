@@ -25,14 +25,14 @@ TEACHER = User.Role.TEACHER
 
 # ---------- Ученик ----------
 
-@role_required(STUDENT)
+@role_required(STUDENT, TEACHER)
 def guild_list(request):
+    if request.user.is_teacher:
+        return _guilds_for_teacher(request)
     tests = {}
     for test, problem in tests_for(request.user):
         tests.setdefault(test.guild_id, []).append((test, problem))
-    guilds = Guild.objects.annotate(member_count=
-        Count("members", filter=Q(members__role=STUDENT, members__is_active=True), distinct=True)
-        + Count("second_members", filter=Q(second_members__role=STUDENT, second_members__is_active=True), distinct=True))
+    guilds = _guilds_with_members()
     return render(request, "web/guilds.html", {
         "guild_rows": [(guild, tests.get(guild.pk, [])) for guild in
                        sorted(guilds, key=lambda g: (g.pk != request.user.guild_id, g.pk != request.user.second_guild_id, g.name))],
@@ -41,6 +41,29 @@ def guild_list(request):
         "next_main_change": next_main_change(request.user),
         "main_change_days": MAIN_CHANGE_DAYS,
     })
+
+
+def _guilds_with_members():
+    return Guild.objects.prefetch_related("leaders").annotate(
+        member_count=Count("members", filter=Q(members__role=STUDENT, members__is_active=True), distinct=True)
+        + Count("second_members", filter=Q(second_members__role=STUDENT, second_members__is_active=True), distinct=True))
+
+
+def _guilds_for_teacher(request):
+    """Кой за коя гилдия отговаря; за своите учителят вижда членовете, тестовете и последните опити."""
+    guilds = list(_guilds_with_members())
+    mine = []
+    for guild in guilds:
+        if request.user in guild.active_leaders:
+            mine.append({
+                "guild": guild,
+                "members": User.objects.filter(Q(guild=guild) | Q(second_guild=guild), role=STUDENT, is_active=True)
+                               .select_related("school_class").order_by("school_class__name", "first_name", "last_name"),
+                "tests": guild.tests.filter(is_active=True).select_related("created_by"),
+                "attempts": Attempt.objects.filter(test__guild=guild).exclude(status=Attempt.Status.RUNNING)
+                                   .select_related("student__school_class", "test")[:8],
+            })
+    return render(request, "web/guilds_teacher.html", {"guilds": guilds, "mine": mine})
 
 
 @require_POST

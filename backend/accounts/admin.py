@@ -128,7 +128,15 @@ def _passwords_csv(created):
 
 @admin.register(Guild)
 class GuildAdmin(ModelAdmin):
-    list_display = ["name", "code", "description"]
+    list_display = ["name", "code", "leader_names", "description"]
+    filter_horizontal = ["leaders"]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("leaders")
+
+    @admin.display(description="отговорници")
+    def leader_names(self, guild):
+        return ", ".join(user.get_full_name() or user.email for user in guild.active_leaders) or "няма"
 
 
 @admin.register(SchoolClass)
