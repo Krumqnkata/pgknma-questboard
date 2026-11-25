@@ -184,3 +184,9 @@ def time_left(deadline):
         return "последен ден"
     days = math.ceil(hours / 24)
     return "остава 1 ден" if days == 1 else f"остават {days} дни"
+
+
+@register.filter
+def split_bar(text):
+    """„едно|две“ → ["едно", "две"] (за кратки списъци в шаблон)."""
+    return text.split("|")

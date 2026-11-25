@@ -23,6 +23,15 @@
   });
   showKit();
 
+  // Менюто „Още“ се затваря при натискане встрани или с Escape.
+  const more = document.querySelectorAll(".nav-more");
+  document.addEventListener("click", function (event) {
+    more.forEach(function (item) { if (!item.contains(event.target)) item.open = false; });
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") more.forEach(function (item) { item.open = false; });
+  });
+
   const root = document.documentElement;
   const button = document.querySelector("[data-theme-toggle]");
   if (!button) return;

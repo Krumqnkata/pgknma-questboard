@@ -102,14 +102,14 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
     @extend_schema(request=None, responses=HintSerializer)
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsStudent])
     def hint(self, request, pk=None):
-        """Подсказка от асистента срещу един Hint Token (Ф10)."""
+        """Подсказка от асистента срещу една купена подсказка (Ф10)."""
         mission = get_object_or_404(Mission, pk=pk, is_active=True)
         try:
             hint = request_hint(request.user, mission)
         except GameRuleError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         except AssistantError as error:
-            return Response({"detail": f"{error} Hint Token-ът не е похарчен."},
+            return Response({"detail": f"{error} Подсказката не е похарчена."},
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response(HintSerializer(hint).data, status=status.HTTP_201_CREATED)
 

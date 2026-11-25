@@ -24,7 +24,7 @@ from accounts.models import LoginAttempt, NicknameChange, SchoolClass, User
 from assistant_bridge.models import AssistantLog, Hint
 from badges.models import Badge, StudentBadge
 from economy.models import CoinTransaction, CoinWeek, Privilege, Purchase, Sponsor, XPTransaction
-from missions.models import Claim, EvidenceFile, Mission, MissionFile
+from missions.models import Claim, DeadlineExtension, EvidenceFile, Mission, MissionFile
 from notifications.models import Notification
 from quizzes.models import Attempt, AttemptAnswer, GuildTest, Question, TestSession
 from web.models import BotKnock
@@ -32,7 +32,7 @@ from web.models import BotKnock
 CONFIRM = "ИЗТРИЙ"
 
 # Редът е важен: първо това, което сочи към останалото.
-CONTENT = [Notification, AssistantLog, Hint, AttemptAnswer, Attempt, TestSession, Question, GuildTest, StudentBadge,
+CONTENT = [Notification, AssistantLog, Hint, DeadlineExtension, AttemptAnswer, Attempt, TestSession, Question, GuildTest, StudentBadge,
            CoinTransaction, XPTransaction, CoinWeek, Purchase, EvidenceFile, MissionFile, Claim, Mission,
            NicknameChange, LoginAttempt, BotKnock, LogEntry, Session]
 

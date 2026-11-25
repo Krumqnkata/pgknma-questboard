@@ -110,7 +110,7 @@ class RewardsPageTests(TestCase):
         self.assertContains(page, "Бонус XP")
         self.assertContains(page, "още <strong>150 XP</strong>", html=False)
         self.assertContains(page, "Звезда на седмицата")
-        self.assertContains(self.client.get(reverse("review_list")), reverse("rewards"))
+        self.assertContains(self.client.get(reverse("purchase_list")), reverse("rewards"))  # под „Награди“
 
     def test_give_bonus_from_the_page(self):
         response = self.client.post(reverse("rewards"), {

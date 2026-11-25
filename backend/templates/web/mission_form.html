@@ -15,7 +15,12 @@
   <section class="panel">
     <form method="post" enctype="multipart/form-data" novalidate data-mission-form>
       {% csrf_token %}
-      {% include "web/_form_fields.html" %}
+      {% for error in form.non_field_errors %}<p class="message message-error">{{ error }}</p>{% endfor %}
+      {% for field in form.main_fields %}{% include "web/_field.html" %}{% endfor %}
+      <details class="more-fields"{% if form.more_open %} open{% endif %}>
+        <summary>Още настройки <span class="muted small">по желание: {{ form.more_summary }}</span></summary>
+        {% for field in form.more_fields %}{% include "web/_field.html" %}{% endfor %}
+      </details>
       <div class="actions">
         <button type="submit">{% if is_new %}Публикувай{% else %}Запази промените{% endif %}</button>
         <a class="btn btn-outline" href="{% if is_new %}{% url 'mission_list' %}{% else %}{% url 'mission_detail' mission.pk %}{% endif %}">Отказ</a>

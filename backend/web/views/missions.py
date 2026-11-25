@@ -17,6 +17,9 @@ from accounts.permissions import role_required
 from assistant_bridge.models import Hint
 from assistant_bridge.services import AssistantError, draft_mission, unused_hint_tokens
 from economy.models import GameSettings
+from missions.deadlines import (
+    apply_extensions, can_submit, deadline_for, missions_to_extend, unused_passes, use_pass, why_not_extend, with_extension,
+)
 from missions.models import Claim, Mission
 from missions.services import (
     GameRuleError, leave_team, missions_for_student, missions_reviewed_by, submit_claim, visible_to,
@@ -52,7 +55,8 @@ def _student_mission_list(request):
 
     # Състоянието на собствените заявки, за да се показва до всяка мисия
     my_claims = {c.mission_id: c for c in Claim.objects.filter(student=request.user)}
-    rows = [(mission, my_claims.get(mission.id)) for mission in missions]
+    rows = [(mission, my_claims.get(mission.id)) for mission in apply_extensions(request.user, missions)]
+    passes = unused_passes(request.user).count()
 
     now = timezone.now()
     return render(request, "web/student_missions.html", {
@@ -60,6 +64,8 @@ def _student_mission_list(request):
         "guilds": Guild.objects.all(),
         "selected_guild": selected_guild,
         "only_homework": only_homework,
+        # Наскоро изтеклите се показват само на ученик, който има с какво да удължи срока.
+        "passes": passes, "to_extend": missions_to_extend(request.user) if passes else [],
         "homework_count": homework_count,
         "max_xp": GameSettings.load().max_xp_per_mission,
         "new_since": now - timedelta(days=3),   # „нова“ – създадена през последните 3 дни
@@ -137,11 +143,12 @@ def mission_detail(request, pk):
 def _teacher_mission_detail(request, pk):
     # Авторът и заместниците му. Заместникът проверява заявките, но не редактира мисията.
     mission = get_object_or_404(missions_reviewed_by(request.user), pk=pk)
-    claims = mission.claims.select_related("student", "student__school_class", "captain__student").prefetch_related(
+    claims = with_extension(mission.claims).select_related("student", "student__school_class", "captain__student").prefetch_related(
         "files").order_by("status", "-submitted_at")
     return render(request, "web/mission_detail.html", {
         "mission": mission, "claims": claims, "review_form": ReviewForm(),
         "is_author": mission.created_by_id == request.user.pk,
+        "extensions": mission.extensions.select_related("student"),
     })
 
 
@@ -153,7 +160,8 @@ def _student_mission_detail(request, pk):
         pk=pk,
     )
     my_claim = Claim.objects.filter(mission=mission, student=request.user).select_related("captain__student").first()
-    can_claim = mission.is_open() and (my_claim is None or my_claim.status == Claim.Status.REJECTED)
+    can_claim = can_submit(request.user, mission, my_claim) and (
+        my_claim is None or my_claim.status == Claim.Status.REJECTED)
     form = ClaimForm(request.POST or None, request.FILES or None, mission=mission)
 
     if request.method == "POST" and form.is_valid():
@@ -171,9 +179,28 @@ def _student_mission_detail(request, pk):
     return render(request, "web/mission_detail.html", {
         "team": [team_lead, *team_lead.team.select_related("student")] if team_lead and mission.is_group else [],
         "mission": mission, "my_claim": my_claim, "can_claim": can_claim, "form": form,
+        "my_deadline": deadline_for(request.user, mission, my_claim),
+        "extension_problem": why_not_extend(request.user, mission),
+        "passes": unused_passes(request.user).count(),
+        "rules": GameSettings.load(),
         "hints": Hint.objects.filter(student=request.user, mission=mission),
         "hint_tokens": unused_hint_tokens(request.user).count(),
     })
+
+
+@require_POST
+@role_required(STUDENT)
+def mission_extend(request, pk):
+    """Ученикът използва „Удължен срок“ за тази мисия."""
+    mission = get_object_or_404(Mission, pk=pk)
+    try:
+        extension = use_pass(request.user, mission)
+    except GameRuleError as error:
+        messages.error(request, str(error))
+    else:
+        until = timezone.localtime(extension.until)
+        messages.success(request, f"Срокът ти вече е до {until:%d.%m, %H:%M}.")
+    return redirect("mission_detail", pk=mission.pk)
 
 
 @require_POST

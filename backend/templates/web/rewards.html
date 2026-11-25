@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% load questboard %}
 
-{% block title %}Награди – Questboard{% endblock %}
+{% block title %}Бонус и значка – Questboard{% endblock %}
 
 {% block content %}
+{% include "web/_teacher_tabs.html" with tabs="rewards" %}
 <div class="page-head">
   <div>
-    <h1>Награди</h1>
+    <h1>Бонус и значка</h1>
     <p>Бонус XP или значка за нещо, което не е мисия. Ученикът получава известие.</p>
   </div>
 </div>

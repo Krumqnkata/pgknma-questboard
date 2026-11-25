@@ -18,6 +18,7 @@ from django.utils.formats import date_format
 from accounts.models import Guild
 from badges.models import Badge
 from economy.models import GameSettings, Purchase
+from missions.deadlines import can_submit
 from missions.models import TEAM_LIMIT
 from missions.services import GameRuleError
 from timetable import queries
@@ -86,10 +87,10 @@ def request_hint(student, mission):
         raise GameRuleError("Подсказки могат да искат само ученици.")
     if not mission.hints_allowed:
         raise GameRuleError("Учителят е забранил подсказките за тази мисия.")
-    if not mission.is_open():
+    if not can_submit(student, mission):
         raise GameRuleError("Мисията вече не е активна.")
     if not unused_hint_tokens(student).exists():
-        raise GameRuleError("Нямаш Hint Token. Можеш да купиш от магазина.")
+        raise GameRuleError("Нямаш подсказка. Можеш да купиш от магазина.")
     _check_available(student)
 
     log = _Logged(student, AssistantLog.Kind.HINT, mission)
@@ -108,7 +109,7 @@ def request_hint(student, mission):
             return Hint.objects.create(student=student, mission=mission, purchase=token, text=answer["hint"])
 
     log.finish(False, "няма неизползван Hint Token")
-    raise GameRuleError("Hint Token-ът вече е използван.")
+    raise GameRuleError("Подсказката вече е използвана.")
 
 
 # ---------- Ф11: чернова на мисия ----------

@@ -1,7 +1,12 @@
+{% load questboard %}
 {# Бутони „Потвърди“ / „Откажи“ за заявка. Очаква claim; след действието се връща на същата страница. #}
 <form method="post" action="{% url 'review_claim' claim.pk %}" class="review-form">
   {% csrf_token %}
   <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  {# Готовите коментари се избират с JavaScript (static/js/review.js); без него остава само полето. #}
+  <span class="quick-comments" hidden>
+    {% for text in "Браво!|Много добре!|Липсва снимка.|Опиши повече.|Мини през мен."|split_bar %}<button type="button" class="btn-outline" data-comment="{{ text }}">{{ text }}</button>{% endfor %}
+  </span>
   <input type="text" name="comment" maxlength="500" placeholder="Коментар към ученика (по желание)" aria-label="Коментар към ученика">
   <button type="submit" name="decision" value="approve" class="btn-small">Потвърди</button>
   <button type="submit" name="decision" value="reject" class="btn-danger btn-small">Откажи</button>

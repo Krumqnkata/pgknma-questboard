@@ -17,9 +17,9 @@ from django.utils import timezone
 
 from accounts.models import Guild, User
 from assistant_bridge.models import AssistantLog
-from economy.models import Level, Privilege
+from economy.models import GameSettings, Level, Privilege
 from economy.services import owned_cosmetics
-from missions.models import Claim, Mission
+from missions.models import Claim, DeadlineExtension, Mission
 from missions.services import claims_to_decide
 
 WAITING_DAYS = 3
@@ -38,7 +38,13 @@ class Problem:
 # ---------- Заявки за всеки проблем ----------
 
 def expired_missions():
-    return Mission.objects.filter(is_active=True, deadline__lt=timezone.now())
+    """Изтекли, по които вече никой не може да удължи срока или да поправи върната заявка."""
+    rules, now = GameSettings.load(), timezone.now()
+    grace = max(rules.extension_late_days, rules.resubmit_days)
+    fixing = Claim.objects.filter(status=Claim.Status.REJECTED, reviewed_at__gte=now - timedelta(days=rules.resubmit_days))
+    return (Mission.objects.filter(is_active=True, deadline__lt=now - timedelta(days=grace))
+            .exclude(pk__in=DeadlineExtension.objects.filter(until__gte=now).values("mission_id"))
+            .exclude(pk__in=fixing.values("mission_id")))
 
 
 def sold_out_items():
@@ -123,7 +129,8 @@ def find_problems():
 # ---------- Поправките ----------
 
 def fix_expired_missions():
-    return expired_missions().update(is_active=False, updated_at=timezone.now())
+    pks = list(expired_missions().values_list("pk", flat=True))
+    return Mission.objects.filter(pk__in=pks).update(is_active=False, updated_at=timezone.now())
 
 
 def fix_sold_out():

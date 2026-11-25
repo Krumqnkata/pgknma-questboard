@@ -23,14 +23,17 @@ from economy import leaderboard
 from economy.models import GameSettings, Privilege, Purchase, XPTransaction
 from economy.services import owned_cosmetics, undo_approval, wear
 from economy.services import (
+    SELF_USED,
     active_privileges, approve_claim, buy_privilege, is_unlocked, mark_purchase_used, pending_claims_for,
     reject_claim, student_stats, unused_purchases,
 )
 from economy.words import coins_text
+from missions.deadlines import apply_extensions
 from missions.models import Claim, Mission
 from missions.services import GameRuleError, missions_for_student
 from notifications.models import Notification
 
+from ..cycle import first_steps, student_cycle, teacher_cycle
 from ..forms import NicknameForm, ReviewForm
 
 STUDENT = User.Role.STUDENT
@@ -76,13 +79,16 @@ def student_home(request):
     # Ново ниво и нови значки се показват веднъж с голяма карта, после са прочетени.
     celebrations = list(student.notifications.filter(
         read_at__isnull=True,
-        kind__in=[Notification.Kind.LEVEL_UP, Notification.Kind.BADGE, Notification.Kind.BONUS]).order_by("created_at"))
+        kind__in=[Notification.Kind.LEVEL_UP, Notification.Kind.BADGE, Notification.Kind.BONUS, Notification.Kind.REWARD]).order_by("created_at"))
     if celebrations:
         student.notifications.filter(pk__in=[n.pk for n in celebrations]).update(read_at=timezone.now())
     now = timezone.now()
+    suggested = apply_extensions(student, suggested_missions(student))
     return render(request, "web/student_home.html", {
         "stats": stats,
-        "suggested": suggested_missions(student),
+        "suggested": suggested,
+        "cycle": student_cycle(student, stats, suggested),
+        "first_steps": first_steps(student, stats),
         "max_xp": GameSettings.load().max_xp_per_mission,
         "new_since": now - timedelta(days=3),
         "soon": now + timedelta(days=3),
@@ -169,10 +175,31 @@ def _profile_look(request, action):
 
 @role_required(TEACHER)
 def review_list(request):
-    return render(request, "web/review_list.html", {
-        "claims": pending_claims_for(request.user).order_by("submitted_at"),
-        "review_form": ReviewForm(),
-    })
+    claims = list(pending_claims_for(request.user).order_by("submitted_at"))
+    return render(request, "web/review_list.html", {"claims": claims, "cycle": teacher_cycle(request.user, len(claims))})
+
+
+@require_POST
+@role_required(TEACHER)
+def review_bulk(request):
+    """Потвърждава избраните заявки наведнъж. Всяка минава през същата проверка на правата."""
+    picked = [pk for pk in request.POST.getlist("claim") if pk.isdigit()]
+    done, xp, problems = 0, 0, []
+    for claim in Claim.objects.filter(pk__in=picked).select_related("mission", "student").order_by("submitted_at"):
+        try:
+            result = approve_claim(claim, request.user)
+        except GameRuleError as error:
+            problems.append(f"{claim.student.nickname}: {error}")
+        else:
+            done += 1
+            xp += result.xp * (1 + result.team)
+    if done:
+        messages.success(request, f"Потвърдени: {done}. Учениците получават общо {xp} XP.")
+    elif not problems:
+        messages.error(request, "Не сте избрали заявка.")
+    for problem in problems:
+        messages.error(request, problem)
+    return redirect("review_list")
 
 
 @require_POST
@@ -249,6 +276,8 @@ def shop_buy(request, pk):
             messages.success(request, f"Купено: {privilege.name}. Вече се вижда в класацията – смени го от профила.")
         elif privilege.kind == Privilege.Kind.SPONSOR:
             messages.success(request, f"Купено: {privilege.name}. Виж в „Моите покупки“ от кого ще го получиш.")
+        elif privilege.code in SELF_USED:
+            messages.success(request, f"Купено: {privilege.name}. Използва се от страницата на мисията или домашната.")
         else:
             messages.success(request, f"Купено: {privilege.name}. Покажи го на учителя, когато го използваш.")
     return redirect("shop")

@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .errors import GameRuleError  # noqa: F401 – другите модули я внасят оттук
-from .models import Claim, EvidenceFile, Mission, MissionFile
+from .models import Claim, DeadlineExtension, EvidenceFile, Mission, MissionFile
 
 EVIDENCE_MAX_LENGTH = 2000
 
@@ -25,8 +25,11 @@ def visible_to(student):
 
 def missions_for_student(student=None):
     """Каквото ученикът вижда: активни, с неизтекъл срок, а от домашните – само за неговия клас."""
-    return Mission.objects.filter(visible_to(student), is_active=True,
-                                  deadline__gte=timezone.now()).select_related("guild")
+    now = timezone.now()
+    in_time = Q(deadline__gte=now)
+    if student is not None:  # и тези, чийто срок този ученик си е удължил
+        in_time |= Q(pk__in=DeadlineExtension.objects.filter(student=student, until__gte=now).values("mission_id"))
+    return Mission.objects.filter(visible_to(student), in_time, is_active=True).select_related("guild")
 
 
 def missions_for_teacher(teacher):
@@ -145,12 +148,14 @@ def submit_claim(student, mission, evidence, files=(), teammates=()):
     Граничните случаи от раздел 3.1 на плана:
       - втора заявка за същата мисия → грешка;
       - заявка след крайния срок → грешка;
-      - отказана заявка може да се подаде отново (новите файлове заменят старите).
+      - отказана заявка може да се подаде отново (новите файлове заменят старите);
+      - срокът може да е по-късен само за този ученик (missions/deadlines.py).
 
     При отборна мисия teammates са псевдонимите на съотборниците; подалият е капитанът.
     """
     from economy.models import GameSettings  # тук, за да няма кръгов import
 
+    from .deadlines import can_submit
     from .evidence import prepare_all
 
     if not student.is_student:
@@ -167,7 +172,7 @@ def submit_claim(student, mission, evidence, files=(), teammates=()):
     if not evidence and not prepared:
         raise GameRuleError("Добавете доказателство: кратък текст, връзка или файл.")
 
-    if not mission.is_open():
+    if not can_submit(student, mission):
         raise GameRuleError("Мисията вече не приема заявки: срокът е изтекъл или е спряна.")
 
     mates = _find_teammates(student, mission, teammates)

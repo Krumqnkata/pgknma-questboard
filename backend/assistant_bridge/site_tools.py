@@ -16,6 +16,7 @@ from badges.services import badge_cards
 from economy import leaderboard
 from economy.models import GameSettings, Level, Privilege
 from economy.services import active_privileges, is_unlocked, student_stats, unused_purchases
+from missions.deadlines import apply_extensions
 from missions.models import Claim, Mission
 from missions.services import claims_to_decide, missions_for_student, missions_reviewed_by
 
@@ -76,7 +77,7 @@ def open_missions(user, arguments):
     note = f"в гилдия „{guild}“ няма такива; това са мисиите от другите гилдии" if guild and not in_guild else None
     missions = missions if note else in_guild
     total = missions.count()
-    missions = sorted(missions, key=lambda m: (not m.is_homework and m.guild_id not in user.guild_ids, m.deadline))[:MAX_MISSIONS]
+    missions = sorted(apply_extensions(user, missions), key=lambda m: (not m.is_homework and m.guild_id not in user.guild_ids, m.deadline))[:MAX_MISSIONS]
     max_xp = GameSettings.load().max_xp_per_mission
     return ToolResult(
         data={
@@ -174,6 +175,10 @@ def game_rules(user, arguments):
             "guilds": f"ученикът е в най-много {MAX_GUILDS} гилдии, едната е основна и неговият XP се брои за нея; "
                       "в гилдия се влиза с входен тест пред учител, с код от него; минава се с поне 80 процента, ако учителят "
                       "не е задал друго; месечният тест е само за членовете и дава XP; кой учител отговаря за всяка гилдия се вижда на страница „Гилдии“",
+            "deadlines": f"след срока не се подава; с „Удължен срок“ от магазина ученикът мести срока само за себе си с "
+                         f"{rules.extension_days} дни, от страницата на мисията, веднъж за мисия и най-късно "
+                         f"{rules.extension_late_days} дни след срока; учителят може да го забрани за мисия; върната заявка "
+                         f"може да се поправи поне {rules.resubmit_days} дни след връщането",
             "homework": f"домашните са за определени класове и дават до {rules.max_xp_per_homework} XP за предадена и приета "
                         "работа; не са оценка",
             "levels": [{"level": level.number, "title": level.title, "from_xp": level.min_xp}

@@ -14,6 +14,7 @@ class Notification(models.Model):
         LEVEL_UP = "level_up", "Ново ниво"
         BADGE = "badge", "Нова значка"
         BONUS = "bonus", "Бонус от учител"
+        REWARD = "reward", "Нова награда"
         UNDONE = "undone", "Отменена награда"
         TEAM = "team", "Отборна мисия"
         TEST = "test", "Тест на гилдия"

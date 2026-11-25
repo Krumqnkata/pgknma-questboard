@@ -37,6 +37,9 @@ class TeacherChoices(forms.ModelMultipleChoiceField):
 class MissionForm(forms.ModelForm):
     """Учителят създава или редактира мисия (Ф3). Правилата са в Mission.clean()."""
 
+    MAIN = ["title", "description", "criteria", "guild", "xp", "deadline", "is_active"]  # останалото е в „Още настройки“
+    more_summary = "отбор, награди, заместници, подсказки, удължен срок, файлове"
+
     reviewers = TeacherChoices(
         queryset=User.objects.none(), required=False, label="Заместници при проверката",
         widget=forms.CheckboxSelectMultiple,
@@ -51,7 +54,7 @@ class MissionForm(forms.ModelForm):
 
     class Meta:
         model = Mission
-        fields = ["title", "description", "criteria", "guild", "xp", "deadline", "hints_allowed",
+        fields = ["title", "description", "criteria", "guild", "xp", "deadline", "hints_allowed", "extensions_allowed",
                   "is_group", "team_min", "team_max", "reward_badge", "reward_item", "reviewers", "is_active"]
         widgets = {
             "team_min": forms.NumberInput(attrs={"min": 2, "max": TEAM_LIMIT}),
@@ -68,9 +71,29 @@ class MissionForm(forms.ModelForm):
         self.fields["xp"].help_text = f"Най-много {max_xp} XP."
         if "guild" in self.fields:
             self.fields["guild"].required = True
+            self.fields["guild"].empty_label = "Изберете гилдия"
+            self.fields["guild"].help_text = ""
         if "reward_badge" in self.fields:
             self._setup_rewards()
         self._setup_rest()
+
+    @property
+    def main_fields(self):
+        return [self[name] for name in self.MAIN if name in self.fields]
+
+    @property
+    def more_fields(self):
+        return [self[name] for name in self.fields if name not in self.MAIN]
+
+    @property
+    def more_open(self):
+        """Отворено е, ако вътре има грешка или нещо различно от обичайното."""
+        names = [field.name for field in self.more_fields]
+        if any(name in self.errors for name in names):
+            return True
+        value = lambda name: self[name].value() if name in self.fields else None
+        return bool(value("is_group") or value("reward_badge") or value("reward_item") or value("reviewers")
+                    or "remove_files" in self.fields or not value("hints_allowed") or not value("extensions_allowed"))
 
     def _setup_rewards(self):
         self.fields["reward_badge"].queryset = Badge.objects.filter(
@@ -129,9 +152,12 @@ class MissionForm(forms.ModelForm):
 class HomeworkForm(MissionForm):
     """Домашна работа: мисия за избрани класове, без гилдия и без специални награди."""
 
+    MAIN = ["title", "subject", "school_classes", "description", "criteria", "xp", "deadline", "is_active"]
+    more_summary = "отбор, заместници, подсказки, удължен срок, файлове"
+
     class Meta(MissionForm.Meta):
         fields = ["title", "subject", "school_classes", "description", "criteria", "xp", "deadline", "hints_allowed",
-                  "is_group", "team_min", "team_max", "reviewers", "is_active"]
+                  "extensions_allowed", "is_group", "team_min", "team_max", "reviewers", "is_active"]
         widgets = {**MissionForm.Meta.widgets, "school_classes": forms.CheckboxSelectMultiple}
 
     def __init__(self, *args, **kwargs):

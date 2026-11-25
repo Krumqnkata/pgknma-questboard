@@ -1,24 +1,5 @@
-{# Показва всички полета на форма: етикет, поле, подсказка и грешки. #}
+{# Показва всички полета на форма. #}
 {% for error in form.non_field_errors %}
   <p class="message message-error">{{ error }}</p>
 {% endfor %}
-{% for field in form %}
-  <div class="field{% if field.errors %} has-error{% endif %}{% if field.widget_type == 'checkbox' %} field-checkbox{% endif %}">
-    {% if field.widget_type == 'checkbox' %}
-      {{ field }} <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-    {% elif field.widget_type == 'multiplefile' %}
-      {# Бутонът на браузъра е на езика на браузъра – този е на български (static/js/file-picker.js). #}
-      <span class="label">{{ field.label }}</span>
-      <label class="file-picker">
-        {{ field }}
-        <span class="btn btn-outline btn-small" aria-hidden="true">Избери файлове</span>
-        <span class="file-names" data-file-names>Няма избрани файлове</span>
-      </label>
-    {% else %}
-      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-      {{ field }}
-    {% endif %}
-    {% if field.help_text %}<small class="help">{{ field.help_text }}</small>{% endif %}
-    {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
-  </div>
-{% endfor %}
+{% for field in form %}{% include "web/_field.html" %}{% endfor %}

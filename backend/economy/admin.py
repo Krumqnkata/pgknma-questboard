@@ -19,6 +19,7 @@ class GameSettingsAdmin(ModelAdmin):
             "xp_per_coin", "weekly_coin_limit", "carry_over_remainder",
             "week_start_day", "max_xp_per_mission", "max_xp_per_homework",
         ]}),
+        ("Срокове", {"fields": ["extension_days", "extension_late_days", "resubmit_days"]}),
         ("Асистент", {"fields": [
             "assistant_status", "assistant_enabled", "llm_provider", "llm_model", "assistant_daily_limit",
         ]}),

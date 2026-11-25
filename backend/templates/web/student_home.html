@@ -4,6 +4,7 @@
 {% block title %}Начало – Questboard{% endblock %}
 
 {% block content %}
+{% include "web/_cycle.html" %}
 <div class="home-grid">
   {# Профилният панел е като ученическа карта и остава видим, докато се скролват мисиите вдясно #}
   <aside class="player-card {{ user.guild|guild_class }}" aria-labelledby="player-name">
@@ -46,6 +47,7 @@
   </aside>
 
   <div class="home-main">
+    {% if first_steps %}{% include "web/_first_steps.html" %}{% endif %}
     <section class="section">
       <div class="section-head">
         <h2>Мисии за теб</h2>
@@ -71,7 +73,7 @@
     {% endif %}
 
     <div class="columns section">
-      <section class="panel">
+      <section class="panel" id="moite-zayavki">
         <h2>Моите заявки</h2>
         {% for claim in recent_claims %}
           <div class="list-row">

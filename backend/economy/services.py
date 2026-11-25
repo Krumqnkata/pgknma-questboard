@@ -15,6 +15,7 @@ from django.utils import timezone
 from accounts.models import User
 from badges.models import StudentBadge
 from badges.services import award_badges
+from missions.deadlines import with_extension
 from missions.models import Claim
 from missions.services import GameRuleError, claims_to_decide, missions_reviewed_by
 from notifications.models import Notification
@@ -263,7 +264,7 @@ def _give_mission_rewards(claim, reviewer):
                             used_at=timezone.now() if item.is_cosmetic else None)
     if item.is_cosmetic:
         wear(student, item)
-    notify(student, Notification.Kind.BONUS, f"Спечели „{item.name}“ от мисията „{mission.title}“!",
+    notify(student, Notification.Kind.REWARD, f"Спечели „{item.name}“ от мисията „{mission.title}“!",
            link=reverse("profile" if item.is_cosmetic else "shop"))
 
 
@@ -299,7 +300,7 @@ def reject_claim(claim, reviewer, comment=""):
 
 
 def pending_claims_for(reviewer):
-    claims = claims_to_decide().select_related(
+    claims = with_extension(claims_to_decide()).select_related(
         "mission", "student", "student__school_class").prefetch_related("files", "team__student__school_class")
     if reviewer.is_admin_role:
         return claims
@@ -518,10 +519,15 @@ def wear(student, privilege=None, kind=None):
     student.save(update_fields=[field])
 
 
+SELF_USED = ("hint_token", "deadline_pass")  # ученикът ги използва сам, от страницата на мисията
+
+
 def mark_purchase_used(purchase, teacher, mission=None):
     """Учителят отбелязва, че ученикът е използвал привилегията (Ф9)."""
     if not (teacher.is_teacher or teacher.is_admin_role):
         raise GameRuleError("Само учител може да отбележи привилегия като използвана.")
+    if purchase.privilege.code in SELF_USED:
+        raise GameRuleError(f"„{purchase.privilege.name}“ се използва от самия ученик.")
     person = purchase.privilege.handed_over_by
     if person is not None and person.pk != teacher.pk and not teacher.is_admin_role:
         raise GameRuleError(f"Тази награда се предава от {person.get_full_name() or person.email}.")
@@ -537,11 +543,11 @@ def mark_purchase_used(purchase, teacher, mission=None):
 def unused_purchases(user):
     """
     Неизползваните покупки, които този учител отбелязва: привилегиите и наградите, за които
-    отговаря (или които са без отговорник). Hint Token се харчи сам – през асистента.
+    отговаря (или които са без отговорник). SELF_USED се използват от самия ученик.
     """
     purchases = Purchase.objects.filter(used_at__isnull=True, privilege__kind__in=[
         Privilege.Kind.PRIVILEGE, Privilege.Kind.SPONSOR]).exclude(
-        privilege__code="hint_token").select_related(
+        privilege__code__in=SELF_USED).select_related(
         "student", "student__school_class", "privilege__sponsor", "privilege__responsible").order_by("purchased_at")
     if user.is_admin_role:
         return purchases

@@ -25,10 +25,10 @@ def mission_hint(request, pk):
     try:
         request_hint(request.user, mission)
     except (GameRuleError, AssistantError) as error:
-        messages.error(request, f"{error} Hint Token-ът не е похарчен." if isinstance(error, AssistantError)
+        messages.error(request, f"{error} Подсказката не е похарчена." if isinstance(error, AssistantError)
                        else str(error))
     else:
-        messages.success(request, "Подсказката е готова. Похарчен е 1 Hint Token.")
+        messages.success(request, "Подсказката е готова. Похарчена е 1 подсказка.")
     return redirect("mission_detail", pk=mission.pk)
 
 

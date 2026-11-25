@@ -27,4 +27,14 @@
     <p class="muted">В момента няма активни мисии{% if selected_guild %} за тази гилдия{% endif %}. Провери пак по-късно.</p>
   {% endfor %}
 </div>
+
+{% if to_extend %}
+<section class="panel section">
+  <h2>Срокът току-що мина</h2>
+  <p class="muted">Имаш „Удължен срок“ ({{ passes }}). Отвори мисията и го използвай, ако ти трябва още време.</p>
+  <ul class="plain-list">
+    {% for mission in to_extend %}<li><a href="{% url 'mission_detail' mission.pk %}">{{ mission.title }}</a> <span class="muted small">{{ mission.source }}, срокът беше до {{ mission.deadline|date:"j F, H:i"|lower }}</span></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% endblock %}

@@ -1,0 +1,11 @@
+{# Списък за нов ученик. Изчезва сам, когато всичко е направено. Очаква first_steps. #}
+<section class="panel panel-accent first-steps">
+  <h2>Първи стъпки</h2>
+  <p class="muted">Мисия → XP и монети → награда → следваща мисия. XP вдига нивото, а монетите се харчат в магазина.</p>
+  <ul>
+    {% for step in first_steps %}
+      <li{% if step.done %} class="is-done"{% endif %}><i aria-hidden="true">{% if step.done %}✓{% endif %}</i>
+        <span>{% if step.done %}{{ step.title }} <span class="sr-only">(готово)</span>{% else %}<a href="{{ step.link }}">{{ step.title }}</a><br><span class="muted small">{{ step.hint }}</span>{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+</section>

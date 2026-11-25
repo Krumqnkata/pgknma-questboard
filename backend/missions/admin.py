@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import Claim, EvidenceFile, Mission, MissionFile
+from .models import Claim, DeadlineExtension, EvidenceFile, Mission, MissionFile
 
 
 class EvidenceFileInline(TabularInline):
@@ -40,6 +40,16 @@ class MissionAdmin(ModelAdmin):
     inlines = [MissionFileInline]
     search_fields = ["title", "description"]
     date_hierarchy = "deadline"
+
+
+@admin.register(DeadlineExtension)
+class DeadlineExtensionAdmin(ModelAdmin):
+    """Администраторът може да даде срок и безплатно, напр. при болест."""
+
+    list_display = ["mission", "student", "until", "created_at"]
+    search_fields = ["mission__title", "student__nickname", "student__email"]
+    fields = ["mission", "student", "until", "purchase"]
+    readonly_fields = ["purchase"]
 
 
 @admin.register(Claim)

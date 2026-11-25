@@ -222,7 +222,8 @@ class ShopTests(TestCase):
 
     def test_teacher_marks_purchase_used_once(self):
         self.give_coins(2)
-        purchase = buy_privilege(self.student, self.hint)
+        topic = Privilege.objects.create(code="topic", name="Избор на тема", price=2)
+        purchase = buy_privilege(self.student, topic)
         mark_purchase_used(purchase, self.teacher)
         self.assertTrue(purchase.is_used)
         with self.assertRaises(GameRuleError):

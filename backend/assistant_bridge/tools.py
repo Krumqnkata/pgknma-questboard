@@ -97,7 +97,7 @@ TOOLS = {
         "parameters": _schema(), "for_students": True, "run": site_tools.ranking,
     },
     "game_rules": {
-        "description": "Правилата на играта: как се печелят XP и монети, седмичен лимит, нива, карти, заявки, отбори, "
+        "description": "Правилата на играта: как се печелят XP и монети, седмичен лимит, нива, карти, срокове и удължаване, заявки, отбори, "
                        "файлове, серии, псевдоними. За всеки въпрос „как работи“.",
         "parameters": _schema(), "for_students": True, "run": site_tools.game_rules,
     },

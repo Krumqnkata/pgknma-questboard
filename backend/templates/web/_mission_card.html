@@ -22,6 +22,7 @@
       {% if mission.is_group %}<span class="tag">Отборна · до {{ mission.team_max }}</span>{% endif %}
       {% if mission.reward_badge_id or mission.reward_item_id %}<span class="tag tag-reward">Специална награда</span>{% endif %}
       {% if mission.created_at >= new_since and not claim %}<span class="tag tag-new">Нова</span>{% endif %}
+      {% if mission.is_extended %}<span class="tag">Удължен срок</span>{% endif %}
       {% if mission.deadline <= soon %}<span class="tag tag-soon">{{ mission.deadline|time_left }}</span>{% endif %}
     </div>
     <h3>{{ mission.title }}</h3>

@@ -47,7 +47,7 @@
         {% endif %}
 
         {% if can_claim %}
-          {% if my_claim %}<p>Заявката е отказана. Поправи каквото трябва и я подай отново.</p>{% endif %}
+          {% if my_claim %}<p>Заявката е отказана. Поправи каквото трябва и я подай отново до {{ my_deadline|date:"j F, H:i"|lower }}.</p>{% endif %}
           {% if my_claim and my_claim.files.all %}<p class="muted small">Ако прикачиш нови файлове, те заменят старите.</p>{% endif %}
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -55,7 +55,7 @@
             <button type="submit">Заяви изпълнение</button>
           </form>
         {% elif not my_claim %}
-          <p class="muted mb-0">Мисията вече не приема заявки.</p>
+          <p class="muted mb-0">{% if extension_problem %}Мисията вече не приема заявки.{% else %}Срокът мина, но още можеш да го удължиш.{% endif %}</p>
         {% endif %}
       </section>
     {% endif %}
@@ -69,11 +69,12 @@
         {% if mission.is_group %}<dt>Отбор</dt><dd>от {{ mission.team_min }} до {{ mission.team_max }} ученици</dd>{% endif %}
         {% if mission.reward_badge %}<dt>Значка</dt><dd>{{ mission.reward_badge.name }}</dd>{% endif %}
         {% if mission.reward_item %}<dt>Награда</dt><dd>{{ mission.reward_item.name }}{% if mission.reward_item.sponsor %}<br><span class="muted small">от {{ mission.reward_item.sponsor }}</span>{% endif %}</dd>{% endif %}
-        <dt>Срок</dt><dd>{{ mission.deadline|date:"j F Y, H:i"|lower }}</dd>
+        <dt>Срок</dt><dd>{{ mission.deadline|date:"j F Y, H:i"|lower }}{% if user.is_student and can_claim and my_deadline > mission.deadline %}<br><strong>за теб: {{ my_deadline|date:"j F, H:i"|lower }}</strong>{% endif %}</dd>
         <dt>Състояние</dt>
-        <dd>{% if not mission.is_active %}спряна{% elif mission.is_open %}приема заявки{% else %}срокът изтече{% endif %}</dd>
+        <dd>{% if not mission.is_active %}спряна{% elif mission.is_open or can_claim %}приема заявки{% else %}срокът изтече{% endif %}</dd>
         {% if user.is_teacher %}
           <dt>Подсказки</dt><dd>{{ mission.hints_allowed|yesno:"разрешени,забранени" }}</dd>
+          <dt>Удължен срок</dt><dd>{{ mission.extensions_allowed|yesno:"разрешен,забранен" }}{% for item in extensions %}<br><span class="small">{{ item.student.get_full_name|default:item.student.nickname }} до {{ item.until|date:"j F, H:i"|lower }}</span>{% endfor %}</dd>
           <dt>Проверяват</dt>
           <dd>{{ mission.created_by.get_full_name|default:mission.created_by.email }}{% for teacher in mission.reviewers.all %}, {{ teacher.get_full_name|default:teacher.email }}{% endfor %}</dd>
         {% endif %}
@@ -84,6 +85,20 @@
     </section>
 
     {% if user.is_student %}
+      {% if not extension_problem %}
+        <section class="panel panel-accent">
+          <h3>Трябва ти още време?</h3>
+          {% if passes %}
+            <p class="muted small">Срокът се мести само за теб с {{ rules.extension_days }} дни. Може веднъж за тази мисия. Имаш {{ passes }}.</p>
+            <form method="post" action="{% url 'mission_extend' mission.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-outline btn-small">Използвай „Удължен срок“</button>
+            </form>
+          {% else %}
+            <p class="muted small mb-0">С „Удължен срок“ срокът се мести само за теб с {{ rules.extension_days }} дни. <a href="{% url 'shop' %}">Вземи го от магазина.</a></p>
+          {% endif %}
+        </section>
+      {% endif %}
       {% if mission.hints_allowed and can_claim or hints %}
         <section class="panel panel-accent">
           <h3>Подсказка от асистента</h3>
@@ -95,13 +110,13 @@
           {% endfor %}
           {% if mission.hints_allowed and can_claim %}
             {% if hint_tokens %}
-              <p class="muted small">Подсказката дава насока, а не готово решение. Имаш {{ hint_tokens }} Hint Token.</p>
+              <p class="muted small">Подсказката дава насока, а не готово решение. Имаш {{ hint_tokens }} {% if hint_tokens == 1 %}подсказка{% else %}подсказки{% endif %}.</p>
               <form method="post" action="{% url 'mission_hint' mission.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn-outline btn-small">Поискай подсказка за 1 Hint Token</button>
+                <button type="submit" class="btn-outline btn-small">Използвай 1 подсказка</button>
               </form>
             {% else %}
-              <p class="muted small mb-0">Нямаш Hint Token. <a href="{% url 'shop' %}">Купи от магазина.</a></p>
+              <p class="muted small mb-0">Нямаш подсказка. <a href="{% url 'shop' %}">Купи от магазина.</a></p>
             {% endif %}
           {% endif %}
         </section>
@@ -124,7 +139,7 @@
                   {% if claim.captain %}<br><span class="tag">в отбора на {{ claim.captain.student.nickname }}</span>{% endif %}</td>
                 <td>{{ claim.student.school_class }}</td>
                 <td><div class="pre">{{ claim.evidence|urlize }}</div>{% include "web/_evidence_files.html" %}</td>
-                <td>{{ claim.submitted_at|date:"j F, H:i"|lower }}</td>
+                <td>{{ claim.submitted_at|date:"j F, H:i"|lower }}{% if claim.is_extended %}<br><span class="tag">удължен срок</span>{% endif %}</td>
                 <td>
                   {% include "web/_claim_status.html" %}
                   {% if claim.review_comment %}<p class="muted small">„{{ claim.review_comment }}“</p>{% endif %}
@@ -145,6 +160,6 @@
 {% endif %}
 {% endblock %}
 
-{% block scripts %}
+{% block scripts %}{% if user.is_teacher %}<script src="{% static 'js/review.js' %}" defer></script>{% endif %}
   {% if can_claim %}<script src="{% static 'js/file-picker.js' %}" defer></script>{% endif %}
 {% endblock %}

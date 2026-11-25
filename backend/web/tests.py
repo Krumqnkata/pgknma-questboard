@@ -122,7 +122,7 @@ class GamePageTests(TestCase):
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("review_list"))
         self.assertContains(response, "Репортаж")
-        self.assertContains(response, 'aria-label="1 чакат"')
+        self.assertContains(response, 'aria-label="1 заявки чакат"')
 
     def test_teacher_approves_claim(self):
         response = self.review("approve")
@@ -157,7 +157,7 @@ class GamePageTests(TestCase):
         self.client.force_login(self.student)
         hint = Privilege.objects.get(code="hint_token")
         response = self.client.post(reverse("shop_buy", args=[hint.pk]), follow=True)
-        self.assertContains(response, "Купено: Hint Token")
+        self.assertContains(response, "Купено: Подсказка")
 
     def test_shop_refuses_without_coins(self):
         self.client.force_login(self.student)
@@ -167,8 +167,8 @@ class GamePageTests(TestCase):
 
     def test_teacher_marks_purchase_used(self):
         CoinTransaction.objects.create(student=self.student, amount=5, kind="correction", reason="тест")
-        purchase = Purchase.objects.create(student=self.student, privilege=Privilege.objects.get(code="deadline_pass"),
-                                           price_paid=3)
+        privilege = Privilege.objects.create(code="first_choice", name="Избор на тема", price=3)
+        purchase = Purchase.objects.create(student=self.student, privilege=privilege, price_paid=3)
         self.client.force_login(self.teacher)
         self.client.post(reverse("purchase_use", args=[purchase.pk]))
         purchase.refresh_from_db()

@@ -338,7 +338,7 @@ class SystemCheckTests(Base):
         self.admin = User.objects.create_user("admin@example.com", "TaynaParola123", role=User.Role.ADMIN, is_staff=True,
                                               is_superuser=True)
         self.old = make_mission(self.teacher, title="Стара")
-        self.old.deadline = timezone.now() - timedelta(days=1)
+        self.old.deadline = timezone.now() - timedelta(days=5)
         self.old.save()
 
     def test_only_admin(self):

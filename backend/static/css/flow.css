@@ -1,0 +1,62 @@
+/* Кръгът на работа, първите стъпки, късата форма, менюто „Още“ и бързата проверка. */
+
+/* ---------- Следваща стъпка и кръг ---------- */
+.cycle { border: 2px solid var(--stroke); border-radius: var(--radius); background: var(--surface); box-shadow: var(--hard); margin-bottom: 1.75rem; overflow: hidden; }
+.cycle-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.9rem 1.1rem; }
+.cycle-head p { margin: 0; font-weight: 700; font-size: 1.1rem; }
+.cycle ol { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--stroke); counter-reset: step; }
+.cycle li + li { border-left: 2px solid var(--stroke); }
+.cycle li a { display: block; height: 100%; padding: 0.6rem 0.9rem; text-decoration: none; color: inherit; }
+.cycle li a:hover b { text-decoration: underline; }
+.cycle li b { display: block; counter-increment: step; }
+.cycle li b::before { content: counter(step) ". "; font-family: var(--mono); }
+.cycle li span { color: var(--muted); font-size: 0.85rem; }
+.cycle li.is-now { background: var(--gold); }
+.cycle li.is-now a, .cycle li.is-now span { color: #14151a; }
+@media (max-width: 700px) {
+  .cycle ol { grid-template-columns: 1fr 1fr; }
+  .cycle li:nth-child(3) { border-left: 0; }
+  .cycle li:nth-child(n + 3) { border-top: 2px solid var(--stroke); }
+}
+
+/* ---------- Първи стъпки ---------- */
+.first-steps { margin-bottom: 1.75rem; }
+.first-steps ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.first-steps li { display: flex; gap: 0.7rem; align-items: flex-start; }
+.first-steps i { flex: none; width: 1.5rem; height: 1.5rem; border: 2px solid var(--stroke); border-radius: var(--radius-sm); display: grid; place-items: center; font-style: normal; font-weight: 800; line-height: 1; }
+.first-steps .is-done i { background: var(--gold); color: #14151a; }
+.first-steps .is-done > span { color: var(--muted); text-decoration: line-through; }
+
+/* ---------- Къса форма ---------- */
+.more-fields { margin: 0.5rem 0 1.25rem; border: 2px dashed var(--line); border-radius: var(--radius-sm); padding: 0.7rem 1rem; }
+.more-fields > summary { cursor: pointer; font-weight: 700; }
+.more-fields[open] > summary { margin-bottom: 1rem; }
+
+/* ---------- Меню ---------- */
+.page-tabs { margin-bottom: 1.25rem; }
+.nav-more { position: relative; }
+.nav-more summary { list-style: none; cursor: pointer; color: var(--on-panel-muted); font-weight: 700; font-size: 0.93rem; padding: 0.35rem 0.7rem; border: 2px solid transparent; border-radius: var(--radius-sm); }
+.nav-more summary::-webkit-details-marker { display: none; }
+.nav > .nav-more > summary::after { content: " ▾"; }
+.nav-more summary:hover { color: var(--on-panel); border-color: #3a3b42; }
+.nav-more summary[aria-current="page"] { color: #14151a; background: var(--gold); border-color: var(--gold); }
+.nav-more > div { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 11rem; display: grid; gap: 0.2rem; padding: 0.4rem; background: var(--panel); border: 2px solid var(--gold); border-radius: var(--radius-sm); }
+.tabbar:has(.nav-more[open]) { z-index: 60; }  /* над бутона на асистента */
+.tabbar .nav-more { margin: 0 0.15rem; }
+.tabbar .nav-more summary { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.3rem 0; font-size: 0.68rem; }
+.tabbar .nav-more > div { top: auto; bottom: calc(100% + 10px); }
+.tabbar .nav-more > div a { align-items: flex-start; font-size: 0.95rem; padding: 0.55rem 0.7rem; }
+
+/* ---------- Бърза проверка ---------- */
+.bulk-bar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.bulk-bar h2 { margin: 0 auto 0 0; }
+.bulk-all[hidden], .quick-comments[hidden] { display: none; }
+.bulk-all { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; }
+.bulk-pick { display: inline-flex; padding: 0.35rem; margin: -0.2rem 0.2rem -0.2rem -0.35rem; cursor: pointer; }
+.bulk-pick + a { flex: 1; }
+.review-form { flex-wrap: wrap; }
+.quick-comments { display: flex; flex-wrap: wrap; gap: 0.4rem; flex: 1 0 100%; }
+.quick-comments button { padding: 0.2rem 0.6rem; font-size: 0.82rem; box-shadow: none; }
+.quick-comments button[aria-pressed="true"] { background: var(--gold); color: #14151a; }
+
+.plain-list { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.35rem; }

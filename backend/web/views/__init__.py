@@ -1,8 +1,8 @@
 """Страниците за ученици и учители (Django шаблони), разделени по теми."""
 from .game import (  # noqa: F401
-    claim_undo, home, leaderboard_view, profile, purchase_list, purchase_use, review_claim, review_list, shop, shop_buy,
+    claim_undo, home, leaderboard_view, profile, purchase_list, purchase_use, review_bulk, review_claim, review_list, shop, shop_buy,
 )
-from .missions import homework_create, mission_create, mission_detail, mission_edit, mission_list, team_leave  # noqa: F401
+from .missions import homework_create, mission_create, mission_detail, mission_edit, mission_extend, mission_list, team_leave  # noqa: F401
 from .assistant import assistant_chat, mission_hint  # noqa: F401
 from .reports import reports  # noqa: F401
 from .branding import school_logo, sponsor_logo  # noqa: F401

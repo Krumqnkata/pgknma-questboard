@@ -27,10 +27,12 @@ urlpatterns = [
     path("missions/<int:pk>/", views.mission_detail, name="mission_detail"),
     path("missions/<int:pk>/edit/", views.mission_edit, name="mission_edit"),
     path("missions/<int:pk>/hint/", views.mission_hint, name="mission_hint"),
+    path("missions/<int:pk>/extend/", views.mission_extend, name="mission_extend"),
     path("missions/<int:pk>/leave-team/", views.team_leave, name="team_leave"),
     path("mission-files/<int:pk>/", views.mission_file, name="mission_file"),
     # Проверка на заявки (учител)
     path("review/", views.review_list, name="review_list"),
+    path("review/approve/", views.review_bulk, name="review_bulk"),
     path("claims/<int:pk>/review/", views.review_claim, name="review_claim"),
     path("evidence/<int:pk>/", views.evidence_file, name="evidence_file"),
     path("claims/<int:pk>/undo/", views.claim_undo, name="claim_undo"),

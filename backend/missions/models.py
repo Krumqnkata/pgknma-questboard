@@ -39,7 +39,11 @@ class Mission(models.Model):
     deadline = models.DateTimeField("краен срок")
     hints_allowed = models.BooleanField(
         "разрешени подсказки", default=True,
-        help_text="Може ли ученикът да ползва Hint Token за тази мисия.",
+        help_text="Може ли ученикът да ползва купена подсказка за тази мисия.",
+    )
+    extensions_allowed = models.BooleanField(
+        "разрешен удължен срок", default=True,
+        help_text="Може ли ученикът да използва „Удължен срок“. Махнете го, ако датата е твърда, напр. за събитие.",
     )
     is_active = models.BooleanField("активна", default=True)
 
@@ -192,6 +196,28 @@ class Claim(models.Model):
 
     def __str__(self):
         return f"{self.student} → {self.mission}"
+
+
+class DeadlineExtension(models.Model):
+    """Удължен срок на една мисия само за един ученик (missions/deadlines.py)."""
+
+    mission = models.ForeignKey(Mission, verbose_name="мисия", on_delete=models.CASCADE, related_name="extensions")
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="ученик", on_delete=models.CASCADE,
+                                related_name="deadline_extensions")
+    purchase = models.OneToOneField("economy.Purchase", verbose_name="използван „Удължен срок“", on_delete=models.SET_NULL,
+                                    null=True, blank=True, related_name="extension",
+                                    help_text="Празно – даден безплатно от администратора.")
+    until = models.DateTimeField("нов срок")
+    created_at = models.DateTimeField("кога", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "удължен срок"
+        verbose_name_plural = "удължени срокове"
+        ordering = ["-created_at"]
+        constraints = [models.UniqueConstraint(fields=["mission", "student"], name="one_extension_per_student")]
+
+    def __str__(self):
+        return f"{self.student} – {self.mission}"
 
 
 def _random_path(folder, instance):

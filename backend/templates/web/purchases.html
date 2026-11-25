@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Привилегии – Questboard{% endblock %}
+{% block title %}За предаване – Questboard{% endblock %}
 
 {% block content %}
+{% include "web/_teacher_tabs.html" with tabs="rewards" %}
 <div class="page-head">
   <div>
-    <h1>Привилегии и награди за предаване</h1>
-    <p>Когато ученик използва привилегия при вас, например удължен срок, или получи награда от външен контрибутор, за която отговаряте, отбележете я тук.</p>
+    <h1>За предаване</h1>
+    <p>Каквото учениците са взели от магазина. Отбележете го, когато го предадете или използват при вас.</p>
   </div>
 </div>
 
 {% if purchases %}
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Ученик</th><th>Клас</th><th>Привилегия</th><th>Купена</th><th></th></tr></thead>
+      <thead><tr><th>Ученик</th><th>Клас</th><th>Какво</th><th>Купена</th><th></th></tr></thead>
       <tbody>
         {% for purchase in purchases %}
           <tr>
@@ -34,8 +35,8 @@
   </div>
 {% else %}
   <section class="panel">
-    <h2>Няма неизползвани привилегии</h2>
-    <p class="muted mb-0">Hint Token не се показва тук – той се харчи сам, когато ученикът поиска подсказка.</p>
+    <h2>Нищо не чака</h2>
+    <p class="muted mb-0">„Подсказка“ и „Удължен срок“ не са тук, защото ученикът ги използва сам от страницата на мисията.</p>
   </section>
 {% endif %}
 {% endblock %}

@@ -1,0 +1,12 @@
+{# Следващата стъпка и кръгът на работа (web/cycle.py). Очаква cycle. #}
+<section class="cycle" aria-label="Какво следва">
+  <div class="cycle-head">
+    <p>{{ cycle.headline }}</p>
+    {% if cycle.link %}<a class="btn btn-small" href="{{ cycle.link }}">{{ cycle.label }}</a>{% endif %}
+  </div>
+  <ol>
+    {% for step in cycle.steps %}
+      <li{% if step.is_now %} class="is-now" aria-current="step"{% endif %}><a href="{{ step.link }}"><b>{{ step.title }}</b><span>{{ step.text }}</span></a></li>
+    {% endfor %}
+  </ol>
+</section>

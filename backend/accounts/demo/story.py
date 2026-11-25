@@ -23,8 +23,9 @@ from economy.models import Privilege
 from economy.services import (approve_claim, buy_privilege, give_bonus, mark_purchase_used, reject_claim,
                               undo_bonus, unused_purchases)
 from missions.errors import GameRuleError
+from missions.deadlines import unused_passes, use_pass
 from missions.models import Claim, Mission
-from missions.services import submit_claim
+from missions.services import missions_for_student, submit_claim
 from notifications.models import Notification
 from quizzes.models import GuildTest
 from quizzes.services import (answer_question, current_question, note_left_page, open_session, start_attempt,
@@ -241,6 +242,8 @@ class Story:
             self.add(self.day(days, 20), self.shopping_evening)
         self.add(self.day(2, 13), self.teacher_marks_used)
         self.add(self.now - timedelta(hours=20), self.use_hint)
+        self.add(self.day(3, 17), lambda: self.buy(self.fresh("Феникс"), "deadline_pass"))  # за демонстрацията
+        self.add(self.day(1, 16), self.use_deadline_passes)
 
     def buy(self, student, code):
         item = Privilege.objects.filter(code=code, is_active=True).first()
@@ -261,8 +264,20 @@ class Story:
 
     def teacher_marks_used(self):
         for teacher in self.teachers:
-            for purchase in list(unused_purchases(teacher))[::2]:
+            for purchase in list(unused_purchases(teacher))[1::2]:
                 mark_purchase_used(purchase, teacher)
+
+    def use_deadline_passes(self):
+        """Двама ученици си удължават срока на домашна или мисия, която още не са подали."""
+        left = 2
+        for nickname in self.students:
+            student = self.fresh(nickname)
+            if not left or nickname == "Феникс" or not unused_passes(student).exists():
+                continue
+            mission = missions_for_student(student).exclude(claims__student=student).order_by("deadline").first()
+            if mission:
+                use_pass(student, mission)
+                left -= 1
 
     def use_hint(self):
         student = self.fresh("Феникс")

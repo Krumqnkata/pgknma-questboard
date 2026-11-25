@@ -76,6 +76,19 @@ class GameSettings(models.Model):
         help_text="XP е за предадена и приета домашна. Не е оценка и не влияе на оценките.",
     )
 
+    # --- Срокове ---
+    extension_days = models.PositiveIntegerField(
+        "„Удължен срок“ мести срока с (дни)", default=3, validators=[MinValueValidator(1)],
+    )
+    extension_late_days = models.PositiveIntegerField(
+        "„Удължен срок“ може да се използва до (дни) след срока", default=2,
+        help_text="0 – само преди срокът да е минал.",
+    )
+    resubmit_days = models.PositiveIntegerField(
+        "върната заявка може да се поправи поне (дни)", default=2,
+        help_text="Броят се от връщането, дори срокът на мисията да е минал.",
+    )
+
     # --- Асистент (раздел 3.2) ---
     assistant_enabled = models.BooleanField(
         "асистентът е включен", default=True,
@@ -332,7 +345,7 @@ class Sponsor(models.Model):
 class Privilege(models.Model):
     """
     Артикул в магазина (Ф8). Три вида:
-      - привилегия (Deadline Pass, Hint Token) – учителят я отбелязва като използвана;
+      - привилегия – „Удължен срок“ и „Подсказка“ се използват от ученика, другите отбелязва учителят;
       - за профила (титла или рамка на аватара) – само външен вид, не влияе на ученето;
       - награда от външен контрибутор (билет, книга, курс) – ограничен брой, предава я отговорникът ѝ.
     """
