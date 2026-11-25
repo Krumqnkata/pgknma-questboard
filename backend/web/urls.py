@@ -44,6 +44,8 @@ urlpatterns = [
     path("rewards/", views.rewards, name="rewards"),
     # Гилдии и тестове
     path("guilds/", views.guild_list, name="guild_list"),
+    path("guilds/<int:pk>/main/", views.guild_main, name="guild_main"),
+    path("guilds/<int:pk>/leave/", views.guild_leave, name="guild_leave"),
     path("tests/start/", views.test_start, name="test_start"),
     path("tests/attempt/<int:pk>/", views.test_attempt, name="test_attempt"),
     path("tests/attempt/<int:pk>/left/", views.test_left, name="test_left"),

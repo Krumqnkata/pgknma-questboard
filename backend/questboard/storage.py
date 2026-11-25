@@ -10,7 +10,7 @@ collectstatic: компресират се и получават уникалн�
 Това хранилище в такъв случай просто връща обикновения адрес (style.css),
 а WhiteNoise намира файла направо в папката static/.
 
-Тук са и хранилищата за логото на училището и на спонсорите.
+Тук са и хранилищата за логото на училището и на външните контрибутори.
 """
 from urllib.parse import quote
 
@@ -42,7 +42,7 @@ class LogoStorage(FileSystemStorage):
 
 
 class SponsorLogoStorage(FileSystemStorage):
-    """Логата на спонсорите (media/sponsors/) се показват от /sponsor-logo/<име> (web/views/branding.py)."""
+    """Логата на външните контрибутори (media/sponsors/) се показват от /sponsor-logo/<име> (web/views/branding.py)."""
 
     def url(self, name):
         return reverse("sponsor_logo", args=[(name or "").rsplit("/", 1)[-1]])

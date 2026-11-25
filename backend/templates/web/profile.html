@@ -19,7 +19,7 @@
     {% if user.is_student %}
       <dt>Псевдоним</dt><dd>{{ user.nickname }}</dd>
       <dt>Клас</dt><dd>{{ user.school_class }}</dd>
-      <dt>Гилдия</dt><dd>{% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% else %}<a href="{% url 'guild_list' %}">Избери гилдия</a>{% endif %}</dd>
+      <dt>Гилдии</dt><dd>{% for guild in user.guilds %}<span class="chip {{ guild|guild_class }}">{{ guild }}</span> {% endfor %}<a class="small" href="{% url 'guild_list' %}">{% if user.guilds %}Управление{% else %}Избери гилдия{% endif %}</a></dd>
     {% endif %}
   </dl>
   <div class="actions"><a class="btn btn-outline btn-small" href="{% url 'password_change' %}">Смени паролата</a></div>
@@ -27,7 +27,7 @@
 
 <section class="panel section" aria-labelledby="kit-title">
   <h2 id="kit-title">Вид на сайта</h2>
-  <p class="muted">Помни се в този браузър.{% if user.is_student and user.guild %} В геймърския комплект цветът, формата на картите и фонът са на гилдия {{ user.guild }}.{% endif %}</p>
+  <p class="muted">Помни се в този браузър.{% if user.is_student and user.guild %} Цветът, фонът и формата на картите са на основната ти гилдия, {{ user.guild }}.{% elif user.is_student %} Когато влезеш в гилдия, сайтът ще вземе нейния цвят.{% else %} Учителите имат своя тема, а всяка гилдия своя.{% endif %}</p>
   <div class="kit-choice">
     <button type="button" data-kit-set="school" aria-pressed="true"><span class="kit-preview"></span>Училищен</button>
     <button type="button" data-kit-set="gamer" aria-pressed="false"><span class="kit-preview is-gamer"></span>Геймърски</button>

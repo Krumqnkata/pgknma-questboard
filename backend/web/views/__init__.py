@@ -14,5 +14,5 @@ from .evidence import evidence_file, mission_file  # noqa: F401
 from .rewards import rewards  # noqa: F401
 from .not_wordpress import not_wordpress  # noqa: F401
 from .quizzes import (  # noqa: F401
-    guild_list, session_open, test_attempt, test_create, test_edit, test_left, test_list, test_session, test_start,
+    guild_leave, guild_list, guild_main, session_open, test_attempt, test_create, test_edit, test_left, test_list, test_session, test_start,
 )

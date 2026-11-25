@@ -1,0 +1,78 @@
+/*
+ * Темите на училищния комплект: всяка гилдия, учителите и администраторът имат своя.
+ * Класът е на <html> (web/templatetags/questboard.py → theme_class). Гостите и ученик
+ * без гилдия виждат горчичената тема от style.css. Геймърският комплект е в gamer.css.
+ *
+ * Темата задава само цвят (--t), форма на картите и шарка на фона. Останалото се смесва
+ * от цвета, затова контрастът е еднакъв навсякъде: --t е винаги достатъчно светъл за
+ * тъмен текст (поне 7:1), а фонът и тъмните панели само се оцветяват леко.
+ */
+
+:root:where(.themed) {
+  --gold: var(--t);
+  --paper: color-mix(in srgb, var(--t) 11%, #f7f6f3);
+  --sunken: color-mix(in srgb, var(--t) 14%, #efece6);
+  --line: color-mix(in srgb, var(--t) 22%, #e2dccf);
+  --accent-soft: color-mix(in srgb, var(--t) 26%, #ffffff);
+  --panel: color-mix(in srgb, var(--t) 18%, #0c0d12);
+  --theme-line: color-mix(in srgb, var(--t) 34%, transparent);
+}
+:root[data-theme="dark"]:where(.themed) {
+  --gold: var(--t);
+  --paper: color-mix(in srgb, var(--t) 6%, #111216);
+  --sunken: color-mix(in srgb, var(--t) 8%, #25262d);
+  --line: color-mix(in srgb, var(--t) 12%, #34353d);
+  --accent-soft: color-mix(in srgb, var(--t) 18%, #1c1d23);
+  --panel: color-mix(in srgb, var(--t) 12%, #08090b);
+  --theme-line: color-mix(in srgb, var(--t) 14%, transparent);
+}
+
+/* Помощници: спокойни кръгове */
+:root.accent-helpers {
+  --t: #7db4ff; --radius: 14px;
+  --theme-pattern: radial-gradient(circle, transparent 11px, var(--theme-line) 11.5px 12.5px, transparent 13px);
+  --theme-size: 56px 56px;
+}
+/* Артисти: петна боя и несиметрични ъгли */
+:root.accent-artists {
+  --t: #ff8cc3; --radius: 22px 6px 22px 6px;
+  --theme-pattern: radial-gradient(circle at 22% 28%, var(--theme-line) 0 16px, transparent 17px), radial-gradient(circle at 70% 74%, var(--theme-line) 0 9px, transparent 10px), radial-gradient(circle at 84% 22%, var(--theme-line) 0 4px, transparent 5px);
+  --theme-size: 190px 190px;
+}
+/* Техничари: чертожна мрежа и прави ъгли */
+:root.accent-techies {
+  --t: #ffa340; --radius: 2px;
+  --theme-pattern: linear-gradient(var(--theme-line) 1px, transparent 1px), linear-gradient(90deg, var(--theme-line) 1px, transparent 1px);
+  --theme-size: 28px 28px;
+}
+/* Спортисти: коси линии като на писта */
+:root.accent-athletes {
+  --t: #ff8f85; --radius: 2px 16px 2px 16px;
+  --theme-pattern: repeating-linear-gradient(115deg, transparent 0 34px, var(--theme-line) 34px 37px, transparent 37px 48px);
+  --theme-size: auto;
+}
+/* Организатори: точки и връзки */
+:root.accent-organizers {
+  --t: #b79bff; --radius: 10px;
+  --theme-pattern: radial-gradient(var(--theme-line) 3px, transparent 3.5px), radial-gradient(var(--theme-line) 1.5px, transparent 2px);
+  --theme-size: 40px 40px, 20px 20px;
+}
+/* Учители: лист от тетрадка и зелена дъска */
+:root.accent-teacher {
+  --t: #86d7a3; --radius: 6px;
+  --theme-pattern: repeating-linear-gradient(transparent 0 31px, var(--theme-line) 31px 32px);
+  --theme-size: auto;
+}
+/* Администратор: ситна мрежа */
+:root.accent-admin {
+  --t: #7fcbd6; --radius: 4px;
+  --theme-pattern: linear-gradient(var(--theme-line) 1px, transparent 1px), linear-gradient(90deg, var(--theme-line) 1px, transparent 1px);
+  --theme-size: 16px 16px;
+}
+
+:root.themed:not([data-kit="gamer"]) body { background-image: var(--theme-pattern); background-size: var(--theme-size); }
+
+:root.themed:not([data-kit="gamer"]) .player-avatar .avatar { color: var(--t); }
+
+.guild-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.8rem; margin-top: 0.8rem; }
+.guild-actions summary { cursor: pointer; font-size: 0.9rem; padding: 0.3rem 0; }

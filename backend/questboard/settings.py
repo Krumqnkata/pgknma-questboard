@@ -278,7 +278,7 @@ UNFOLD = {
                      "link": _admin_link("economy_gamesettings")},
                     {"title": "Нива", "icon": "military_tech", "link": _admin_link("economy_level")},
                     {"title": "Магазин", "icon": "storefront", "link": _admin_link("economy_privilege")},
-                    {"title": "Спонсори", "icon": "handshake", "link": _admin_link("economy_sponsor")},
+                    {"title": "Външни контрибутори", "icon": "handshake", "link": _admin_link("economy_sponsor")},
                     {"title": "Значки", "icon": "workspace_premium", "link": _admin_link("badges_badge")},
                 ],
             },

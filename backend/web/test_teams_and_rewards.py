@@ -1,4 +1,4 @@
-"""Отборни мисии, заместници, награди от мисия, спонсори, нива в магазина и файлове."""
+"""Отборни мисии, заместници, награди от мисия, външни контрибутори, нива в магазина и файлове."""
 import io
 import tempfile
 import zipfile
@@ -267,7 +267,7 @@ class ShopTests(Base):
         self.give_coins(self.captain, 10)
         self.give_coins(self.mate, 10)
         purchase = buy_privilege(self.captain, ticket)
-        self.assertIn(purchase, unused_purchases())
+        self.assertIn(purchase, unused_purchases(self.teacher))
         with self.assertRaises(GameRuleError):
             buy_privilege(self.mate, ticket)
         self.client.force_login(self.mate)
@@ -286,6 +286,31 @@ class ShopTests(Base):
         XPTransaction.objects.create(student=self.captain, amount=250, reason="тест")
         buy_privilege(self.captain, item)
         self.assertIn(item, owned_cosmetics(self.captain))
+
+    def test_only_the_responsible_teacher_hands_it_over(self):
+        ticket = Privilege.objects.create(code="ticket", kind=Privilege.Kind.SPONSOR, name="Билет", price=5,
+                                          sponsor=Sponsor.objects.create(name="Театър"), responsible=self.teacher)
+        purchase = Purchase.objects.create(student=self.captain, privilege=ticket, price_paid=5)
+        other = make_teacher("other-teacher@example.com")
+        self.client.force_login(other)
+        self.assertNotContains(self.client.get(reverse("purchase_list")), "Билет")
+        self.client.post(reverse("purchase_use", args=[purchase.pk]))
+        purchase.refresh_from_db()
+        self.assertFalse(purchase.is_used)
+        self.client.force_login(self.captain)
+        self.assertContains(self.client.get(reverse("shop")), "Предава: " + self.teacher.get_full_name())
+        self.teacher.is_active = False  # отговорникът е напуснал: предава всеки учител
+        self.teacher.save()
+        self.client.force_login(other)
+        self.assertContains(self.client.get(reverse("purchase_list")), "Билет")
+        self.client.post(reverse("purchase_use", args=[purchase.pk]))
+        purchase.refresh_from_db()
+        self.assertTrue(purchase.is_used)
+
+    def test_responsible_is_required(self):
+        with self.assertRaisesMessage(ValidationError, "отговорник"):
+            Privilege(code="x", kind=Privilege.Kind.SPONSOR, name="Книга", price=1,
+                      sponsor=Sponsor.objects.create(name="Театър")).clean()
 
     def test_sponsor_is_required(self):
         with self.assertRaises(ValidationError):

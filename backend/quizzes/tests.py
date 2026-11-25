@@ -8,9 +8,11 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.guilds import leave_guild, make_main
 from accounts.models import Guild
 from accounts.testing import make_student, make_teacher
-from economy.services import xp_total
+from economy.leaderboard import guild_ranking, student_ranking
+from economy.services import award_xp, xp_total
 from missions.errors import GameRuleError
 
 from .models import Attempt, GuildTest, Question, normalize
@@ -59,7 +61,41 @@ class EntryTests(Base):
     def test_pass_at_80_percent_joins_the_guild(self):
         attempt = self.solve(self.start(), 4)
         self.assertEqual((attempt.status, attempt.percent), (Attempt.Status.PASSED, 80))
-        self.assertEqual(self.student.guild, self.artists)
+        self.assertEqual(self.student.guild.code, "techies")           # първата остава основна
+        self.assertEqual(self.student.second_guild, self.artists)
+
+    def test_third_guild_is_refused(self):
+        self.solve(self.start(), 5)
+        third = self.make_test(Guild.objects.get(code="athletes"))
+        self.assertIn("2 гилдии", why_not(self.student, third))
+        leave_guild(self.student, self.artists)
+        self.student.refresh_from_db()
+        self.assertEqual(why_not(self.student, third), "")
+
+    def test_main_guild_is_swapped_once_in_30_days(self):
+        self.solve(self.start(), 5)
+        self.client.force_login(self.student)
+        self.client.post(reverse("guild_main", args=[self.artists.pk]))
+        self.student.refresh_from_db()
+        self.assertEqual([guild.code for guild in self.student.guilds], ["artists", "techies"])
+        self.assertContains(self.client.get(reverse("home")), 'class="themed accent-artists"')
+        with self.assertRaises(GameRuleError):
+            make_main(self.student, self.student.second_guild)
+        self.client.post(reverse("guild_leave", args=[self.artists.pk]))
+        self.student.refresh_from_db()
+        self.assertEqual([guild.code for guild in self.student.guilds], ["techies"])  # втората става основна
+
+    def test_xp_counts_for_the_main_guild_only(self):
+        self.solve(self.start(), 5)
+        award_xp(self.student, 50, "тест")
+        xp = {row.code: row.xp for row in guild_ranking()}
+        self.assertEqual((xp["techies"], xp["artists"]), (50, 0))
+        self.assertEqual(len(student_ranking(guild_id=self.artists.pk)), 1)  # но се вижда и в двете
+
+    def test_members_of_the_second_guild_take_the_monthly_test(self):
+        self.solve(self.start(), 5)
+        monthly = self.make_test(self.artists, GuildTest.Kind.MONTHLY, xp=40)
+        self.assertEqual(why_not(self.student, monthly), "")
 
     def test_below_80_stays_and_waits_seven_days(self):
         attempt = self.solve(self.start(), 3)
@@ -229,7 +265,7 @@ class VoidTests(Base):
             void_attempt(make_teacher("other@example.com"), attempt, "преписване")
         void_attempt(self.teacher, attempt, "преписване")
         self.student.refresh_from_db()
-        self.assertEqual(self.student.guild.code, "techies")
+        self.assertEqual((self.student.guild.code, self.student.second_guild), ("techies", None))
         self.assertEqual(why_not(self.student, self.entry), "")  # анулираният не се брои
 
     def test_xp_goes_back(self):

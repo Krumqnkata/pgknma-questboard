@@ -7,7 +7,7 @@
 <div class="page-head">
   <div>
     <h1>Гилдии</h1>
-    <p>Гилдията е според интересите ти. Влиза се с входен тест, а членовете ѝ решават и месечен тест за XP.</p>
+    <p>Гилдията е според интересите ти. Можеш да си в две. Влиза се с входен тест, а членовете решават и месечен тест за XP.</p>
   </div>
 </div>
 
@@ -32,8 +32,8 @@
 
 <div class="guild-grid section">
   {% for guild, tests in guild_rows %}
-    <section class="guild-card guild-{{ guild.code }}{% if guild == user.guild %} is-mine{% endif %}">
-      <header>{% guild_icon guild %}<h2>{{ guild }}</h2>{% if guild == user.guild %}<span class="tag">твоята</span>{% endif %}</header>
+    <section class="guild-card guild-{{ guild.code }}{% if guild in user.guilds %} is-mine{% endif %}">
+      <header>{% guild_icon guild %}<h2>{{ guild }}</h2>{% if guild == user.guild %}<span class="tag">основна</span>{% elif guild == user.second_guild %}<span class="tag">втора</span>{% endif %}</header>
       <p class="muted small">{{ guild.description }}</p>
       <p class="small"><strong>{{ guild.member_count }}</strong> ученици</p>
       {% for test, problem in tests %}
@@ -45,9 +45,24 @@
       {% empty %}
         <p class="muted small">Още няма тест за тази гилдия.</p>
       {% endfor %}
+      {% if guild in user.guilds %}
+        <div class="guild-actions">
+          {% if guild == user.second_guild and not next_main_change %}
+            <form method="post" action="{% url 'guild_main' guild.pk %}">{% csrf_token %}<button type="submit" class="btn-outline btn-small">Направи основна</button></form>
+          {% endif %}
+          <details><summary>Напусни</summary>
+            <form method="post" action="{% url 'guild_leave' guild.pk %}">{% csrf_token %}
+              <p class="small">За да се върнеш, ще трябва пак да минеш входния тест.</p>
+              <button type="submit" class="btn-danger btn-small">Да, напускам</button>
+            </form>
+          </details>
+        </div>
+      {% endif %}
     </section>
   {% endfor %}
 </div>
+
+{% if user.guilds %}<p class="muted small">Видът на сайта е на основната ти гилдия и твоят XP се брои за нея. Основната се сменя веднъж на {{ main_change_days }} дни{% if next_main_change %}, следващата смяна е от {{ next_main_change|date:"j E"|lower }}{% endif %}.</p>{% endif %}
 
 {% if attempts %}
 <section class="section">

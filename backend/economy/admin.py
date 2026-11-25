@@ -65,7 +65,7 @@ class LevelAdmin(ModelAdmin):
 
 @admin.register(Privilege)
 class PrivilegeAdmin(ModelAdmin):
-    list_display = ["name", "kind", "sponsor", "price", "min_level", "stock", "only_from_mission", "is_active"]
+    list_display = ["name", "kind", "sponsor", "responsible", "price", "min_level", "stock", "only_from_mission", "is_active"]
     list_editable = ["price", "min_level", "is_active"]
     list_filter = ["kind", "sponsor", "only_from_mission", "is_active"]
 

@@ -101,14 +101,14 @@ def suggested_missions(student, limit=4):
     """
     „Мисии за теб“ на началната страница (до 4, за да се подредят 2×2 до картата
     на играча): активни мисии без заявка от ученика,
-    първо тези на неговата гилдия, после по най-близък срок.
+    първо тези на неговите гилдии, после по най-близък срок.
     """
     return (missions_for_student(student)
             .exclude(claims__student=student)
             .annotate(
                 # Първо домашните за класа и мисиите на собствената гилдия.
                 own_guild=Case(When(kind=Mission.Kind.HOMEWORK, then=Value(0)),
-                               When(guild_id=student.guild_id, then=Value(0)), default=Value(1),
+                               When(guild_id__in=student.guild_ids, then=Value(0)), default=Value(1),
                                output_field=IntegerField()),
                 done_count=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
             )
@@ -230,7 +230,7 @@ def shop(request):
                             key=lambda item: (not item.unlocked, item.min_level, item.price)),
         "owned": owned,
         "stats": stats,
-        "purchases": Purchase.objects.filter(student=request.user).select_related("privilege"),
+        "purchases": Purchase.objects.filter(student=request.user).select_related("privilege__responsible"),
     })
 
 
@@ -246,7 +246,7 @@ def shop_buy(request, pk):
         if privilege.is_cosmetic:
             messages.success(request, f"Купено: {privilege.name}. Вече се вижда в класацията – смени го от профила.")
         elif privilege.kind == Privilege.Kind.SPONSOR:
-            messages.success(request, f"Купено: {privilege.name}. Ще го получиш от учител – виж „Моите покупки“.")
+            messages.success(request, f"Купено: {privilege.name}. Виж в „Моите покупки“ от кого ще го получиш.")
         else:
             messages.success(request, f"Купено: {privilege.name}. Покажи го на учителя, когато го използваш.")
     return redirect("shop")
@@ -256,7 +256,7 @@ def shop_buy(request, pk):
 
 @role_required(TEACHER)
 def purchase_list(request):
-    return render(request, "web/purchases.html", {"purchases": unused_purchases()})
+    return render(request, "web/purchases.html", {"purchases": unused_purchases(request.user)})
 
 
 @require_POST

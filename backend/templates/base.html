@@ -1,6 +1,6 @@
 {% load static questboard %}<!doctype html>
-{# При ученик сайтът приема цвета на гилдията му (static/css/style.css → „Цвят по гилдия“). #}
-<html lang="bg"{% if user.is_student and user.guild %} class="accent-{{ user.guild|guild_slug }}"{% endif %}>
+{# Всяка гилдия, учителите и администраторът имат своя тема (static/css/themes.css). #}
+<html lang="bg"{% if user|theme_class %} class="{{ user|theme_class }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,6 +28,7 @@
   {# Шрифтовете са на нашия сървър (без заявки към Google), с българските форми на буквите. #}
   <link rel="preload" href="{% static 'fonts/SofiaSans-wght.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
   {# Вторият комплект за интерфейса („Геймърски“) – важи само при data-kit="gamer". #}
   <link rel="stylesheet" href="{% static 'css/gamer.css' %}">
 </head>

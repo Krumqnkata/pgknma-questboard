@@ -11,7 +11,7 @@ class GuildSeedTests(TestCase):
     def test_six_interest_guilds_exist(self):
         guilds = dict(Guild.objects.values_list("name", "code"))
         self.assertEqual(guilds, {"Помощници": "helpers", "Артисти": "artists", "Техничари": "techies",
-                                  "Изследователи": "explorers", "Спортисти": "athletes", "Организатори": "organizers"})
+                                  "Спортисти": "athletes", "Организатори": "organizers"})
 
 
 class UserRoleTests(TestCase):
@@ -55,7 +55,7 @@ class AdminAddUserTests(TestCase):
         self.client.force_login(User.objects.create_superuser("a@example.com", "TaynaParola123"))
         self.url = reverse("admin:accounts_user_add")
         self.school_class = SchoolClass.objects.create(name="10А")
-        self.guild = Guild.objects.get(name="Изследователи")
+        self.guild = Guild.objects.get(name="Артисти")
 
     def post(self, **fields):
         data = {"password1": "НоваПарола2026!", "password2": "НоваПарола2026!", "usable_password": "true",
@@ -119,7 +119,7 @@ class ImportUsersTests(TestCase):
         return import_users(self.HEADER + rows)
 
     def test_students_and_teachers_are_created(self):
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n"
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Артисти\n"
                                  "maria@example.bg,Мария,Иванова,учител,,,\n")
         self.assertTrue(result.ok, result.errors)
         student = User.objects.get(email="ivan@example.bg")
@@ -128,14 +128,14 @@ class ImportUsersTests(TestCase):
         self.assertEqual(User.objects.get(email="maria@example.bg").role, User.Role.TEACHER)
 
     def test_temporary_password_works_and_must_be_changed(self):
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n")
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Артисти\n")
         user = User.objects.get(email="ivan@example.bg")
         self.assertTrue(user.check_password(result.created[0].password))
         self.assertTrue(user.must_change_password)
         self.assertNotEqual(user.password, result.created[0].password)  # в базата е само хешът
 
     def test_one_bad_row_imports_nothing(self):
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n"
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Артисти\n"
                                  "bad-email,Мария,Иванова,ученик,Лъв,11Б,Техничари\n")
         self.assertFalse(result.ok)
         self.assertIn("Ред 3", result.errors[0])
@@ -156,7 +156,7 @@ class ImportUsersTests(TestCase):
 
     def test_existing_email_is_skipped(self):
         User.objects.create_user("ivan@example.bg", "TaynaParola123", role=User.Role.TEACHER)
-        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n")
+        result = self.run_import("ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Артисти\n")
         self.assertTrue(result.ok)
         self.assertEqual(result.skipped, ["ivan@example.bg"])
         self.assertEqual(User.objects.get(email="ivan@example.bg").role, User.Role.TEACHER)  # не е променен
@@ -168,7 +168,7 @@ class ImportUsersTests(TestCase):
         url = reverse("admin:accounts_user_import_csv")
         self.assertContains(self.client.get(url), "Внасяне на ученици и учители")
 
-        upload = SimpleUploadedFile("hora.csv", (self.HEADER + "ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Изследователи\n")
+        upload = SimpleUploadedFile("hora.csv", (self.HEADER + "ivan@example.bg,Иван,Петров,ученик,Сокол,11Б,Артисти\n")
                                     .encode("utf-8"), content_type="text/csv")
         response = self.client.post(url, {"file": upload})
         self.assertContains(response, "Свали паролите")

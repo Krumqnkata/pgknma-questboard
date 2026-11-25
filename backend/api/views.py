@@ -278,7 +278,7 @@ class PurchaseViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if user.is_student:
             return Purchase.objects.filter(student=user).select_related("privilege", "student")
-        return unused_purchases()
+        return unused_purchases(self.request.user)
 
     @extend_schema(request=None, responses=PurchaseSerializer)
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsTeacher])

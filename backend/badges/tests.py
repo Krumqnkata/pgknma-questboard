@@ -38,18 +38,18 @@ class BadgeTests(TestCase):
 
     def test_five_missions_in_one_guild(self):
         self.complete(4, guild="Техничари")
-        self.complete(1, guild="Изследователи")
+        self.complete(1, guild="Артисти")
         self.assertIn("Пет мисии", self.earned())
         self.assertNotIn("Верен на гилдията", self.earned())  # 4 + 1 в различни гилдии
         self.complete(1, guild="Техничари")
         self.assertIn("Верен на гилдията", self.earned())
 
     def test_badge_for_a_specific_guild(self):
-        Badge.objects.create(name="Изследовател", description="3 мисии на Изследователи", rule=Badge.Rule.GUILD_MISSIONS,
-                             threshold=3, guild=Guild.objects.get(name="Изследователи"))
+        Badge.objects.create(name="Изследовател", description="3 мисии на Артисти", rule=Badge.Rule.GUILD_MISSIONS,
+                             threshold=3, guild=Guild.objects.get(name="Артисти"))
         self.complete(3, guild="Техничари")
         self.assertNotIn("Изследовател", self.earned())
-        self.complete(3, guild="Изследователи")
+        self.complete(3, guild="Артисти")
         self.assertIn("Изследовател", self.earned())
 
     def test_level_badge(self):

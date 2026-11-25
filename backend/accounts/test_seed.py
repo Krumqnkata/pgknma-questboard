@@ -41,6 +41,7 @@ class SeedTests(TestCase):
         run("seed_demo")
         run("seed_demo")  # второто пускане не прави дубликати
         self.assertEqual(User.objects.count(), 41)
+        self.assertTrue(User.objects.filter(second_guild__isnull=False).exists())
         run("seed_activity")
         statuses = set(Claim.objects.values_list("status", flat=True))
         self.assertTrue({Claim.Status.APPROVED, Claim.Status.PENDING} <= statuses)

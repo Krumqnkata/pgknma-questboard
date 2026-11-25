@@ -1,5 +1,5 @@
 """
-Зарежда примерни данни: класове, акаунти за всяка роля, мисии, домашни, спонсори,
+Зарежда примерни данни: класове, акаунти за всяка роля, мисии, домашни, външни награди,
 тестове на гилдиите и примерно седмично разписание.
 
     python manage.py seed_demo
@@ -32,7 +32,7 @@ from timetable.models import Lesson
 
 SAMPLE_TIMETABLE = Path(settings.BASE_DIR) / "timetable" / "sample" / "razpisanie_primer.csv"
 TERM = timedelta(days=65)  # преди толкова са създадени акаунтите и тестовете
-OWN_FIELDS = ("nickname", "guild", "avatar_seed")  # ученикът може вече да ги е сменил
+OWN_FIELDS = ("nickname", "guild", "second_guild", "avatar_seed")  # ученикът може вече да ги е сменил
 
 
 class Command(BaseCommand):
@@ -54,7 +54,8 @@ class Command(BaseCommand):
         for number, (first, last, nickname, class_name, guild, _active) in enumerate(content.STUDENTS, start=1):
             self.save_user(email=f"uchenik{number if number > 1 else ''}{content.DOMAIN}", first_name=first,
                            last_name=last, role=User.Role.STUDENT, nickname=nickname,
-                           school_class=classes[class_name], guild=self.guilds.get(guild), avatar_seed=number * 37)
+                           school_class=classes[class_name], guild=self.guilds.get(guild),
+                           second_guild=self.guilds.get(content.SECOND_GUILDS.get(nickname)), avatar_seed=number * 37)
 
         self.save_rewards()
         for quest in content.MISSIONS:
@@ -92,10 +93,11 @@ class Command(BaseCommand):
 
     def save_rewards(self):
         sponsors = [Sponsor.objects.get_or_create(name=name)[0] for name in content.SPONSORS]
-        for code, name, description, price, level, sponsor, stock, only_from_mission in content.REWARDS:
+        for code, name, description, price, level, sponsor, person, stock, only_from_mission in content.REWARDS:
             Privilege.objects.get_or_create(code=code, defaults={
                 "kind": Privilege.Kind.SPONSOR, "name": name, "description": description, "price": price,
                 "min_level": level, "sponsor": sponsors[sponsor], "stock": stock,
+                "responsible": self.teachers[person],
                 "only_from_mission": only_from_mission,
             })
 

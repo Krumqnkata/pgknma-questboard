@@ -16,7 +16,7 @@
   {% if homework_count %}<a href="?kind=homework" class="chip" {% if only_homework %}aria-current="true"{% endif %}>Домашни ({{ homework_count }})</a>{% endif %}
   {% for guild in guilds %}
     <a href="?guild={{ guild.id }}" class="chip {{ guild|guild_class }}"
-       {% if selected_guild == guild.id|stringformat:'s' %}aria-current="true"{% endif %}>{{ guild }}{% if guild == user.guild %} (твоята){% endif %}</a>
+       {% if selected_guild == guild.id|stringformat:'s' %}aria-current="true"{% endif %}>{{ guild }}{% if guild in user.guilds %} (твоя){% endif %}</a>
   {% endfor %}
 </nav>
 

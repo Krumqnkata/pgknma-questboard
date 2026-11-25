@@ -15,10 +15,11 @@ class MeSerializer(serializers.ModelSerializer):
 
     school_class = serializers.StringRelatedField()
     guild = serializers.StringRelatedField()
+    second_guild = serializers.StringRelatedField()
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "role", "nickname", "school_class", "guild"]
+        fields = ["id", "email", "first_name", "last_name", "role", "nickname", "school_class", "guild", "second_guild"]
 
 
 class MissionSerializer(serializers.ModelSerializer):

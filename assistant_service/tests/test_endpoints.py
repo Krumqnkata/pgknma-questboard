@@ -15,7 +15,7 @@ client = TestClient(app)
 HEADERS = {"X-Assistant-Token": "test-token"}
 FAKE = {"provider": "fake", "model": "тестов"}
 MISSION = {"title": "Репортаж", "description": "Направи репортаж за събитие.", "criteria": "Връзка към статия."}
-GUILDS = [{"name": "Техничари"}, {"name": "Изследователи"}]
+GUILDS = [{"name": "Техничари"}, {"name": "Артисти"}]
 TOOLS = [{
     "name": "free_rooms",
     "description": "Свободни кабинети",
@@ -106,7 +106,7 @@ class EndpointTests(unittest.TestCase):
         response = self.post("/mission-draft", {**FAKE, "idea": "Помощ в библиотеката",
                                                 "guilds": GUILDS, "max_xp": 100})
         self.assertEqual(response.status_code, 200)
-        self.assertIn(response.json()["guild"], ["Техничари", "Изследователи"])
+        self.assertIn(response.json()["guild"], ["Техничари", "Артисти"])
 
     def test_draft_xp_is_limited_by_game_rules(self):
         response = self.post("/mission-draft", {**FAKE, "idea": "Помощ в библиотеката",

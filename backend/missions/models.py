@@ -61,7 +61,7 @@ class Mission(models.Model):
     reward_item = models.ForeignKey(
         "economy.Privilege", verbose_name="предмет за изпълнение", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="missions",
-        help_text="Предмет, който се печели само от мисия, или награда от спонсор.",
+        help_text="Предмет, който се печели само от мисия, или награда от външен контрибутор.",
     )
 
     # --- Кой проверява ---

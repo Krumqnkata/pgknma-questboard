@@ -66,6 +66,7 @@ def _xp_sum(path, prefix, since=None):
 
 
 def guild_ranking(since=None):
+    """XP на ученика се брои само за основната му гилдия."""
     guilds = Guild.objects.annotate(
         xp=_xp_sum("members__xp_transactions", "members__", since),
         member_count=Count("members", filter=_active_students_filter("members__"), distinct=True),
@@ -94,11 +95,11 @@ def student_ranking(guild_id=None, class_id=None, limit=50, since=None, week_sta
     места е мръднал ученикът от началото на седмицата.
     """
     students = User.objects.filter(role=User.Role.STUDENT, is_active=True).select_related(
-        "guild", "shown_title", "shown_frame").annotate(xp=_xp_sum("xp_transactions", "", since))
+        "guild", "second_guild", "shown_title", "shown_frame").annotate(xp=_xp_sum("xp_transactions", "", since))
     if week_start and not since:
         students = students.annotate(week_xp=_xp_sum("xp_transactions", "", week_start))
     if guild_id:
-        students = students.filter(guild_id=guild_id)
+        students = students.filter(Q(guild_id=guild_id) | Q(second_guild_id=guild_id))
     if class_id:
         students = students.filter(school_class_id=class_id)
 

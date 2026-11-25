@@ -31,7 +31,6 @@
   --helpers: #5aa2ff;
   --artists: #ff6fb5;
   --techies: #ff9f43;
-  --explorers: #2ee6a6;
   --athletes: #ff6b6b;
   --organizers: #b58cff;
   --code-key: #ff8593;
@@ -62,10 +61,6 @@
   --pattern: linear-gradient(#ff9f4310 1px, transparent 1px), linear-gradient(90deg, #ff9f4310 1px, transparent 1px);
   --pattern-size: 32px 32px;
 }
-:root[data-kit="gamer"].accent-explorers {
-  --g: #2ee6a6; --radius: 4px 16px 4px 16px;
-  --pattern: repeating-radial-gradient(circle at 80% 10%, transparent 0 38px, #2ee6a612 39px 40px);
-}
 :root[data-kit="gamer"].accent-athletes {
   --g: #ff6b6b; --radius: 2px 18px 2px 18px;
   --pattern: repeating-linear-gradient(115deg, transparent 0 46px, #ff6b6b10 46px 60px);
@@ -74,6 +69,17 @@
   --g: #b58cff; --radius: 10px;
   --pattern: radial-gradient(#b58cff24 2px, transparent 3px), linear-gradient(45deg, transparent 48%, #b58cff0c 49% 51%, transparent 52%);
   --pattern-size: 48px 48px;
+}
+
+/* ---------- Учители и администратор ---------- */
+:root[data-kit="gamer"].accent-teacher {
+  --g: #7fe3a1; --radius: 6px;
+  --pattern: repeating-linear-gradient(transparent 0 30px, #7fe3a114 30px 31px);
+}
+:root[data-kit="gamer"].accent-admin {
+  --g: #5fd0d6; --radius: 4px;
+  --pattern: linear-gradient(#5fd0d60e 1px, transparent 1px), linear-gradient(90deg, #5fd0d60e 1px, transparent 1px);
+  --pattern-size: 16px 16px;
 }
 
 /* ---------- Фон и заглавия ---------- */

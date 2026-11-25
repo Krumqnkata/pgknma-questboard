@@ -66,7 +66,7 @@ class SiteToolTests(TestCase):
                                        reason="тест")
         items = {item["name"]: item for item in self.data(self.student, "shop")["items"]}
         self.assertTrue(items["Книга"]["can_buy_now"])
-        self.assertEqual((items["Книга"]["partner"], items["Книга"]["left"]), ("Книжарница", 1))
+        self.assertEqual((items["Книга"]["contributor"], items["Книга"]["left"]), ("Книжарница", 1))
         self.assertFalse(items["Легенда"]["can_buy_now"])
         self.assertNotIn("Откривател", items)  # само от мисия
 

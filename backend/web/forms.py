@@ -77,7 +77,7 @@ class MissionForm(forms.ModelForm):
             Q(rule=Badge.Rule.MISSION, is_active=True) | Q(pk=self.instance.reward_badge_id))
         self.fields["reward_badge"].empty_label = "Без значка"
         self.fields["reward_badge"].help_text = "Получава се само от тази мисия. Нови значки добавя администраторът."
-        # Учителят не може да подари обикновена стока от магазина – само предмет за мисии или награда от спонсор.
+        # Учителят не може да подари обикновена стока от магазина – само предмет за мисии или награда от контрибутор.
         self.fields["reward_item"].queryset = Privilege.objects.filter(
             Q(only_from_mission=True, is_active=True) | Q(kind=Privilege.Kind.SPONSOR, is_active=True)
             | Q(pk=self.instance.reward_item_id)).select_related("sponsor")

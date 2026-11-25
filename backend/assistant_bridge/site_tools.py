@@ -11,6 +11,7 @@ from django.db.models import Count, Min, Q
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.models import MAX_GUILDS
 from badges.services import badge_cards
 from economy import leaderboard
 from economy.models import GameSettings, Level, Privilege
@@ -59,7 +60,7 @@ def _mission_links(missions):
 # ---------- За ученика ----------
 
 def open_missions(user, arguments):
-    """Активните мисии, които ученикът още не е заявил; първо тези на гилдията му."""
+    """Активните мисии, които ученикът още не е заявил; първо тези на гилдиите му."""
     missions = missions_for_student(user).select_related("reward_badge", "reward_item").exclude(claims__student=user)
     kind = str(arguments.get("kind") or "").strip().lower()
     if kind.startswith("отбор"):
@@ -75,11 +76,11 @@ def open_missions(user, arguments):
     note = f"в гилдия „{guild}“ няма такива; това са мисиите от другите гилдии" if guild and not in_guild else None
     missions = missions if note else in_guild
     total = missions.count()
-    missions = sorted(missions, key=lambda m: (not m.is_homework and m.guild_id != user.guild_id, m.deadline))[:MAX_MISSIONS]
+    missions = sorted(missions, key=lambda m: (not m.is_homework and m.guild_id not in user.guild_ids, m.deadline))[:MAX_MISSIONS]
     max_xp = GameSettings.load().max_xp_per_mission
     return ToolResult(
         data={
-            "own_guild": user.guild.name if user.guild else None,
+            "own_guilds": [guild.name for guild in user.guilds],
             "total": total, "note": note,
             "missions": [{
                 "title": m.title, "guild": None if m.is_homework else m.guild.name,
@@ -112,7 +113,8 @@ def shop(user, arguments):
             "my_level": stats.level.number if stats.level else None,
             "items": [{
                 "name": item.name, "kind": kinds[item.kind], "description": item.description[:150],
-                "price": item.price, "partner": item.sponsor.name if item.sponsor else None, "left": item.left,
+                "price": item.price, "contributor": item.sponsor.name if item.sponsor else None,
+                "handed_over_by": "отговорника, вижда се в магазина" if item.handed_over_by else None, "left": item.left,
                 "from_level": item.min_level,
                 "can_buy_now": is_unlocked(item, stats.level) and stats.coins >= item.price and not item.is_sold_out,
             } for item in active_privileges()],
@@ -147,7 +149,8 @@ def ranking(user, arguments):
     if user.is_student:
         mine = next((row for row in leaderboard.student_ranking(limit=None) if row.user.pk == user.pk), None)
         data["my_rank"] = mine.rank if mine else None
-        data["my_guild"] = user.guild.name if user.guild else None
+        data["my_guilds"] = [guild.name for guild in user.guilds]
+        data["my_main_guild"] = user.guild.name if user.guild else None
     return ToolResult(data=data, links=[Link("Класация", reverse("leaderboard"))])
 
 
@@ -168,7 +171,8 @@ def game_rules(user, arguments):
                               "Excel, PowerPoint",
             "teams": "при отборна мисия капитанът подава заявката и изписва псевдонимите на съотборниците; "
                      "всеки получава пълната награда",
-            "guilds": "в гилдия се влиза с входен тест пред учител, с код от него; минава се с поне 80 процента, ако учителят "
+            "guilds": f"ученикът е в най-много {MAX_GUILDS} гилдии, едната е основна и неговият XP се брои за нея; "
+                      "в гилдия се влиза с входен тест пред учител, с код от него; минава се с поне 80 процента, ако учителят "
                       "не е задал друго; месечният тест е само за членовете и дава XP",
             "homework": f"домашните са за определени класове и дават до {rules.max_xp_per_homework} XP за предадена и приета "
                         "работа; не са оценка",
@@ -215,7 +219,7 @@ def pending_reviews(user, arguments):
 def to_hand_over(user, arguments):
     """Колко привилегии и награди чакат да бъдат предадени – без имената на учениците."""
     counts = {}
-    for purchase in unused_purchases():
+    for purchase in unused_purchases(user):
         counts[purchase.privilege.name] = counts.get(purchase.privilege.name, 0) + 1
     return ToolResult(
         data={"total": sum(counts.values()), "items": [{"name": name, "count": n} for name, n in counts.items()]},

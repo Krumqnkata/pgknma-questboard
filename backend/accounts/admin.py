@@ -52,7 +52,7 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         (None, {"fields": ["email", "password"]}),
         ("Лични данни", {"fields": ["first_name", "last_name"]}),
         ("Роля", {"fields": ["role", "is_active", "must_change_password"]}),
-        ("Само за ученици", {"fields": ["nickname", "school_class", "guild"]}),
+        ("Само за ученици", {"fields": ["nickname", "school_class", "guild", "second_guild"]}),
         ("Дати", {"fields": ["last_login", "date_joined"]}),
     ]
     # Формата за нов потребител има всички полета наведнъж – иначе ученик не може
@@ -67,7 +67,7 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         ("Само за ученици", {
             "classes": ["wide"],
             "description": "Псевдонимът и класът са задължителни, когато ролята е „Ученик“; гилдията може да се спечели и с входен тест. За учител и администратор се оставят празни.",
-            "fields": ["nickname", "school_class", "guild"],
+            "fields": ["nickname", "school_class", "guild", "second_guild"],
         }),
     ]
     readonly_fields = ["last_login", "date_joined"]

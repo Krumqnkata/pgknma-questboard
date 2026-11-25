@@ -211,8 +211,6 @@ class Attempt(models.Model):
     started_at = models.DateTimeField("започнат", auto_now_add=True)
     deadline = models.DateTimeField("най-късно до")
     finished_at = models.DateTimeField("завършен", null=True, blank=True)
-    previous_guild = models.ForeignKey(Guild, verbose_name="предишна гилдия", on_delete=models.SET_NULL, null=True,
-                                       blank=True, related_name="+")
     xp_entry = models.OneToOneField("economy.XPTransaction", verbose_name="начислен XP", on_delete=models.SET_NULL,
                                     null=True, blank=True, related_name="test_attempt")
     void_reason = models.CharField("защо е анулиран", max_length=200, blank=True)

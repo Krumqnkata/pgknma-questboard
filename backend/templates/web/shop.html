@@ -31,8 +31,8 @@
 {% if sponsor_rewards %}
 <section class="section">
   <div class="section-head">
-    <h2>От нашите партньори</h2>
-    <span class="muted small">Билети, книги и курсове. Наградата се получава от учител.</span>
+    <h2>Награди от външни контрибутори</h2>
+    <span class="muted small">Билети, книги и курсове от хора и организации извън училище.</span>
   </div>
   <div class="mission-grid">
     {% for item in sponsor_rewards %}
@@ -46,6 +46,7 @@
           <span class="xp">{{ item.price|coins }}</span>
         </div>
         <p class="muted small">{{ item.description }}</p>
+        {% if item.handed_over_by %}<p class="muted small">Предава: {{ item.handed_over_by.get_full_name }}</p>{% endif %}
         {% if item.left is not None %}<p class="ticket-left">{% if item.left %}остават {{ item.left }} от {{ item.stock }}{% else %}изчерпана{% endif %}</p>{% endif %}
         {% include "web/_shop_button.html" %}
       </section>
@@ -96,7 +97,7 @@
               <td>
                 {% if purchase.privilege.is_cosmetic %}<span class="badge">за профила</span>
                 {% elif purchase.is_used %}<span class="badge">{% if purchase.privilege.kind == "sponsor" %}получена{% else %}използвана{% endif %} на {{ purchase.used_at|date:"j F"|lower }}</span>
-                {% else %}<span class="badge status-approved">{% if purchase.privilege.kind == "sponsor" %}чака те при учител{% else %}неизползвана{% endif %}</span>{% endif %}
+                {% else %}<span class="badge status-approved">{% if purchase.privilege.kind == "sponsor" %}чака те при {{ purchase.privilege.handed_over_by.get_full_name|default:'учител' }}{% else %}неизползвана{% endif %}</span>{% endif %}
               </td>
             </tr>
           {% endfor %}

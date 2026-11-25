@@ -19,7 +19,7 @@
 
       <div class="player-meta">
         <span class="level-badge">Ниво {{ stats.level.number|default:"0" }}</span>
-        {% if user.guild %}<span class="chip {{ user.guild|guild_class }}">{{ user.guild }}</span>{% endif %}
+        {% for guild in user.guilds %}<span class="chip {{ guild|guild_class }}">{{ guild }}</span>{% endfor %}
       </div>
 
       <ul class="player-stats">

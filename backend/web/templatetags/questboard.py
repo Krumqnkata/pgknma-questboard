@@ -132,13 +132,16 @@ def page_text(text, school=None):
 
 
 @register.filter
-def guild_slug(guild):
-    """{{ user.guild|guild_slug }} → „techies“ (за цвета на сайта според гилдията)."""
-    return guild.code if guild else ""
+def theme_class(user):
+    """Темата на сайта: на основната гилдия, на учителите или на администратора. Без тема – гости и ученик без гилдия."""
+    if not getattr(user, "is_authenticated", False):
+        return ""
+    name = user.guild.code if user.is_student and user.guild else "" if user.is_student else user.role
+    return f"themed accent-{name}" if name else ""
 
 
 GUILD_ICONS = {"helpers": "shield", "artists": "brush", "techies": "wrench",
-               "explorers": "compass", "athletes": "bolt", "organizers": "users"}
+               "athletes": "bolt", "organizers": "users"}
 
 
 @register.simple_tag

@@ -50,13 +50,13 @@ def demo_file(name):
 
 
 class Story:
-    def __init__(self, seed=2026):
+    def __init__(self, seed=21):
         self.rng = random.Random(seed)
         self.now = timezone.now()
         self.events = []      # (кога, ред на добавяне, какво)
         self.teachers = [User.objects.get(email=row[0]) for row in content.TEACHERS]
         self.students = {user.nickname: user for user in User.objects.filter(
-            role=User.Role.STUDENT, email__endswith=DOMAIN).select_related("school_class", "guild").order_by("pk")}
+            role=User.Role.STUDENT, email__endswith=DOMAIN).select_related("school_class", "guild", "second_guild").order_by("pk")}
         self.active = {row[2]: row[5] for row in content.STUDENTS}
 
     def run(self):
@@ -131,10 +131,10 @@ class Story:
         def weight(student):
             active = self.active[student.nickname]
             value = active ** 1.6 / (1 + self.done[student.nickname] * 0.35)
-            if student.guild and student.guild.code == quest.source:
+            if quest.source in [guild.code for guild in student.guilds]:
                 value *= 2
             if active >= 8 and (student.nickname, week) not in self.weeks:
-                value *= 4
+                value *= 15 if active == 10 else 4  # Феникс е за демонстрация: има дълга серия
             return value
 
         crew = []
@@ -260,8 +260,9 @@ class Story:
                 del self.wishes[nickname]
 
     def teacher_marks_used(self):
-        for purchase in list(unused_purchases())[::2]:
-            mark_purchase_used(purchase, self.rng.choice(self.teachers))
+        for teacher in self.teachers:
+            for purchase in list(unused_purchases(teacher))[::2]:
+                mark_purchase_used(purchase, teacher)
 
     def use_hint(self):
         student = self.fresh("Феникс")

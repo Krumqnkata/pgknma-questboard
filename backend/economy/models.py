@@ -310,7 +310,7 @@ def sponsor_logo_path(instance, filename):
 
 
 class Sponsor(models.Model):
-    """Партньор, който осигурява награди: билети, книги, курсове."""
+    """Външен контрибутор, който осигурява награди: билети, книги, курсове."""
 
     name = models.CharField("име", max_length=80, unique=True)
     logo = models.ImageField(
@@ -321,8 +321,8 @@ class Sponsor(models.Model):
     website = models.URLField("сайт", blank=True)
 
     class Meta:
-        verbose_name = "спонсор"
-        verbose_name_plural = "спонсори"
+        verbose_name = "външен контрибутор"
+        verbose_name_plural = "външни контрибутори"
         ordering = ["name"]
 
     def __str__(self):
@@ -334,14 +334,14 @@ class Privilege(models.Model):
     Артикул в магазина (Ф8). Три вида:
       - привилегия (Deadline Pass, Hint Token) – учителят я отбелязва като използвана;
       - за профила (титла или рамка на аватара) – само външен вид, не влияе на ученето;
-      - награда от спонсор (билет, книга, курс) – ограничен брой, предава я учител.
+      - награда от външен контрибутор (билет, книга, курс) – ограничен брой, предава я отговорникът ѝ.
     """
 
     class Kind(models.TextChoices):
         PRIVILEGE = "privilege", "Привилегия"
         TITLE = "title", "Титла до псевдонима"
         FRAME = "frame", "Рамка на аватара"
-        SPONSOR = "sponsor", "Награда от спонсор"
+        SPONSOR = "sponsor", "Награда от външен контрибутор"
 
     class FrameStyle(models.TextChoices):
         GOLD = "gold", "Златна"
@@ -363,8 +363,14 @@ class Privilege(models.Model):
         "печели се само от мисия", default=False,
         help_text="Не се продава – дава се като награда за конкретна мисия.",
     )
-    sponsor = models.ForeignKey(Sponsor, verbose_name="спонсор", on_delete=models.PROTECT, null=True, blank=True,
-                                related_name="rewards", help_text="Само за награди от спонсор.")
+    sponsor = models.ForeignKey(Sponsor, verbose_name="външен контрибутор", on_delete=models.PROTECT,
+                                null=True, blank=True, related_name="rewards",
+                                help_text="Само за награди от външен контрибутор.")
+    responsible = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="отговорник", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="rewards_in_charge", limit_choices_to={"role__in": ["teacher", "admin"], "is_active": True},
+        help_text="Кой предава наградата на ученика. За всяка награда може да е различен.",
+    )
     stock = models.PositiveIntegerField(
         "общо бройки", null=True, blank=True,
         help_text="Колко са осигурени общо. Празно – без ограничение.",
@@ -393,11 +399,19 @@ class Privilege(models.Model):
     def is_sold_out(self):
         return self.left == 0
 
+    @property
+    def handed_over_by(self):
+        """Отговорникът; None – може всеки учител (или отговорникът вече не е активен)."""
+        person = self.responsible
+        return person if person is not None and person.is_active else None
+
     def clean(self):
         if self.kind == self.Kind.SPONSOR and not self.sponsor_id:
-            raise ValidationError({"sponsor": "Изберете спонсора."})
+            raise ValidationError({"sponsor": "Изберете външния контрибутор."})
         if self.kind != self.Kind.SPONSOR and self.sponsor_id:
-            raise ValidationError({"sponsor": "Спонсор се избира само за награда от спонсор."})
+            raise ValidationError({"sponsor": "Контрибутор се избира само за награда от външен контрибутор."})
+        if self.kind == self.Kind.SPONSOR and not self.responsible_id:
+            raise ValidationError({"responsible": "Изберете отговорник, който ще предава наградата."})
         if self.kind == self.Kind.FRAME and not self.frame_style:
             raise ValidationError({"frame_style": "Изберете вид на рамката."})
 

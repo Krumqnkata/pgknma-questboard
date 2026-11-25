@@ -22,7 +22,7 @@ def school_logo(request):
 
 @cache_control(public=True, max_age=86400)
 def sponsor_logo(request, name):
-    """Логото на спонсор. Името на файла трябва да е записано при някой спонсор."""
+    """Логото на външен контрибутор. Името на файла трябва да е записано при някой от тях."""
     return _send_logo(get_object_or_404(Sponsor, logo=f"sponsors/{name}").logo)
 
 

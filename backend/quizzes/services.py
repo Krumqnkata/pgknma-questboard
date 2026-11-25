@@ -13,7 +13,8 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.guilds import can_join, join_guild, remove_guild
+from accounts.models import MAX_GUILDS, User
 from badges.services import award_badges
 from economy.services import _undo_xp, award_xp, level_for_xp, xp_total
 from missions.errors import GameRuleError
@@ -63,14 +64,16 @@ def why_not(student, test, now=None):
     if attempts.filter(status=Attempt.Status.RUNNING, deadline__gt=now).exists():
         return "Вече решаваш този тест."
     if test.is_entry:
-        if student.guild_id == test.guild_id:
+        if test.guild_id in student.guild_ids:
             return "Вече си в тази гилдия."
+        if not can_join(student, test.guild_id):
+            return f"Вече си в {MAX_GUILDS} гилдии. За нова първо напусни една."
         last = attempts.order_by("-started_at").first()
         if last and now < last.started_at + timedelta(days=test.retry_days):
             when = timezone.localtime(last.started_at + timedelta(days=test.retry_days))
             return f"Нов опит можеш да направиш след {when:%d.%m.%Y, %H:%M}."
         return ""
-    if student.guild_id != test.guild_id:
+    if test.guild_id not in student.guild_ids:
         return "Месечният тест е само за членовете на гилдията."
     month = timezone.localtime(now).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if attempts.filter(started_at__gte=month).exists():
@@ -201,12 +204,11 @@ def _finish(attempt, now):
     attempt.finished_at = now
     if passed and test.is_entry:
         student = User.objects.select_for_update().get(pk=student.pk)
-        attempt.previous_guild = student.guild
-        student.guild = test.guild
-        student.save(update_fields=["guild"])
-        notify(student, Notification.Kind.TEST, f"Мина входния тест с {attempt.percent}% и вече си в гилдия „{test.guild}“!",
+        joined = join_guild(student, test.guild)
+        notify(student, Notification.Kind.TEST, f"Мина входния тест с {attempt.percent}% "
+               + (f"и вече си в гилдия „{test.guild}“!" if joined else f"за „{test.guild}“, но нямаш място за нова гилдия."),
                link=reverse("guild_list"))
-    elif passed and student.guild_id == test.guild_id:
+    elif passed and test.guild_id in student.guild_ids:
         before = level_for_xp(xp_total(student))
         award_xp(student, test.xp, reason=f"Месечен тест „{test.title}“"[:255], created_by=attempt.session.teacher, now=now)
         attempt.xp_entry = student.xp_transactions.order_by("-pk").first()
@@ -232,9 +234,8 @@ def void_attempt(teacher, attempt, why):
             raise GameRuleError("Опитът вече е анулиран.")
         student = User.objects.select_for_update().get(pk=attempt.student_id)
         if attempt.status == Attempt.Status.PASSED:
-            if attempt.test.is_entry and student.guild_id == attempt.test.guild_id:
-                student.guild = attempt.previous_guild
-                student.save(update_fields=["guild"])
+            if attempt.test.is_entry:
+                remove_guild(student, attempt.test.guild_id)
             if attempt.xp_entry and not hasattr(attempt.xp_entry, "reversal"):
                 _undo_xp(attempt.xp_entry, teacher, why)
         attempt.status = Attempt.Status.VOID

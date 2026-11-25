@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
@@ -522,6 +522,9 @@ def mark_purchase_used(purchase, teacher, mission=None):
     """Учителят отбелязва, че ученикът е използвал привилегията (Ф9)."""
     if not (teacher.is_teacher or teacher.is_admin_role):
         raise GameRuleError("Само учител може да отбележи привилегия като използвана.")
+    person = purchase.privilege.handed_over_by
+    if person is not None and person.pk != teacher.pk and not teacher.is_admin_role:
+        raise GameRuleError(f"Тази награда се предава от {person.get_full_name() or person.email}.")
     updated = Purchase.objects.filter(pk=purchase.pk, used_at__isnull=True).update(
         used_at=timezone.now(), marked_used_by=teacher, used_for_mission=mission,
     )
@@ -531,14 +534,21 @@ def mark_purchase_used(purchase, teacher, mission=None):
     return purchase
 
 
-def unused_purchases():
-    """Неизползваните покупки, които учителят отбелязва. Hint Token се харчи сам – през асистента."""
-    return Purchase.objects.filter(used_at__isnull=True, privilege__kind__in=[
+def unused_purchases(user):
+    """
+    Неизползваните покупки, които този учител отбелязва: привилегиите и наградите, за които
+    отговаря (или които са без отговорник). Hint Token се харчи сам – през асистента.
+    """
+    purchases = Purchase.objects.filter(used_at__isnull=True, privilege__kind__in=[
         Privilege.Kind.PRIVILEGE, Privilege.Kind.SPONSOR]).exclude(
         privilege__code="hint_token").select_related(
-        "student", "student__school_class", "privilege").order_by("purchased_at")
+        "student", "student__school_class", "privilege__sponsor", "privilege__responsible").order_by("purchased_at")
+    if user.is_admin_role:
+        return purchases
+    return purchases.filter(Q(privilege__responsible__isnull=True) | Q(privilege__responsible__is_active=False)
+                            | Q(privilege__responsible=user))
 
 
 def active_privileges():
     """Каквото се продава в магазина. Предметите само от мисия не са тук."""
-    return Privilege.objects.filter(is_active=True, only_from_mission=False).select_related("sponsor")
+    return Privilege.objects.filter(is_active=True, only_from_mission=False).select_related("sponsor", "responsible")

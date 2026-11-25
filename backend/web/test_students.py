@@ -2,12 +2,13 @@
 import json
 from datetime import timedelta
 
+from django.contrib.staticfiles import finders
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import Guild, User
 from accounts.testing import make_mission, make_student, make_teacher
 from badges.models import StudentBadge
 from economy.models import CoinTransaction, GameSettings, Privilege
@@ -59,12 +60,26 @@ class AvatarTests(TestCase):
 
 class GuildAccentTests(TestCase):
     def test_student_pages_use_guild_color(self):
-        self.client.force_login(make_student(guild_name="Изследователи"))
-        self.assertContains(self.client.get(reverse("home")), '<html lang="bg" class="accent-explorers">')
+        self.client.force_login(make_student(guild_name="Артисти"))
+        self.assertContains(self.client.get(reverse("home")), '<html lang="bg" class="themed accent-artists">')
 
-    def test_teacher_pages_keep_school_red(self):
+    def test_teachers_have_their_own_theme(self):
         self.client.force_login(make_teacher())
-        self.assertContains(self.client.get(reverse("review_list")), '<html lang="bg">')
+        self.assertContains(self.client.get(reverse("review_list")), '<html lang="bg" class="themed accent-teacher">')
+
+    def test_student_without_a_guild_and_guests_have_no_theme(self):
+        student = make_student()
+        student.guild = None
+        student.save()
+        self.assertContains(self.client.get(reverse("login")), '<html lang="bg">')
+        self.client.force_login(student)
+        self.assertContains(self.client.get(reverse("home")), '<html lang="bg">')
+
+    def test_every_guild_has_both_themes(self):
+        for name in ("css/themes.css", "css/gamer.css"):
+            css = open(finders.find(name), encoding="utf-8").read()
+            for code in [*Guild.Code.values, "teacher", "admin"]:
+                self.assertIn(f".accent-{code} {{", css)
 
 
 class CosmeticShopTests(TestCase):
@@ -81,7 +96,7 @@ class CosmeticShopTests(TestCase):
     def test_buying_a_title_wears_it_and_needs_no_teacher(self):
         purchase = buy_privilege(self.student, self.title)
         self.assertIsNotNone(purchase.used_at)
-        self.assertNotIn(purchase, unused_purchases())
+        self.assertNotIn(purchase, unused_purchases(make_teacher()))
         self.student.refresh_from_db()
         self.assertEqual(self.student.shown_title, self.title)
 

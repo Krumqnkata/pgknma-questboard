@@ -62,7 +62,6 @@
   --helpers: #2563eb;
   --artists: #db2777;
   --techies: #d97706;
-  --explorers: #10b981;
   --athletes: #dc2626;
   --organizers: #7c3aed;
 
@@ -329,7 +328,6 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
 .guild-helpers { --chip-color: var(--helpers); }
 .guild-artists { --chip-color: var(--artists); }
 .guild-techies { --chip-color: var(--techies); }
-.guild-explorers { --chip-color: var(--explorers); }
 .guild-athletes { --chip-color: var(--athletes); }
 .guild-organizers { --chip-color: var(--organizers); }
 
@@ -469,7 +467,7 @@ a.chip:hover { color: var(--ink); background: var(--sunken); }
 .pips { display: inline-flex; gap: 2px; }
 .pips i { width: 7px; height: 7px; border: 1.5px solid var(--stroke); }
 .pips i.on { background: var(--stroke); }
-.tier-hard .pips i.on { background: var(--gold); }
+.tier-hard .pips i.on { background: var(--goldcard); }
 .tag-new { background: var(--accent); color: var(--on-accent); }
 .tag-soon { background: var(--coral); color: #14151a; font-family: var(--mono); }
 
@@ -531,7 +529,7 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--in
   border: 2px solid var(--stroke); border-left-width: 8px; border-radius: var(--radius-sm);
   background: var(--surface); box-shadow: var(--hard); font-weight: 600;
 }
-.message-success { border-left-color: var(--explorers); }
+.message-success { border-left-color: var(--ok); }
 .message-error { border-left-color: var(--coral); }
 
 /* ---------- Вход ---------- */
@@ -761,7 +759,7 @@ tr.mine td { background: var(--accent-soft); }
   background: var(--gold); animation: confetti-fall 2.4s ease-in 0.15s forwards;
 }
 .confetti i:nth-child(3n) { background: var(--coral); }
-.confetti i:nth-child(3n+1) { background: var(--explorers); }
+.confetti i:nth-child(3n+1) { background: var(--ok); }
 .confetti i:nth-child(1) { left: 6%; animation-delay: 0.1s; }
 .confetti i:nth-child(2) { left: 12%; animation-delay: 0.5s; }
 .confetti i:nth-child(3) { left: 18%; animation-delay: 0.25s; }
@@ -858,7 +856,7 @@ tr.mine td { background: var(--accent-soft); }
 .field[hidden] { display: none; }
 .field div[id^="id_"] > div label { display: flex; gap: 0.5rem; align-items: center; font-weight: 500; }
 
-/* ---------- Магазин: партньори и заключени предмети ---------- */
+/* ---------- Магазин: външни награди и заключени предмети ---------- */
 .ticket-card { position: relative; border-style: dashed; }
 .ticket-sponsor { display: flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.8rem; font-weight: 700; }
 .ticket-sponsor img { width: 36px; height: 36px; object-fit: contain; border: 2px solid var(--stroke); border-radius: var(--radius-sm); background: #fff; }

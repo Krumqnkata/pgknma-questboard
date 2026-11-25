@@ -84,7 +84,7 @@ TOOLS = {
         "parameters": _schema(), "for_students": True, "only_students": True, "run": site_tools.my_claims,
     },
     "shop": {
-        "description": "Магазинът: привилегии, награди от партньори, титли и рамки, с цена, бройки и ниво, и какво може "
+        "description": "Магазинът: привилегии, награди от външни контрибутори, титли и рамки, с цена, бройки и ниво, и какво може "
                        "да купи питащият ученик сега.",
         "parameters": _schema(), "for_students": True, "only_students": True, "run": site_tools.shop,
     },
@@ -110,7 +110,7 @@ TOOLS = {
         "parameters": _schema(), "for_students": False, "run": site_tools.pending_reviews,
     },
     "to_hand_over": {
-        "description": "Колко купени привилегии и награди от партньори чакат да бъдат предадени на учениците.",
+        "description": "Колко купени привилегии и награди от външни контрибутори чакат питащият учител да ги предаде на учениците.",
         "parameters": _schema(), "for_students": False, "run": site_tools.to_hand_over,
     },
 }

@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from accounts.guilds import MAIN_CHANGE_DAYS, leave_guild, make_main, next_main_change
 from accounts.models import Guild, User
 from accounts.permissions import role_required
 from assistant_bridge.services import AssistantError, draft_questions
@@ -29,14 +30,43 @@ def guild_list(request):
     tests = {}
     for test, problem in tests_for(request.user):
         tests.setdefault(test.guild_id, []).append((test, problem))
-    guilds = Guild.objects.annotate(member_count=Count(
-        "members", filter=Q(members__role=STUDENT, members__is_active=True)))
+    guilds = Guild.objects.annotate(member_count=
+        Count("members", filter=Q(members__role=STUDENT, members__is_active=True), distinct=True)
+        + Count("second_members", filter=Q(second_members__role=STUDENT, second_members__is_active=True), distinct=True))
     return render(request, "web/guilds.html", {
         "guild_rows": [(guild, tests.get(guild.pk, [])) for guild in
-                       sorted(guilds, key=lambda g: (g.pk != request.user.guild_id, g.name))],
+                       sorted(guilds, key=lambda g: (g.pk != request.user.guild_id, g.pk != request.user.second_guild_id, g.name))],
         "attempts": Attempt.objects.filter(student=request.user).select_related("test", "test__guild")[:8],
         "running": Attempt.objects.filter(student=request.user, status=Attempt.Status.RUNNING).first(),
+        "next_main_change": next_main_change(request.user),
+        "main_change_days": MAIN_CHANGE_DAYS,
     })
+
+
+@require_POST
+@role_required(STUDENT)
+def guild_main(request, pk):
+    guild = get_object_or_404(Guild, pk=pk)
+    try:
+        make_main(request.user, guild)
+    except GameRuleError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"Основната ти гилдия вече е „{guild}“.")
+    return redirect("guild_list")
+
+
+@require_POST
+@role_required(STUDENT)
+def guild_leave(request, pk):
+    guild = get_object_or_404(Guild, pk=pk)
+    try:
+        leave_guild(request.user, guild)
+    except GameRuleError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"Напусна гилдия „{guild}“.")
+    return redirect("guild_list")
 
 
 @require_POST
