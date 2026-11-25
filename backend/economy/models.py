@@ -21,7 +21,7 @@ LOGO_MAX_BYTES = 1024 * 1024
 DEFAULT_MODELS = {
     "claude": "claude-opus-5-5",
     "gemini": "gemini-3.5-flash-lite",
-    "openai": "gpt-5-mini",
+    "openai": "gpt-6-luna",
 }
 
 
@@ -102,7 +102,7 @@ class GameSettings(models.Model):
     llm_model = models.CharField(
         "модел", max_length=100, blank=True,
         help_text="Празно – препоръчаният модел: Claude – claude-opus-5-5, Gemini – gemini-3.5-flash-lite, "
-                  "OpenAI – gpt-5-mini. След промяна запазете и натиснете „Провери асистента“.",
+                  "OpenAI – gpt-6-luna. След промяна запазете и натиснете „Провери асистента“.",
     )
     assistant_daily_limit = models.PositiveIntegerField("заявки към асистента на потребител на ден", default=20)
 
