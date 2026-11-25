@@ -29,7 +29,7 @@ PERIOD_WORDS = ["първи", "втори", "трети", "четвърти", "�
 
 # Справките и кой може да ги ползва
 TEACHER_REPORTS = {"teacher_schedule", "teacher_free_periods", "substitutes", "free_rooms"}
-CLASS_REPORTS = {"class_schedule"}
+CLASS_REPORTS = {"class_schedule", "bell_schedule"}
 
 
 class QueryError(Exception):
@@ -122,6 +122,8 @@ def resolve_teacher(text):
         return partial[0]
     if len(partial) > 1:
         raise QueryError("Има няколко учители с това име: " + ", ".join(partial) + ". Уточнете.")
+    if len(wanted) > 50 or "?" in wanted:  # моделът е подал целия въпрос вместо име
+        raise QueryError("Не разбрах за кой учител става дума. Напишете името му.")
     raise QueryError(f"Няма учител „{text}“ в разписанието.")
 
 
@@ -234,6 +236,14 @@ def class_now(class_name, now=None):
     return class_schedule(class_name, current["day"], current["period"], now)
 
 
+# ---------- Учебните часове ----------
+
+def bell_schedule(day=None, now=None):
+    """Кои часове има през деня и кога започва и свършва всеки."""
+    day = parse_day(day, now)
+    return {"day": DAY_NAMES[day], "periods": bell(day)}
+
+
 # ---------- Ф22: свободни кабинети ----------
 
 def free_rooms(day=None, period=None, now=None):
@@ -262,6 +272,8 @@ def run_report(user, report, params):
         return substitutes(params.get("teacher"), params.get("day"), params.get("period"))
     if report == "class_schedule":
         return class_schedule(params.get("class_name"), params.get("day"), params.get("period"))
+    if report == "bell_schedule":
+        return bell_schedule(params.get("day"))
     if report == "free_rooms":
         return free_rooms(params.get("day"), params.get("period"))
     raise QueryError("Непозната справка.")

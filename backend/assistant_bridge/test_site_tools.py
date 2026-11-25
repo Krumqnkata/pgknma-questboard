@@ -17,7 +17,7 @@ from .site_tools import Link, visible_links
 from .tests import SAMPLE
 from .tools import run_tool, tools_for
 
-TIMETABLE_TOOLS = ("teacher_schedule", "teacher_free_periods", "substitutes", "class_schedule", "free_rooms")
+TIMETABLE_TOOLS = ("bell_schedule", "teacher_schedule", "teacher_free_periods", "substitutes", "class_schedule", "free_rooms")
 
 
 class SiteToolTests(TestCase):
@@ -160,6 +160,8 @@ class ForgivingArgumentsTests(TestCase):
     def setUp(self):
         import_timetable(SAMPLE.read_text(encoding="utf-8"))
         self.teacher = make_teacher()
+        self.student = make_student()
+        make_mission(self.teacher)
 
     def test_days(self):
         for text in ("сряда", "Сряда", "в сряда", "„сряда“", "среда", "ср", "Wednesday"):
@@ -209,6 +211,21 @@ class ForgivingArgumentsTests(TestCase):
         data = run_tool(self.teacher, "substitutes",
                         {"teacher": "Маринова", "day": "понеделник", "period": str(min(periods))}).data
         self.assertEqual(data["note"], "")
+
+    def test_bell_schedule(self):
+        for user in (self.student, self.teacher):
+            data = run_tool(user, "bell_schedule", {"day": "понеделник"}).data
+            self.assertEqual((data["day"], data["periods"][0]["period"]), ("понеделник", 1))
+            self.assertIn("start", data["periods"][0])
+
+    def test_whole_question_is_not_a_teacher(self):
+        with self.assertRaisesMessage(QueryError, "Не разбрах за кой учител"):
+            run_tool(self.teacher, "teacher_schedule", {"teacher": "Въпрос: Има ли 15 час в сряда?", "day": "сряда"})
+
+    def test_claims_summary_and_teacher_rules(self):
+        self.assertIn("върнати за поправяне (отказани): 0", run_tool(self.student, "my_claims", {}).data["summary"])
+        self.assertIn("питащият е учител", run_tool(self.teacher, "game_rules", {}).data["asker"])
+        self.assertIn("returned", run_tool(self.teacher, "my_missions", {}).data["missions"][0])
 
     def test_unknown_teacher(self):
         with self.assertRaisesMessage(QueryError, "Няма учител „Батман“"):

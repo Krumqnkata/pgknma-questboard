@@ -215,7 +215,7 @@ class AskTests(TestCase):
     def test_student_tools_are_limited(self):
         from .tools import tools_for
         names = {tool["name"] for tool in tools_for(make_student())}
-        self.assertEqual(names, {"class_schedule", "my_progress", "open_missions", "my_claims", "shop", "my_badges",
+        self.assertEqual(names, {"class_schedule", "bell_schedule", "my_progress", "open_missions", "my_claims", "shop", "my_badges",
                                  "ranking", "game_rules"})
 
     @patch("assistant_bridge.client.call", return_value={"tool": None, "answer": "Мога да помогна със справки."})

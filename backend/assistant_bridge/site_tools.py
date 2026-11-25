@@ -163,6 +163,8 @@ def game_rules(user, arguments):
     rules = GameSettings.load()
     return ToolResult(
         data={
+            "asker": "питащият е учител: монети, магазин, подсказки и заявки имат само учениците, затова не му казвай „можеш да купиш“"
+                     if not user.is_student else "питащият е ученик",
             "coins": f"{rules.xp_per_coin} XP дават 1 монета, най-много {rules.weekly_coin_limit} монети на седмица",
             "xp_over_limit": "XP се пази винаги, дори когато седмичният лимит на монетите е достигнат",
             "carry_over": "остатъкът под курса се пренася за следващата седмица" if rules.carry_over_remainder
@@ -201,11 +203,13 @@ def my_missions(user, arguments):
     missions = list(open_first(missions_reviewed_by(user).annotate(
         pending=Count("claims", filter=Q(claims__status=Claim.Status.PENDING, claims__captain__isnull=True)),
         approved=Count("claims", filter=Q(claims__status=Claim.Status.APPROVED)),
+        rejected=Count("claims", filter=Q(claims__status=Claim.Status.REJECTED)),
     ))[:MAX_MISSIONS])
     return ToolResult(
         data={"missions": [{
             "title": m.title, "guild": m.source, "xp": m.xp, "deadline": _date(m.deadline),
             "accepts_claims": m.is_open(), "waiting": m.pending, "approved": m.approved,
+            "returned": m.rejected,
             "role": "автор" if m.created_by_id == user.pk else "заместник",
         } for m in missions]},
         links=_mission_links(missions) + [Link("Моите мисии", reverse("mission_list"))],

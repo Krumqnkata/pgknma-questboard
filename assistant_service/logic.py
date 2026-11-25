@@ -114,6 +114,8 @@ def make_draft(request: DraftRequest) -> DraftResponse:
             raise ProviderError("черновата е в неочакван формат")
         if draft.guild not in names:
             raise ProviderError("предложена е несъществуваща гилдия")
+        # Само текстовете; имената на гилдията и значката остават точно каквито са.
+        draft.title, draft.description, draft.criteria = plain(draft.title), plain(draft.description), plain(draft.criteria)
         draft.xp = max(1, min(draft.xp, request.max_xp))  # XP се ограничава от правилата на играта
         draft.team_min = max(2, min(draft.team_min, request.team_limit))
         draft.team_max = max(draft.team_min, min(draft.team_max, request.team_limit))

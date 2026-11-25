@@ -59,6 +59,12 @@ TOOLS = {
                               day=DAY, period="номер на час или празно за целия ден"),
         "for_students": True,
     },
+    "bell_schedule": {
+        "description": "Учебните часове в училището през деня: колко са и кога започва и свършва всеки. Без клас и учител. "
+                       "За „в колко започва 3 час“ и „има ли 8 час в петък“.",
+        "parameters": _schema(day=DAY),
+        "for_students": True,
+    },
     "free_rooms": {
         "description": "Кои кабинети са свободни в даден час (Ф22).",
         "parameters": _schema(day=DAY, period=PERIOD),
@@ -102,7 +108,7 @@ TOOLS = {
         "parameters": _schema(), "for_students": True, "run": site_tools.game_rules,
     },
     "my_missions": {
-        "description": "Мисиите на питащия учител (и тези, на които е заместник): срок, чакащи и потвърдени заявки.",
+        "description": "Мисиите на питащия учител (и тези, на които е заместник): срок, чакащи, потвърдени и върнати заявки.",
         "parameters": _schema(), "for_students": False, "run": site_tools.my_missions,
     },
     "pending_reviews": {
