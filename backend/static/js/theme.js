@@ -5,18 +5,17 @@
 (function () {
   "use strict";
 
-  // Комплектът за интерфейса: „Училищен“ или „Геймърски“ (static/css/gamer.css).
+  // Комплектът за интерфейса: „Изчистен“ (clean.css), „Ретро“ (само style.css) или „Геймърски“ (gamer.css).
   const buttons = document.querySelectorAll("[data-kit-set]");
   function showKit() {
-    const kit = document.documentElement.dataset.kit || "school";
+    const kit = document.documentElement.dataset.kit;
     buttons.forEach(function (item) {
       item.setAttribute("aria-pressed", item.dataset.kitSet === kit ? "true" : "false");
     });
   }
   buttons.forEach(function (item) {
     item.addEventListener("click", function () {
-      if (item.dataset.kitSet === "gamer") document.documentElement.dataset.kit = "gamer";
-      else delete document.documentElement.dataset.kit;
+      document.documentElement.dataset.kit = item.dataset.kitSet;
       try { localStorage.setItem("qb-kit", item.dataset.kitSet); } catch (error) { /* напр. частен режим */ }
       showKit();
     });

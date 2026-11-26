@@ -1,6 +1,7 @@
 {% load static questboard %}<!doctype html>
 {# Всяка гилдия, учителите и администраторът имат своя тема (static/css/themes.css). #}
-<html lang="bg"{% if user|theme_class %} class="{{ user|theme_class }}"{% endif %}>
+{# data-kit е видът на сайта: „Изчистен“ (clean.css) по подразбиране, „Ретро“ или „Геймърски“. #}
+<html lang="bg" data-kit="clean"{% if user|theme_class %} class="{{ user|theme_class }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,13 +16,13 @@
   <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
 
   {# Темата се избира още преди страницата да се покаже, за да няма премигване. #}
-  {# По подразбиране е светла (кремавият фон с мрежа); изборът с бутона се помни. #}
+  {# По подразбиране е светла и „Изчистена“; изборът с бутоните се помни в браузъра. #}
   <script>
     (function () {
       var theme, kit;
       try { theme = localStorage.getItem("qb-theme"); kit = localStorage.getItem("qb-kit"); } catch (e) {}
       document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
-      if (kit === "gamer") document.documentElement.dataset.kit = "gamer";
+      if (kit === "retro" || kit === "gamer") document.documentElement.dataset.kit = kit;
     })();
   </script>
 
@@ -30,7 +31,8 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <link rel="stylesheet" href="{% static 'css/themes.css' %}">
   <link rel="stylesheet" href="{% static 'css/flow.css' %}">
-  {# Вторият комплект за интерфейса („Геймърски“) – важи само при data-kit="gamer". #}
+  {# Комплектите за интерфейса: всеки важи само при своя data-kit. Без тях е „Ретро“. #}
+  <link rel="stylesheet" href="{% static 'css/clean.css' %}">
   <link rel="stylesheet" href="{% static 'css/gamer.css' %}">
 </head>
 <body class="{% if user.is_student or user.is_teacher %}has-tabbar{% endif %}{% if assistant_enabled and user.is_authenticated %} has-assistant{% endif %}">
@@ -117,7 +119,8 @@
         <a href="{% url 'privacy' %}">Поверителност</a>
         <span>Отворен код под лиценз GPL-3.0</span>
         <span class="kit-switch" role="group" aria-label="Вид на интерфейса">
-          <button type="button" data-kit-set="school" aria-pressed="true">Училищен</button>
+          <button type="button" data-kit-set="clean" aria-pressed="true">Изчистен</button>
+          <button type="button" data-kit-set="retro" aria-pressed="false">Ретро</button>
           <button type="button" data-kit-set="gamer" aria-pressed="false">Геймърски</button>
         </span>
       </nav>

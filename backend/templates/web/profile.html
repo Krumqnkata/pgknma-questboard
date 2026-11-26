@@ -29,9 +29,10 @@
 
 <section class="panel section" aria-labelledby="kit-title">
   <h2 id="kit-title">Вид на сайта</h2>
-  <p class="muted">Помни се в този браузър.{% if user.is_student and user.guild %} Цветът, фонът и формата на картите са на основната ти гилдия, {{ user.guild }}.{% elif user.is_student %} Когато влезеш в гилдия, сайтът ще вземе нейния цвят.{% else %} Учителите имат своя тема, а всяка гилдия своя.{% endif %}</p>
+  <p class="muted">Помни се в този браузър.{% if user.is_student and user.guild %} В „Ретро“ и „Геймърски“ цветът, фонът и формата на картите са на основната ти гилдия, {{ user.guild }}.{% elif user.is_student %} В „Ретро“ и „Геймърски“ сайтът взема цвета на гилдията ти, когато влезеш в нея.{% else %} В „Ретро“ и „Геймърски“ учителите имат своя тема, а всяка гилдия своя.{% endif %}</p>
   <div class="kit-choice">
-    <button type="button" data-kit-set="school" aria-pressed="true"><span class="kit-preview"></span>Училищен</button>
+    <button type="button" data-kit-set="clean" aria-pressed="true"><span class="kit-preview is-clean"></span>Изчистен</button>
+    <button type="button" data-kit-set="retro" aria-pressed="false"><span class="kit-preview"></span>Ретро</button>
     <button type="button" data-kit-set="gamer" aria-pressed="false"><span class="kit-preview is-gamer"></span>Геймърски</button>
   </div>
 </section>

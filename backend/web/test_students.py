@@ -61,19 +61,19 @@ class AvatarTests(TestCase):
 class GuildAccentTests(TestCase):
     def test_student_pages_use_guild_color(self):
         self.client.force_login(make_student(guild_name="Артисти"))
-        self.assertContains(self.client.get(reverse("home")), '<html lang="bg" class="themed accent-artists">')
+        self.assertContains(self.client.get(reverse("home")), '<html lang="bg" data-kit="clean" class="themed accent-artists">')
 
     def test_teachers_have_their_own_theme(self):
         self.client.force_login(make_teacher())
-        self.assertContains(self.client.get(reverse("review_list")), '<html lang="bg" class="themed accent-teacher">')
+        self.assertContains(self.client.get(reverse("review_list")), '<html lang="bg" data-kit="clean" class="themed accent-teacher">')
 
     def test_student_without_a_guild_and_guests_have_no_theme(self):
         student = make_student()
         student.guild = None
         student.save()
-        self.assertContains(self.client.get(reverse("login")), '<html lang="bg">')
+        self.assertContains(self.client.get(reverse("login")), '<html lang="bg" data-kit="clean">')
         self.client.force_login(student)
-        self.assertContains(self.client.get(reverse("home")), '<html lang="bg">')
+        self.assertContains(self.client.get(reverse("home")), '<html lang="bg" data-kit="clean">')
 
     def test_every_guild_has_both_themes(self):
         for name in ("css/themes.css", "css/gamer.css"):

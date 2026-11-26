@@ -348,7 +348,10 @@ class PageTests(Base):
 
     def test_kit_switch_and_privacy(self):
         page = self.client.get(reverse("login"))
-        self.assertContains(page, 'data-kit-set="gamer"')
+        for kit in ("clean", "retro", "gamer"):
+            self.assertContains(page, f'data-kit-set="{kit}"')
+        self.assertContains(page, '<html lang="bg" data-kit="clean">')
+        self.assertContains(page, "css/clean.css")
         self.assertContains(page, "css/gamer.css")
         self.assertContains(self.client.get(reverse("privacy")), "Тестове: отговорите")
 

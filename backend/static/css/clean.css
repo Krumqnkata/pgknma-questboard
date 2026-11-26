@@ -1,0 +1,257 @@
+/*
+ * Комплектът „Изчистен“ – видът по подразбиране.
+ * Включва се с data-kit="clean" на <html> (base.html). Другите комплекти са „Ретро“
+ * (само style.css) и „Геймърски“ (gamer.css); избират се от горната лента или профила.
+ *
+ * Променят се само цветовете, рамките, сенките и шрифтът – страниците са същите.
+ * Идеята: светлосив фон, бели карти без рамки, един син цвят за действията,
+ * заоблени бутони и полупрозрачна горна лента. Гилдиите се виждат по цвета на
+ * етикетите и иконите, а не по фона.
+ */
+
+/* ---------- Цветове ---------- */
+:root[data-kit="clean"] {
+  --paper: #f5f5f7;
+  --dots: transparent;
+  --surface: #ffffff;
+  --sunken: #f5f5f7;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #e8e8ed;
+  --stroke: transparent;      /* картите са без рамки */
+  --field: #d2d2d7;           /* рамката на полетата */
+  --soft-button: #e8e8ed;     /* второстепенните бутони */
+  --shadow: rgba(0, 0, 0, 0.08);
+  --panel: #1d1d1f;           /* ученическата карта */
+  --on-panel: #f5f5f7;
+  --on-panel-muted: #a1a1a6;
+  --primary: #0071e3;         /* бутони, връзки, избраното */
+  --primary-hover: #0077ed;
+  --primary-soft: #e8f2fd;
+  --accent: #0071e3;
+  --on-accent: #ffffff;
+  --accent-soft: #e8f2fd;
+  --gold: #f5b700;
+  --radius: 22px;
+  --radius-sm: 12px;
+  --hard: 0 2px 12px rgba(0, 0, 0, 0.04);
+  --mono: var(--font);        /* без моноширинния шрифт */
+}
+:root[data-kit="clean"][data-theme="dark"] {
+  --paper: #000000;
+  --surface: #1c1c1e;
+  --sunken: #2c2c2e;
+  --ink: #f5f5f7;
+  --muted: #a1a1a6;
+  --line: #38383a;
+  --field: #424245;
+  --soft-button: #2c2c2e;
+  --panel: #1c1c1e;
+  --primary: #0a84ff;
+  --primary-hover: #409cff;
+  --primary-soft: #0a2a4a;
+  --accent: #0a84ff;
+  --on-accent: #000000;
+  --accent-soft: #10233a;
+  --hard: none;
+}
+/* Темите на гилдиите (themes.css) не сменят фона и ъглите в този комплект */
+:root[data-kit="clean"].themed { --paper: #f5f5f7; --panel: #1d1d1f; --radius: 22px; --accent-soft: #e8f2fd; }
+:root[data-kit="clean"][data-theme="dark"].themed { --paper: #000000; --panel: #1c1c1e; --accent-soft: #10233a; }
+:root[data-kit="clean"] body, :root[data-kit="clean"].themed body { background-image: none; }
+
+/* ---------- Основа ---------- */
+[data-kit="clean"] body { font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+[data-kit="clean"] h1 { letter-spacing: -0.03em; }
+[data-kit="clean"] :is(h2, h3) { letter-spacing: -0.02em; }
+[data-kit="clean"] :focus-visible { outline-color: var(--primary); }
+
+/* Рамките стават тънки (а при картите – прозрачни, защото --stroke е прозрачен) */
+[data-kit="clean"] :is(.panel, .stat, .mission-card, .quest-card, .table-wrap, .step, .message, .cycle, .badge-card,
+  .guild-card, .code-card, .celebrate, .assistant-popup, .cookie-note, .segmented, .evidence, .evidence-doc,
+  .player-card, .podium-step, .test-bar, .progress, .chip, .tier, .tag, .badge, .card-xp, .level-badge, .streak,
+  .new-label, .first-steps i, .order-no, .icon-button, .ticket-sponsor img, .evidence-thumb img, .bubble,
+  .bubble-links a, .badge-icon) {
+  border-width: 1px;
+}
+[data-kit="clean"] :is(.card-bar, .code-card-head, .chat-form, .assistant-head, .id-band) { border-bottom-width: 1px; }
+[data-kit="clean"] :is(input, textarea, select) { border: 1px solid var(--field); border-radius: 12px; }
+[data-kit="clean"] :is(input, textarea, select):focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); }
+[data-kit="clean"] .message { border-left-width: 4px; }
+
+/* Меки сенки вместо твърдите */
+[data-kit="clean"] :is(.player-card, .auth .panel, .panel-accent, .guild-card.is-mine, .quest-card.tier-hard, .celebrate,
+  .assistant-popup, .cookie-note) { box-shadow: var(--hard); }
+[data-kit="clean"] :is(a.chip, .chat-examples button, .evidence-thumb img, .evidence-doc, .bubble.bot) { box-shadow: none; }
+
+/* ---------- Горна лента: полупрозрачна, без линийката ---------- */
+[data-kit="clean"] .site-header {
+  position: sticky; top: 0; z-index: 25;
+  background: rgba(251, 251, 253, 0.8); color: var(--ink);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08); backdrop-filter: saturate(180%) blur(20px);
+}
+[data-kit="clean"][data-theme="dark"] .site-header { background: rgba(22, 22, 23, 0.8); border-bottom-color: #ffffff1a; }
+[data-kit="clean"] .site-header::after { display: none; }
+[data-kit="clean"] .header-inner { padding-block: 0.4rem; }
+[data-kit="clean"] :is(.brand span, .user-text > span) { color: var(--muted); }
+[data-kit="clean"] .site-header :is(.user-link, .link-button):hover { color: var(--ink); }
+[data-kit="clean"] :is(.nav a, .nav-more summary, .site-header .link-button) {
+  color: var(--muted); border: 0; border-radius: 0; padding: 0.4rem 0.75rem; font-weight: 500; font-size: 0.88rem;
+}
+[data-kit="clean"] :is(.nav a, .nav-more summary):hover { color: var(--ink); }
+/* Избраната страница: удебелена, с черта отдолу */
+[data-kit="clean"] :is(.nav a, .nav-more summary)[aria-current="page"] { color: var(--ink); background: transparent; font-weight: 700; box-shadow: inset 0 -2px 0 var(--ink); }
+[data-kit="clean"] .nav-more > div { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); }
+[data-kit="clean"] .nav-more > div a { border-radius: 8px; }
+[data-kit="clean"] .site-header .icon-button { border: 0; border-radius: 999px; background: transparent; color: var(--ink); }
+[data-kit="clean"] .site-header .icon-button:hover { background: var(--sunken); }
+[data-kit="clean"] .site-header .bell.active { box-shadow: inset 0 0 0 1px var(--primary); }
+[data-kit="clean"] :is(.bell-count, .nav .count) { border-radius: 999px; background: #ff3b30; color: #fff; }
+[data-kit="clean"] .bell-count { border: 2px solid var(--surface); }
+
+/* ---------- Бутони: синьо хапче; второстепенните са сиви ---------- */
+[data-kit="clean"] :is(.btn, button) {
+  font-family: var(--font); font-weight: 600; padding: 0.55rem 1.2rem;
+  border: 1px solid transparent; border-radius: 999px;
+  background: var(--primary); color: #fff; box-shadow: none;
+  transition: background 0.15s;
+}
+[data-kit="clean"] :is(.btn, button):hover { background: var(--primary-hover); color: #fff; }
+[data-kit="clean"] :is(.btn, button):active { transform: none; box-shadow: none; }
+[data-kit="clean"] :is(.btn-outline, button.btn-outline, .chat-examples button, .quick-comments button) { background: var(--soft-button); color: var(--ink); font-weight: 500; }
+[data-kit="clean"] :is(.btn-outline, button.btn-outline, .chat-examples button, .quick-comments button):hover { background: color-mix(in srgb, var(--soft-button) 88%, #000); color: var(--ink); }
+[data-kit="clean"] .quick-comments button[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); }
+[data-kit="clean"] :is(.btn-danger, button.btn-danger) { background: var(--soft-button); color: #d70015; }
+[data-kit="clean"] :is(.btn-danger, button.btn-danger):hover { background: #fde8e8; color: #d70015; }
+[data-kit="clean"][data-theme="dark"] :is(.btn-danger, button.btn-danger) { color: #ff6961; }
+[data-kit="clean"] :is(button.icon-button, .assistant-head button, .link-button) { background: transparent; color: inherit; box-shadow: none; }
+[data-kit="clean"] :is(button:disabled, button:disabled:hover) { border: 0; background: var(--soft-button); color: var(--muted); }
+[data-kit="clean"] .test-option { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); }
+
+/* ---------- Карти на мисиите ---------- */
+[data-kit="clean"] .quest-card { box-shadow: var(--hard); transition: transform 0.2s, box-shadow 0.2s; }
+[data-kit="clean"] .quest-card:hover { transform: scale(1.01); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08); }
+[data-kit="clean"] .quest-card:active { transform: none; }
+[data-kit="clean"] .quest-card.tier-hard:hover { box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08); }
+/* Горната лента е прозрачна: трудността се вижда от етикета под нея */
+[data-kit="clean"] .quest-card[class*="tier-"] .card-bar, [data-kit="clean"] .quest-card.is-homework .card-bar {
+  background: transparent; color: var(--muted); border-bottom: 0; min-height: 44px; padding-top: 0.6rem;
+}
+[data-kit="clean"] .quest-card[class*="tier-"] .card-id svg {
+  border: 0; border-radius: 8px; padding: 3px; background: color-mix(in srgb, var(--chip-color, var(--muted)) 14%, var(--surface));
+}
+[data-kit="clean"] .card-id { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--muted); }
+[data-kit="clean"] .card-xp { border: 0; border-radius: 999px; padding: 0.15rem 0.6rem; background: var(--primary-soft); color: var(--primary); }
+[data-kit="clean"][data-theme="dark"] .card-xp { color: #64b5ff; }
+[data-kit="clean"] .card-body h3 { font-size: 1.18rem; }
+[data-kit="clean"] .card-foot { font-size: 0.82rem; }
+[data-kit="clean"] :is(.tier, .tag) { border-color: transparent; border-radius: 999px; padding: 0.1rem 0.6rem; font-weight: 600; }
+[data-kit="clean"] .quest-card .tier { background: var(--sunken); color: var(--ink); }
+[data-kit="clean"] .pips i { border: 0; border-radius: 50%; background: color-mix(in srgb, var(--ink) 18%, transparent); }
+[data-kit="clean"] .pips i.on { background: var(--ink); }
+[data-kit="clean"] .tier-hard .pips i.on { background: #bf8a00; }
+[data-kit="clean"] .tag-reward { background: #1d1d1f; color: #ffd75e; }
+[data-kit="clean"] .tag-new { background: var(--primary-soft); color: var(--primary); }
+[data-kit="clean"] .tag-soon { background: #fde8e8; color: #b42318; }
+[data-kit="clean"] .badge { border-radius: 999px; border-color: color-mix(in srgb, currentColor 35%, transparent); background: color-mix(in srgb, currentColor 8%, var(--surface)); }
+[data-kit="clean"] .stamp { border-width: 2px; border-style: solid; border-radius: 999px; transform: rotate(-6deg); letter-spacing: 0.08em; }
+[data-kit="clean"] .chip { border-color: var(--field); border-radius: 999px; background: var(--surface); }
+[data-kit="clean"] .chip::before { border: 0; border-radius: 50%; }
+[data-kit="clean"] .chip[aria-current="true"] { background: var(--ink); color: var(--paper); border-color: transparent; }
+
+/* ---------- Кръгът „Следваща стъпка“ ---------- */
+[data-kit="clean"] .cycle ol { border-top: 1px solid var(--line); }
+[data-kit="clean"] .cycle li + li { border-left: 1px solid var(--line); }
+[data-kit="clean"] .cycle li b::before { color: var(--primary); }
+[data-kit="clean"] .cycle li.is-now { background: var(--primary-soft); }
+[data-kit="clean"] .cycle li.is-now a, [data-kit="clean"] .cycle li.is-now span { color: var(--ink); }
+[data-kit="clean"] .cycle li.is-now b { color: var(--primary); }
+@media (max-width: 700px) {
+  [data-kit="clean"] .cycle li:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+[data-kit="clean"] .first-steps i { border-color: var(--field); border-radius: 50%; }
+[data-kit="clean"] .first-steps .is-done i { border-color: transparent; background: var(--primary); color: #fff; }
+[data-kit="clean"] .more-fields { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+
+/* ---------- Ученическата карта: тъмна и чиста ---------- */
+[data-kit="clean"] .player-card { color: var(--on-panel); background: var(--panel); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); }
+[data-kit="clean"] .id-band { margin-bottom: 0; padding-top: 0.9rem; border-bottom: 1px solid #ffffff1f; border-radius: 0; background: transparent; color: var(--on-panel-muted); letter-spacing: 0.1em; }
+[data-kit="clean"] .player-avatar { border: 0; border-radius: 14px; overflow: hidden; }
+[data-kit="clean"] .player-avatar .avatar { background: #ffffff14; }
+[data-kit="clean"] .player-card .player-title { color: #2997ff; }
+[data-kit="clean"] .level-badge { border: 0; border-radius: 999px; background: #ffffff; color: #1d1d1f; }
+[data-kit="clean"] .player-card .chip { background: transparent; color: var(--on-panel); border-color: #ffffff38; }
+[data-kit="clean"] .player-stats li { border: 0; border-radius: 14px; background: #ffffff12; }
+[data-kit="clean"] .xp-bar { height: 10px; border: 0; border-radius: 999px; background: #ffffff1f; }
+[data-kit="clean"] .xp-bar span { border-radius: 999px; background: linear-gradient(90deg, #2997ff, #5ac8fa); }
+[data-kit="clean"] .xp-bar::after { display: none; }
+[data-kit="clean"] .id-foot { justify-content: flex-end; border-top: 1px solid #ffffff1f; }
+[data-kit="clean"] .barcode { display: none; }
+[data-kit="clean"] .player-card .btn { border-color: transparent; box-shadow: none; }
+[data-kit="clean"] .player-card .btn-ghost { background: #ffffff1f; color: var(--on-panel); }
+[data-kit="clean"] .player-card .btn-ghost:hover { background: #ffffff2e; color: var(--on-panel); }
+
+/* ---------- Таблици, класации, числа ---------- */
+[data-kit="clean"] :is(.stat-value, .xp, .rank, td.num, .player-stats b) { font-weight: 800; }
+[data-kit="clean"] th { letter-spacing: 0.05em; font-size: 0.74rem; }
+[data-kit="clean"] thead th { border-bottom: 1px solid var(--line); }
+[data-kit="clean"] :is(tr.me, tr.mine) td { background: var(--primary-soft); }
+[data-kit="clean"] tr.me td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
+[data-kit="clean"] tr.top-1 .rank { text-decoration-color: var(--primary); }
+[data-kit="clean"] .segmented { padding: 3px; border-color: transparent; border-radius: 999px; background: var(--soft-button); box-shadow: none; }
+[data-kit="clean"] .segmented a { border: 0; border-radius: 999px; }
+[data-kit="clean"] .segmented a + a { border-left: 0; }
+[data-kit="clean"] .segmented a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+[data-kit="clean"] .podium-step { border: 0; }
+[data-kit="clean"] :is(.progress, .test-bar) { border: 0; border-radius: 999px; background: var(--sunken); }
+[data-kit="clean"] :is(.progress, .test-bar) span { border: 0; border-radius: 999px; background: var(--primary); }
+[data-kit="clean"] .test-panel.is-last .test-bar span { background: #ff3b30; }
+[data-kit="clean"] .evidence { border: 0; border-radius: 14px; }
+
+/* ---------- Значки, гилдии, известия ---------- */
+[data-kit="clean"] .badge-card { border-color: var(--line); border-radius: 18px; }
+[data-kit="clean"] .badge-card.earned { border-color: transparent; }
+[data-kit="clean"] .badge-icon { border-radius: 12px; border-color: var(--field); }
+[data-kit="clean"] .badge-card.earned .badge-icon, [data-kit="clean"] .celebrate-list .badge-icon { border: 0; background: var(--primary-soft); color: var(--primary); }
+[data-kit="clean"] .guild-card { border-top: 1px solid transparent; box-shadow: var(--hard), inset 0 5px 0 var(--chip-color); }
+[data-kit="clean"] .guild-card.is-mine { box-shadow: var(--hard), inset 0 5px 0 var(--chip-color), 0 0 0 2px var(--chip-color); }
+[data-kit="clean"] .guild-test { border: 1px solid var(--line); border-radius: 14px; }
+[data-kit="clean"] .notification.unread { box-shadow: inset 3px 0 0 var(--primary); }
+[data-kit="clean"] .new-label { border: 0; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+[data-kit="clean"] .streak { border: 0; border-radius: 999px; }
+[data-kit="clean"] .cosmetic-preview { border: 1px solid var(--line); border-radius: 14px; }
+[data-kit="clean"] .ticket-card { border: 1px dashed var(--field); }
+
+/* ---------- Асистентът ---------- */
+[data-kit="clean"] .assistant-fab { border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+[data-kit="clean"] .assistant-fab:hover { background: var(--ink); color: var(--paper); transform: scale(1.03); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+[data-kit="clean"] .assistant-head { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--line); }
+[data-kit="clean"] .bubble { border-color: transparent; border-radius: 18px; }
+[data-kit="clean"] .bubble.bot { background: var(--soft-button); }
+[data-kit="clean"] .bubble.user { background: var(--primary); color: #fff; box-shadow: none; }
+[data-kit="clean"] .bubble.error { border-color: var(--bad); }
+[data-kit="clean"] .bubble-links a { border-color: transparent; border-radius: 999px; background: var(--primary-soft); color: var(--primary); box-shadow: none; }
+[data-kit="clean"] .bubble-links a:hover { color: var(--primary); transform: none; box-shadow: none; }
+[data-kit="clean"] .chat-form { border-top: 1px solid var(--line); }
+[data-kit="clean"] .celebrate::backdrop { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(6px); }
+[data-kit="clean"] .confetti i { border: 0; border-radius: 2px; }
+
+/* ---------- Телефон и долна лента ---------- */
+@media (max-width: 700px) {
+  [data-kit="clean"] .tabbar { background: rgba(251, 251, 253, 0.85); border-top: 1px solid var(--line); backdrop-filter: saturate(180%) blur(20px); }
+  [data-kit="clean"][data-theme="dark"] .tabbar { background: rgba(22, 22, 23, 0.85); }
+  [data-kit="clean"] .tabbar a { border: 0; color: var(--muted); }
+  [data-kit="clean"] .tabbar a[aria-current="page"] { background: transparent; color: var(--primary); }
+}
+[data-kit="clean"] .site-footer { border-top: 1px solid var(--line); }
+
+/* ---------- Избор на вида (долната лента и профилът) ---------- */
+[data-kit="clean"] .kit-switch button { padding: 0.15rem 0.6rem; font-size: 0.78rem; font-weight: 500; background: transparent; color: inherit; border: 1px solid var(--field); }
+[data-kit="clean"] .kit-switch button:hover { background: var(--sunken); color: inherit; }
+[data-kit="clean"] .kit-switch button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: transparent; }
+[data-kit="clean"] .kit-choice button { padding: 0.8rem; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); }
+[data-kit="clean"] .kit-choice button:hover { background: var(--sunken); color: var(--ink); }
+[data-kit="clean"] .kit-choice button[aria-pressed="true"] { outline: 2px solid var(--primary); }
+
+/* Мострата на този комплект в профила */
+.kit-preview.is-clean { border: 1px solid #d2d2d7; border-radius: 14px; background: #f5f5f7 linear-gradient(#fbfbfd, #fbfbfd) top / 100% 16px no-repeat; box-shadow: inset 0 16px 0 -15px #d2d2d7; }
